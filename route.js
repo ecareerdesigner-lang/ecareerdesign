@@ -12,31 +12,15 @@ export async function POST(req) {
     apiVersion: "2026-04-22.dahlia",
   });
 
-  const { jobTitle, origin } = await req.json();
-  const safeOrigin = origin || "";
+  const { sessionId } = await req.json();
+  if (!sessionId) {
+    return Response.json({ paid: false, error: "Missing session_id." }, { status: 400 });
+  }
 
   try {
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: `eCareerDesign — ${jobTitle || "job application"}`,
-              description: "STAR-format response generation for one eCareer job title.",
-            },
-            unit_amount: 2500,
-          },
-          quantity: 1,
-        },
-      ],
-      success_url: `${safeOrigin}/?paid=1&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${safeOrigin}/?paid=0`,
-    });
-
-    return Response.json({ url: session.url });
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    return Response.json({ paid: session.payment_status === "paid" });
   } catch (e) {
-    return Response.json({ error: e.message || "Could not create checkout session." }, { status: 500 });
+    return Response.json({ paid: false, error: e.message || "Could not verify session." }, { status: 500 });
   }
 }
