@@ -64,6 +64,7 @@ const INTAKE_FIELDS = [
 ];
 
 const TOTAL_BUDGET = 6000;
+const SKILLS_BUDGET = 500;
 const STEPS = ["Job & requirements", "Payment", "Background", "Generate", "Export"];
 
 async function callClaude(prompt, maxTokens = 1000) {
@@ -89,20 +90,34 @@ ${rawText}`;
 }
 
 function starPrompt(requirementText, profile, budget) {
+  const target = Math.max(150, Math.floor(budget * 0.85));
   return `You are helping a USPS employee draft a response to one job qualification requirement for an internal eCareer application. Using the requirement below and the candidate's background information, write a STAR-format response (Situation, Task, Action, Result) as flowing narrative paragraphs — do NOT include visible "Situation:"/"Task:"/"Action:"/"Result:" subheadings.
 
 Draw only on details actually present in the candidate's background information below. Do not invent specifics (names, numbers, dates) that weren't provided. Use accurate USPS terminology where the candidate has supplied it.
 
 Requirement: ${requirementText}
 Candidate background: ${JSON.stringify(profile)}
-Target length: approximately ${budget} characters. Stay under this budget. Return only the response text, no preamble.`;
+Target length: aim for about ${target} characters. Do not exceed ${budget} characters under any circumstances — this is a hard limit, not a suggestion. Return only the response text, no preamble.`;
 }
 
-function skillsPrompt(jobTitle, profile) {
+function trimToBudget(text, budget) {
+  if (!text || text.length <= budget) return { text, trimmed: false };
+  let cut = text.slice(0, budget);
+  const lastEnd = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("! "), cut.lastIndexOf("? "));
+  if (lastEnd > budget * 0.5) {
+    cut = cut.slice(0, lastEnd + 1);
+  } else {
+    const lastSpace = cut.lastIndexOf(" ");
+    cut = (lastSpace > 0 ? cut.slice(0, lastSpace) : cut).trim();
+  }
+  return { text: cut, trimmed: true };
+}
+
+function skillsPrompt(jobTitle, profile, budget) {
   return `Based on the job title "${jobTitle}" and the candidate's background below, write a brief summary (3-5 sentences) of special skills, professional associations, certifications, or affiliations relevant to this role. Only include items grounded in the candidate's actual background — do not fabricate credentials or memberships.
 
 Candidate background: ${JSON.stringify(profile)}
-Return only the summary text, no preamble.`;
+Keep it under ${budget} characters — this is a hard limit. Return only the summary text, no preamble.`;
 }
 
 function parseJsonArray(text) {
@@ -247,6 +262,8 @@ export default function ECareerDesign() {
 
   const [paying, setPaying] = useState(false);
   const [paid, setPaid] = useState(false);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
 
   const [profile, setProfile] = useState({});
   const [profileLoaded, setProfileLoaded] = useState(false);
@@ -266,6 +283,58 @@ export default function ECareerDesign() {
       // no saved profile yet
     } finally {
       setProfileLoaded(true);
+    }
+  }, []);
+
+  // Restore the in-progress application (job title, requirements) and verify
+  // payment if we're being redirected back from Stripe Checkout. A full
+  // Checkout redirect reloads the page, so React state has to be rebuilt
+  // from localStorage plus the returned session_id.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("ecareerdesign-inprogress");
+      if (raw) {
+        const saved = JSON.parse(raw);
+        if (saved.jobTitle) setJobTitle(saved.jobTitle);
+        if (saved.selectedLib) setSelectedLib(saved.selectedLib);
+        if (saved.requirements?.length) {
+          setRequirements(saved.requirements);
+          setBudgets(evenBudgets(saved.requirements));
+        }
+      }
+    } catch (e) {
+      // nothing to restore
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+    const paidParam = params.get("paid");
+
+    if (paidParam === "1" && sessionId) {
+      setVerifyingPayment(true);
+      (async () => {
+        try {
+          const res = await fetch("/api/verify-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionId }),
+          });
+          const data = await res.json();
+          if (data.paid) {
+            setPaid(true);
+            setStep(2);
+          } else {
+            setPaymentError("Payment could not be confirmed. If you were charged, contact support before retrying.");
+          }
+        } catch (e) {
+          setPaymentError("Could not verify payment status.");
+        } finally {
+          setVerifyingPayment(false);
+          window.history.replaceState({}, "", window.location.pathname);
+        }
+      })();
+    } else if (paidParam === "0") {
+      window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
 
@@ -306,7 +375,7 @@ export default function ECareerDesign() {
 
   function evenBudgets(reqs) {
     const n = reqs.length || 1;
-    const per = Math.floor(TOTAL_BUDGET / n);
+    const per = Math.floor((TOTAL_BUDGET - SKILLS_BUDGET) / n);
     const b = {};
     reqs.forEach((r) => (b[r.id] = per));
     return b;
@@ -315,16 +384,40 @@ export default function ECareerDesign() {
   function goToPayment() {
     if (requirements.length === 0) return;
     setBudgets(evenBudgets(requirements));
+    try {
+      localStorage.setItem(
+        "ecareerdesign-inprogress",
+        JSON.stringify({ jobTitle, selectedLib, requirements })
+      );
+    } catch (e) {
+      // non-fatal, worst case the user re-enters their title after payment
+    }
     setStep(1);
   }
 
-  function simulatePayment() {
+  async function startCheckout() {
     setPaying(true);
-    setTimeout(() => {
+    setPaymentError("");
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobTitle: jobTitle || selectedLib?.title,
+          origin: window.location.origin,
+        }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setPaying(false);
+        setPaymentError(data.error || "Could not start checkout.");
+      }
+    } catch (e) {
       setPaying(false);
-      setPaid(true);
-      setTimeout(() => setStep(2), 500);
-    }, 1400);
+      setPaymentError("Could not reach the payment server.");
+    }
   }
 
   function goToGenerate() {
@@ -332,17 +425,18 @@ export default function ECareerDesign() {
     setStep(3);
   }
 
-  const totalUsed = Object.values(budgets).reduce((a, b) => a + (Number(b) || 0), 0);
+  const totalUsed = Object.values(budgets).reduce((a, b) => a + (Number(b) || 0), 0) + SKILLS_BUDGET;
   const overBudget = totalUsed > TOTAL_BUDGET;
 
   async function generateOne(req) {
     setResponses((r) => ({ ...r, [req.id]: { ...(r[req.id] || {}), generating: true } }));
     try {
-      const text = await callClaude(starPrompt(req.text, profile, budgets[req.id] || 500), 1000);
-      const clean = text.trim();
+      const budget = budgets[req.id] || 500;
+      const text = await callClaude(starPrompt(req.text, profile, budget), 1000);
+      const { text: fitted, trimmed } = trimToBudget(text.trim(), budget);
       setResponses((r) => ({
         ...r,
-        [req.id]: { text: clean, generating: false },
+        [req.id]: { text: fitted, generating: false, trimmed },
       }));
     } catch (e) {
       setResponses((r) => ({
@@ -355,8 +449,9 @@ export default function ECareerDesign() {
   async function generateSkills() {
     setSkills({ text: "", generating: true });
     try {
-      const text = await callClaude(skillsPrompt(jobTitle || selectedLib?.title || "this position", profile), 600);
-      setSkills({ text: text.trim(), generating: false });
+      const text = await callClaude(skillsPrompt(jobTitle || selectedLib?.title || "this position", profile, SKILLS_BUDGET), 600);
+      const { text: fitted, trimmed } = trimToBudget(text.trim(), SKILLS_BUDGET);
+      setSkills({ text: fitted, generating: false, trimmed });
     } catch (e) {
       setSkills({ text: "", generating: false, error: true });
     }
@@ -545,17 +640,24 @@ export default function ECareerDesign() {
             {" "}{jobTitle || selectedLib?.title || "this job title"} — this application only.
           </p>
           <div style={{ fontFamily: "'Fraunces', serif", fontSize: 40, fontWeight: 600, marginBottom: 24 }}>$25</div>
-          {!paid ? (
-            <Button variant="primary" onClick={simulatePayment} disabled={paying} icon={paying ? <Loader2 size={14} className="spin" /> : <Lock size={14} />}>
-              {paying ? "Processing payment..." : "Pay $25 to continue"}
+          {verifyingPayment ? (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, color: TOKENS.inkSoft }}>
+              <Loader2 size={16} className="spin" /> Confirming your payment...
+            </div>
+          ) : !paid ? (
+            <Button variant="primary" onClick={startCheckout} disabled={paying} icon={paying ? <Loader2 size={14} className="spin" /> : <Lock size={14} />}>
+              {paying ? "Redirecting to checkout..." : "Pay $25 to continue"}
             </Button>
           ) : (
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, color: TOKENS.green, fontWeight: 500 }}>
               <CheckCircle2 size={18} /> Payment confirmed
             </div>
           )}
+          {paymentError && (
+            <p style={{ fontSize: 13, color: TOKENS.red, marginTop: 14 }}>{paymentError}</p>
+          )}
           <p style={{ fontSize: 12, color: TOKENS.inkSoft, marginTop: 18 }}>
-            Sandbox demo — no real charge is made. Production build wires this to Stripe Checkout per the build spec.
+            Payment is processed securely by Stripe. You'll be redirected to Stripe's checkout page and back here once it's complete.
           </p>
         </Card>
       )}
@@ -600,7 +702,9 @@ export default function ECareerDesign() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
               <div>
                 <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Character budget</h2>
-                <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: 0 }}>Adjust per-requirement targets. Total cap is 6,000 characters.</p>
+                <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: 0 }}>
+                  Adjust per-requirement targets. Total cap is 6,000 characters, including a {SKILLS_BUDGET.toLocaleString()}-character reserve for the skills summary below.
+                </p>
               </div>
               <div style={{
                 fontFamily: "'IBM Plex Mono', monospace",
@@ -669,6 +773,7 @@ export default function ECareerDesign() {
                         color: charCount(r.id) > (budgets[r.id] || TOTAL_BUDGET) ? TOKENS.red : TOKENS.inkSoft,
                       }}>
                         {charCount(r.id).toLocaleString()} / {(budgets[r.id] || 0).toLocaleString()} chars
+                        {resp.trimmed && <span style={{ color: TOKENS.gold, marginLeft: 8 }}>· trimmed to fit budget</span>}
                       </span>
                       <div style={{ display: "flex", gap: 8 }}>
                         <Button variant="ghost" icon={<RefreshCw size={13} />} onClick={() => generateOne(r)}>Regenerate</Button>
@@ -705,11 +810,21 @@ export default function ECareerDesign() {
                   value={skills.text}
                   onChange={(e) => setSkills((s) => ({ ...s, text: e.target.value }))}
                 />
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
-                  <Button variant="ghost" icon={<RefreshCw size={13} />} onClick={generateSkills}>Regenerate</Button>
-                  <Button variant="ghost" icon={copiedKey === "skills" ? <Check size={13} /> : <Copy size={13} />} onClick={() => copyText("skills", skills.text)}>
-                    {copiedKey === "skills" ? "Copied" : "Copy"}
-                  </Button>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+                  <span style={{
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: 12,
+                    color: skills.text.length > SKILLS_BUDGET ? TOKENS.red : TOKENS.inkSoft,
+                  }}>
+                    {skills.text.length.toLocaleString()} / {SKILLS_BUDGET.toLocaleString()} chars
+                    {skills.trimmed && <span style={{ color: TOKENS.gold, marginLeft: 8 }}>· trimmed to fit budget</span>}
+                  </span>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <Button variant="ghost" icon={<RefreshCw size={13} />} onClick={generateSkills}>Regenerate</Button>
+                    <Button variant="ghost" icon={copiedKey === "skills" ? <Check size={13} /> : <Copy size={13} />} onClick={() => copyText("skills", skills.text)}>
+                      {copiedKey === "skills" ? "Copied" : "Copy"}
+                    </Button>
+                  </div>
                 </div>
               </div>
             ) : null}
