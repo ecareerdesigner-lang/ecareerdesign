@@ -64,6 +64,7 @@ const INTAKE_FIELDS = [
 ];
 
 const TOTAL_BUDGET = 6000;
+const SKILLS_BUDGET = 500;
 const STEPS = ["Job & requirements", "Payment", "Background", "Generate", "Export"];
 
 async function callClaude(prompt, maxTokens = 1000) {
@@ -112,11 +113,11 @@ function trimToBudget(text, budget) {
   return { text: cut, trimmed: true };
 }
 
-function skillsPrompt(jobTitle, profile) {
+function skillsPrompt(jobTitle, profile, budget) {
   return `Based on the job title "${jobTitle}" and the candidate's background below, write a brief summary (3-5 sentences) of special skills, professional associations, certifications, or affiliations relevant to this role. Only include items grounded in the candidate's actual background — do not fabricate credentials or memberships.
 
 Candidate background: ${JSON.stringify(profile)}
-Return only the summary text, no preamble.`;
+Keep it under ${budget} characters — this is a hard limit. Return only the summary text, no preamble.`;
 }
 
 function parseJsonArray(text) {
@@ -374,7 +375,7 @@ export default function ECareerDesign() {
 
   function evenBudgets(reqs) {
     const n = reqs.length || 1;
-    const per = Math.floor(TOTAL_BUDGET / n);
+    const per = Math.floor((TOTAL_BUDGET - SKILLS_BUDGET) / n);
     const b = {};
     reqs.forEach((r) => (b[r.id] = per));
     return b;
@@ -424,7 +425,7 @@ export default function ECareerDesign() {
     setStep(3);
   }
 
-  const totalUsed = Object.values(budgets).reduce((a, b) => a + (Number(b) || 0), 0);
+  const totalUsed = Object.values(budgets).reduce((a, b) => a + (Number(b) || 0), 0) + SKILLS_BUDGET;
   const overBudget = totalUsed > TOTAL_BUDGET;
 
   async function generateOne(req) {
@@ -448,8 +449,9 @@ export default function ECareerDesign() {
   async function generateSkills() {
     setSkills({ text: "", generating: true });
     try {
-      const text = await callClaude(skillsPrompt(jobTitle || selectedLib?.title || "this position", profile), 600);
-      setSkills({ text: text.trim(), generating: false });
+      const text = await callClaude(skillsPrompt(jobTitle || selectedLib?.title || "this position", profile, SKILLS_BUDGET), 600);
+      const { text: fitted, trimmed } = trimToBudget(text.trim(), SKILLS_BUDGET);
+      setSkills({ text: fitted, generating: false, trimmed });
     } catch (e) {
       setSkills({ text: "", generating: false, error: true });
     }
@@ -700,7 +702,9 @@ export default function ECareerDesign() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
               <div>
                 <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Character budget</h2>
-                <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: 0 }}>Adjust per-requirement targets. Total cap is 6,000 characters.</p>
+                <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: 0 }}>
+                  Adjust per-requirement targets. Total cap is 6,000 characters, including a {SKILLS_BUDGET.toLocaleString()}-character reserve for the skills summary below.
+                </p>
               </div>
               <div style={{
                 fontFamily: "'IBM Plex Mono', monospace",
@@ -806,11 +810,21 @@ export default function ECareerDesign() {
                   value={skills.text}
                   onChange={(e) => setSkills((s) => ({ ...s, text: e.target.value }))}
                 />
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
-                  <Button variant="ghost" icon={<RefreshCw size={13} />} onClick={generateSkills}>Regenerate</Button>
-                  <Button variant="ghost" icon={copiedKey === "skills" ? <Check size={13} /> : <Copy size={13} />} onClick={() => copyText("skills", skills.text)}>
-                    {copiedKey === "skills" ? "Copied" : "Copy"}
-                  </Button>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+                  <span style={{
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: 12,
+                    color: skills.text.length > SKILLS_BUDGET ? TOKENS.red : TOKENS.inkSoft,
+                  }}>
+                    {skills.text.length.toLocaleString()} / {SKILLS_BUDGET.toLocaleString()} chars
+                    {skills.trimmed && <span style={{ color: TOKENS.gold, marginLeft: 8 }}>· trimmed to fit budget</span>}
+                  </span>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <Button variant="ghost" icon={<RefreshCw size={13} />} onClick={generateSkills}>Regenerate</Button>
+                    <Button variant="ghost" icon={copiedKey === "skills" ? <Check size={13} /> : <Copy size={13} />} onClick={() => copyText("skills", skills.text)}>
+                      {copiedKey === "skills" ? "Copied" : "Copy"}
+                    </Button>
+                  </div>
                 </div>
               </div>
             ) : null}
