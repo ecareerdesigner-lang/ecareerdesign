@@ -1,11 +1,10 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  Search, FileText, Lock, Check, RefreshCw, Copy, Download,
+  Search, FileText, Check, RefreshCw, Copy, Download,
   ChevronRight, Sparkles, AlertCircle, Save, Plus, Trash2,
-  Package, CheckCircle2, Loader2, Briefcase, GraduationCap, Award
+  Loader2, Briefcase, GraduationCap, Award
 } from "lucide-react";
-import { PRICE_DISPLAY } from "../lib/pricing";
 
 const TOKENS = {
   ink: "#16283D",
@@ -57,7 +56,7 @@ const LIBRARY = [
 const TOTAL_BUDGET = 6000;   // Summary of Accomplishments (requirement responses), combined
 const SKILLS_BUDGET = 2000;  // Special Skills & Associations, independent cap
 const WORK_EXP_BUDGET = 1500; // Each work experience description, independent cap per entry
-const STEPS = ["Job & requirements", "Payment", "Background", "Generate", "Export"];
+const STEPS = ["Job & requirements", "Background", "Generate", "Export"];
 
 let idCounter = 0;
 function newId(prefix) {
@@ -265,11 +264,6 @@ export default function ECareerDesign() {
   const [extracting, setExtracting] = useState(false);
   const [extractError, setExtractError] = useState("");
 
-  const [paying, setPaying] = useState(false);
-  const [paid, setPaid] = useState(false);
-  const [verifyingPayment, setVerifyingPayment] = useState(false);
-  const [paymentError, setPaymentError] = useState("");
-
   const [workExperience, setWorkExperience] = useState([]);
   const [education, setEducation] = useState([]);
   const [trainingPasteText, setTrainingPasteText] = useState("");
@@ -320,37 +314,6 @@ export default function ECareerDesign() {
     } catch (e) {
       // nothing to restore
     }
-
-    const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get("session_id");
-    const paidParam = params.get("paid");
-
-    if (paidParam === "1" && sessionId) {
-      setVerifyingPayment(true);
-      (async () => {
-        try {
-          const res = await fetch("/api/verify-payment", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sessionId }),
-          });
-          const data = await res.json();
-          if (data.paid) {
-            setPaid(true);
-            setStep(2);
-          } else {
-            setPaymentError("Payment could not be confirmed. If you were charged, contact support before retrying.");
-          }
-        } catch (e) {
-          setPaymentError("Could not verify payment status.");
-        } finally {
-          setVerifyingPayment(false);
-          window.history.replaceState({}, "", window.location.pathname);
-        }
-      })();
-    } else if (paidParam === "0") {
-      window.history.replaceState({}, "", window.location.pathname);
-    }
   }, []);
 
   const saveProfile = useCallback(() => {
@@ -398,7 +361,7 @@ export default function ECareerDesign() {
     return b;
   }
 
-  function goToPayment() {
+  function goToBackground() {
     if (requirements.length === 0) return;
     setBudgets(evenBudgets(requirements));
     try {
@@ -409,31 +372,9 @@ export default function ECareerDesign() {
     setStep(1);
   }
 
-  async function startCheckout() {
-    setPaying(true);
-    setPaymentError("");
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobTitle: jobTitle || selectedLib?.title, origin: window.location.origin }),
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setPaying(false);
-        setPaymentError(data.error || "Could not start checkout.");
-      }
-    } catch (e) {
-      setPaying(false);
-      setPaymentError("Could not reach the payment server.");
-    }
-  }
-
   function goToGenerate() {
     saveProfile();
-    setStep(3);
+    setStep(2);
   }
 
   // ---------- Work Experience ----------
@@ -749,8 +690,8 @@ export default function ECareerDesign() {
                   <span>{r.text}</span>
                 </div>
               ))}
-              <Button variant="primary" style={{ marginTop: 12 }} onClick={goToPayment} icon={<ChevronRight size={14} />}>
-                Continue to payment
+              <Button variant="primary" style={{ marginTop: 12 }} onClick={goToBackground} icon={<ChevronRight size={14} />}>
+                Continue to background
               </Button>
             </div>
           )}
@@ -758,35 +699,6 @@ export default function ECareerDesign() {
       )}
 
       {step === 1 && (
-        <Card style={{ textAlign: "center", padding: "3rem 2rem" }}>
-          <Package size={32} color={TOKENS.accent} style={{ marginBottom: 12 }} />
-          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 22, margin: "0 0 6px" }}>Unlock this application</h2>
-          <p style={{ fontSize: 14, color: TOKENS.inkSoft, maxWidth: 420, margin: "0 auto 24px" }}>
-            A flat {PRICE_DISPLAY} fee unlocks unlimited generation, editing, and regeneration for
-            {" "}{jobTitle || selectedLib?.title || "this job title"} — this application only.
-          </p>
-          <div style={{ fontFamily: "'Fraunces', serif", fontSize: 40, fontWeight: 600, marginBottom: 24 }}>{PRICE_DISPLAY}</div>
-          {verifyingPayment ? (
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, color: TOKENS.inkSoft }}>
-              <Loader2 size={16} className="spin" /> Confirming your payment...
-            </div>
-          ) : !paid ? (
-            <Button variant="primary" onClick={startCheckout} disabled={paying} icon={paying ? <Loader2 size={14} className="spin" /> : <Lock size={14} />}>
-              {paying ? "Redirecting to checkout..." : `Pay ${PRICE_DISPLAY} to continue`}
-            </Button>
-          ) : (
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, color: TOKENS.green, fontWeight: 500 }}>
-              <CheckCircle2 size={18} /> Payment confirmed
-            </div>
-          )}
-          {paymentError && <p style={{ fontSize: 13, color: TOKENS.red, marginTop: 14 }}>{paymentError}</p>}
-          <p style={{ fontSize: 12, color: TOKENS.inkSoft, marginTop: 18 }}>
-            Payment is processed securely by Stripe. You'll be redirected to Stripe's checkout page and back here once it's complete.
-          </p>
-        </Card>
-      )}
-
-      {step === 2 && (
         <div>
           {/* Work Experience */}
           <Card style={{ marginBottom: 16 }}>
@@ -951,7 +863,7 @@ export default function ECareerDesign() {
         </div>
       )}
 
-      {step === 3 && (
+      {step === 2 && (
         <div>
           <Card style={{ marginBottom: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
@@ -1065,14 +977,14 @@ export default function ECareerDesign() {
           </Card>
 
           <div style={{ textAlign: "right" }}>
-            <Button variant="primary" icon={<ChevronRight size={14} />} onClick={() => setStep(4)} disabled={!allGenerated}>
+            <Button variant="primary" icon={<ChevronRight size={14} />} onClick={() => setStep(3)} disabled={!allGenerated}>
               Continue to export
             </Button>
           </div>
         </div>
       )}
 
-      {step === 4 && (
+      {step === 3 && (
         <Card>
           <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Export</h2>
           <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: "0 0 20px" }}>

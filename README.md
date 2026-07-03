@@ -8,7 +8,7 @@ STAR-format response builder for Federal Government Career applications.
 - STAR response generation and regeneration per requirement, defensively capped at your character budget
 - Special Skills & Associations summary generation
 - Copy-to-clipboard and plain-text export
-- Real Stripe Checkout for the $25 fee (see setup below)
+- Free to use — no paywall. See "Monetization" below for how to add ads or other revenue without gating access.
 
 ## What is stubbed and needs real integration before production use
 - **Accounts**: there is no login. Background profiles are saved per-browser, not per-user.
@@ -31,16 +31,17 @@ STAR-format response builder for Federal Government Career applications.
    ```
 4. Open http://localhost:3000
 
-## Setting up Stripe (real payments)
+## Monetization
 
-1. Create a Stripe account at https://dashboard.stripe.com/register if you don't have one.
-2. In the Stripe Dashboard, make sure you're in **Test mode** first (toggle top-right) — use test payments until everything works end to end.
-3. Go to **Developers → API keys** and copy the **Secret key** (starts with `sk_test_...`).
-4. Add it to your environment as `STRIPE_SECRET_KEY` — locally in `.env.local`, and in Vercel under **Settings → Environment Variables**.
-5. Test with Stripe's test card: `4242 4242 4242 4242`, any future expiry date, any CVC, any ZIP.
-6. Once you're confident it works, switch the Stripe Dashboard to **Live mode**, generate a new live secret key (starts with `sk_live_...`), and replace `STRIPE_SECRET_KEY` in Vercel with that value. Redeploy after changing it.
+There's no paywall in this version — generation is free and unlimited. A few ways to monetize without gating access:
 
-No webhook is required for this integration — payment is confirmed directly via `stripe.checkout.sessions.retrieve` when the user is redirected back from Checkout. If you later add a database, consider also adding a webhook (`checkout.session.completed`) as a more durable source of truth.
+- **Display ads**: Google AdSense is the simplest to start with, but requires an approved application (original content, some traffic history) and a privacy/cookie-consent notice since it sets tracking cookies. Carbon Ads is a more tasteful, lower-volume option common on professional/developer tools. Both are added via a script tag plus ad unit `<div>`s placed around the main content — ask if you want these actually wired into specific spots in the layout.
+- **Affiliate/referral links**: resume review services, LinkedIn Premium, federal-focused career coaching, or interview prep tools relevant to this audience. Usually a specific tracked link, no ad network needed.
+- **Sponsorship**: a single sponsor (career coaching firm, training provider) instead of a rotating ad network — simpler to implement (a static banner or "Sponsored by" line) and often better fit for a niche professional audience than programmatic ads.
+- **Freemium**: keep the core flow free, charge for extras — real .docx export, saved multi-device profiles once accounts exist, or a higher per-requirement generation limit. This re-uses the Stripe integration pattern from an earlier version if you want to bring it back for just a subset of features.
+- **Tip jar**: a simple "Buy Me a Coffee" / Ko-fi link costs nothing to add and avoids ad-network approval and privacy overhead entirely.
+
+Whatever you choose, note that this app now collects real background/work-history data through a normal web form — if you add any third-party script (ad network, analytics), you should also add a basic privacy notice describing what's collected and shared, since that's both good practice and often a legal requirement (CCPA/GDPR) once third-party trackers are involved.
 
 ## Adding a database and accounts
 
