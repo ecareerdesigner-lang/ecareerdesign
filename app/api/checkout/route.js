@@ -24,8 +24,8 @@ export async function POST(req) {
           price_data: {
             currency: "usd",
             product_data: {
-              name: `eCareerDesign — ${jobTitle || "job application"}`,
-              description: "STAR-format response generation for one eCareer job title.",
+              name: `KSA Assist — ${jobTitle || "job application"}`,
+              description: "STAR-format response generation for one federal job application.",
             },
             unit_amount: PRICE_CENTS,
           },

@@ -26,30 +26,30 @@ const FONTS_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Frau
 
 const LIBRARY = [
   {
-    title: "Manager, Post Office Operations",
+    title: "Management and Program Analyst",
     requirements: [
-      "Ability to plan, organize, and direct the work of subordinate supervisors and employees engaged in retail, delivery, and customer service operations.",
-      "Knowledge of postal policies, procedures, and labor agreements sufficient to resolve operational and staffing issues.",
-      "Ability to analyze operational and financial data to identify variances and implement corrective action.",
-      "Skill in written and oral communication sufficient to represent the organization with employees, customers, and other stakeholders.",
+      "Ability to analyze and evaluate program operations, identify deficiencies, and recommend improvements to meet organizational goals.",
+      "Knowledge of federal budget formulation, execution, and performance measurement sufficient to support program planning.",
+      "Ability to communicate findings and recommendations clearly in written reports and oral briefings to senior leadership.",
+      "Skill in coordinating with multiple stakeholders to implement process improvements across a large organization.",
     ],
   },
   {
-    title: "Manager, Operations Program Support",
+    title: "IT Specialist (INFOSEC)",
     requirements: [
-      "Ability to develop, coordinate, and evaluate program initiatives that support district or area operational goals.",
-      "Knowledge of performance measurement systems and the ability to translate data into actionable recommendations.",
-      "Ability to lead cross-functional teams and manage multiple concurrent projects to completion.",
-      "Skill in preparing and delivering presentations and written reports to management and stakeholders.",
+      "Knowledge of information security principles and practices sufficient to assess and mitigate risks to information systems.",
+      "Ability to develop, implement, and enforce security policies and procedures in accordance with federal guidelines.",
+      "Skill in incident response, including identifying, containing, and reporting security incidents.",
+      "Ability to communicate technical security concepts to non-technical stakeholders and leadership.",
     ],
   },
   {
-    title: "Manager, Address Technology and Innovation",
+    title: "Human Resources Specialist (Recruitment and Placement)",
     requirements: [
-      "Knowledge of address management systems and related technologies sufficient to guide product and process improvements.",
-      "Ability to manage technical projects from concept through implementation, including coordination with IT and field stakeholders.",
-      "Ability to evaluate emerging technologies and assess their applicability to operational needs.",
-      "Skill in communicating complex technical concepts to non-technical audiences.",
+      "Knowledge of federal hiring authorities, classification standards, and recruitment strategies.",
+      "Ability to advise management on staffing plans and workforce needs.",
+      "Skill in evaluating applicant qualifications against position requirements.",
+      "Ability to communicate effectively with applicants, hiring managers, and HR staff throughout the hiring process.",
     ],
   },
 ];
@@ -94,7 +94,7 @@ function trimToBudget(text, budget) {
 }
 
 function extractionPrompt(rawText) {
-  return `You will be given raw text copied from a USPS eCareer job posting. Extract only the distinct Qualifications/Requirements/KSAs as a numbered list. Do not include unrelated posting content (pay grade, location, application instructions). Output strictly as a JSON array of strings, one requirement per item, in the order they appear. Return ONLY the JSON array, no other text, no markdown fences.
+  return `You will be given raw text copied from a federal government job posting. Extract only the distinct Qualifications/Requirements/KSAs as a numbered list. Do not include unrelated posting content (pay grade, location, application instructions). Output strictly as a JSON array of strings, one requirement per item, in the order they appear. Return ONLY the JSON array, no other text, no markdown fences.
 
 Posting text:
 ${rawText}`;
@@ -102,9 +102,9 @@ ${rawText}`;
 
 function starPrompt(requirementText, background, budget) {
   const target = Math.max(150, Math.floor(budget * 0.85));
-  return `You are helping a USPS employee draft one entry of a "Summary of Accomplishments" response for an internal eCareer application, addressing a single qualification requirement.  Write a STAR-format response (Situation, Task, Action, Result) as flowing narrative paragraphs — do NOT include visible "Situation:"/"Task:"/"Action:"/"Result:" subheadings.
+  return `You are helping a federal government job applicant draft one entry of a "Summary of Accomplishments" response for a federal job application, addressing a single qualification requirement. Write a STAR-format response (Situation, Task, Action, Result) as flowing narrative paragraphs — do NOT include visible "Situation:"/"Task:"/"Action:"/"Result:" subheadings.
 
-Draw only on details actually present in the candidate's background information below (work experience, education, training). Do not invent specifics (names, numbers, dates) that weren't provided. Use accurate USPS terminology where the candidate has supplied it.
+Draw only on details actually present in the candidate's background information below (work experience, education, training). Do not invent specifics (names, numbers, dates) that weren't provided. Use accurate terminology from the candidate's field where the candidate has supplied it.
 
 Requirement: ${requirementText}
 Candidate background: ${JSON.stringify(background)}
@@ -113,7 +113,7 @@ Target length: aim for about ${target} characters. Do not exceed ${budget} chara
 
 function skillsPrompt(jobTitle, background, budget) {
   const target = Math.max(150, Math.floor(budget * 0.85));
-  return `Based on the job title "${jobTitle}" and the candidate's background below, write a "Special Skills & Associations" summary for a USPS eCareer application — special skills, professional associations, certifications, or affiliations relevant to this role. Only include items grounded in the candidate's actual background — do not fabricate credentials or memberships.
+  return `Based on the job title "${jobTitle}" and the candidate's background below, write a "Special Skills & Associations" summary for a federal job application — special skills, professional associations, certifications, or affiliations relevant to this role. Only include items grounded in the candidate's actual background — do not fabricate credentials or memberships.
 
 Candidate background: ${JSON.stringify(background)}
 Target length: aim for about ${target} characters. Do not exceed ${budget} characters under any circumstances — this is a hard limit. Return only the summary text, no preamble.`;
@@ -122,10 +122,10 @@ Target length: aim for about ${target} characters. Do not exceed ${budget} chara
 function workExpandPrompt(entry, jobTitle, requirements) {
   const dates = `${entry.startDate || "unspecified"} to ${entry.current ? "Present" : (entry.endDate || "unspecified")}`;
   const reqList = (requirements || []).map((r) => r.text).join(" | ");
-  return `Expand the candidate's basic notes below into a polished, professional "Work Experience" description for a USPS eCareer application. Draw only on the facts the candidate provided — do not invent employers, numbers, programs, or specifics that aren't present. Where genuinely relevant, you may emphasize aspects that connect to the target position's requirements listed below, without fabricating experience the candidate didn't describe.
+  return `Expand the candidate's basic notes below into a polished, professional "Work Experience" description for a federal job application. Draw only on the facts the candidate provided — do not invent employers, numbers, programs, or specifics that aren't present. Where genuinely relevant, you may emphasize aspects that connect to the target position's requirements listed below, without fabricating experience the candidate didn't describe.
 
 Position title: ${entry.positionTitle || "unspecified"}
-Postal / Non-Postal: ${entry.postalType}
+Position type: ${entry.postalType}
 Dates: ${dates}
 Candidate's basic notes: ${entry.basicDescription}
 
@@ -136,7 +136,7 @@ Do not exceed ${WORK_EXP_BUDGET} characters under any circumstances — this is 
 }
 
 function trainingExtractionPrompt(rawText) {
-  return `You will be given a raw pasted USPS training record for an employee. Identify training completed within roughly the last 15 years that would be worth including on a job application. For each relevant item extract: start date, end date (same as start date if it was a single day), facility or provider name, and the course/training title. Output strictly as a JSON array of objects with keys "startDate", "endDate", "facility", "course", ordered by start date descending (most recent first). Return ONLY the JSON array, no other text, no markdown fences.
+  return `You will be given a raw pasted training record for a federal government employee. Identify training completed within roughly the last 15 years that would be worth including on a job application. For each relevant item extract: start date, end date (same as start date if it was a single day), facility or provider name, and the course/training title. Output strictly as a JSON array of objects with keys "startDate", "endDate", "facility", "course", ordered by start date descending (most recent first). Return ONLY the JSON array, no other text, no markdown fences.
 
 Training record text:
 ${rawText}`;
@@ -439,7 +439,7 @@ export default function ECareerDesign() {
   // ---------- Work Experience ----------
   function addWorkExperience() {
     setWorkExperience((w) => [...w, {
-      id: newId("we"), positionTitle: "", postalType: "Postal",
+      id: newId("we"), positionTitle: "", postalType: "Federal",
       startDate: "", endDate: "", current: false,
       basicDescription: "", expandedDescription: "", generating: false, trimmed: false,
     }]);
@@ -627,7 +627,7 @@ export default function ECareerDesign() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${(jobTitle || selectedLib?.title || "eCareerDesign-export").replace(/\s+/g, "_")}.txt`;
+    a.download = `${(jobTitle || selectedLib?.title || "KSA-Assist-export").replace(/\s+/g, "_")}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -648,21 +648,21 @@ export default function ECareerDesign() {
       <div style={{ marginBottom: "1.75rem" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
           <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 34, margin: 0, letterSpacing: "-0.01em" }}>
-            eCareerDesign
+            KSA Assist
           </h1>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.inkSoft, border: `1px solid ${TOKENS.line}`, padding: "2px 8px", borderRadius: 2 }}>
-            v1.1
+            v1.2
           </span>
         </div>
         <p style={{ fontSize: 14, color: TOKENS.inkSoft, margin: "6px 0 0", maxWidth: 620 }}>
-          STAR-format response builder for internal USPS eCareer applications.
+          STAR-format response builder for Federal Government Career applications.
         </p>
       </div>
 
       <div style={{ background: TOKENS.goldSoft, border: `1px solid ${TOKENS.gold}`, borderRadius: 4, padding: "10px 14px", display: "flex", gap: 10, alignItems: "flex-start", marginBottom: "1.75rem" }}>
         <AlertCircle size={16} color={TOKENS.gold} style={{ flexShrink: 0, marginTop: 2 }} />
         <p style={{ fontSize: 13, margin: 0, color: "#5C4210", lineHeight: 1.5 }}>
-          eCareerDesign is an independent drafting tool, not an official USPS or eCareer product. Review every generated response for accuracy before submitting — you attest to what you enter into eCareer.
+          KSA Assist is an independent drafting tool, not an official Federal Government or USPS product. Review every generated response for accuracy before submitting — you attest to what you enter into your application profile.
         </p>
       </div>
 
@@ -725,7 +725,7 @@ export default function ECareerDesign() {
 
           {sourceMode === "paste" && (
             <div>
-              <Field label="Paste the Qualifications / Requirements section from the eCareer posting">
+              <Field label="Paste the Qualifications / Requirements section from the job posting">
                 <textarea
                   style={{ ...inputStyle, minHeight: 140, resize: "vertical" }}
                   value={rawPosting}
@@ -800,6 +800,7 @@ export default function ECareerDesign() {
                 <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10, marginBottom: 10 }}>
                   <input style={smallInputStyle} placeholder="Position title" value={w.positionTitle} onChange={(e) => updateWorkExperience(w.id, { positionTitle: e.target.value })} />
                   <select style={smallInputStyle} value={w.postalType} onChange={(e) => updateWorkExperience(w.id, { postalType: e.target.value })}>
+                    <option>Federal</option>
                     <option>Postal</option>
                     <option>Non-Postal</option>
                   </select>
@@ -1075,7 +1076,7 @@ export default function ECareerDesign() {
         <Card>
           <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Export</h2>
           <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: "0 0 20px" }}>
-            Copy sections directly into eCareer's web form, or download everything as text to paste into Word.
+            Copy sections directly into your agency's application portal, or download everything as text to paste into Word.
           </p>
 
           <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>

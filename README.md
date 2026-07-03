@@ -1,6 +1,6 @@
-# eCareerDesign
+# KSA Assist
 
-STAR-format response builder for internal USPS eCareer applications.
+STAR-format response builder for Federal Government Career applications.
 
 ## What works out of the box
 - Job title entry, sample requirement library, and paste-a-posting extraction (AI-powered)
