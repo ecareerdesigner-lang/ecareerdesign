@@ -918,21 +918,21 @@ export default function ECareerDesign() {
       <div style={{ marginBottom: "1.75rem" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
           <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 34, margin: 0, letterSpacing: "-0.01em" }}>
-            KSA Assist
+            eCareer Designs
           </h1>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.inkSoft, border: `1px solid ${TOKENS.line}`, padding: "2px 8px", borderRadius: 2 }}>
-            v1.2
+            v1.3
           </span>
         </div>
         <p style={{ fontSize: 14, color: TOKENS.inkSoft, margin: "6px 0 0", maxWidth: 620 }}>
-          STAR-format response builder for Federal Government Career applications.
+          STAR-format response and resume builder for your next job application.
         </p>
       </div>
 
       <div style={{ background: TOKENS.goldSoft, border: `1px solid ${TOKENS.gold}`, borderRadius: 4, padding: "10px 14px", display: "flex", gap: 10, alignItems: "flex-start", marginBottom: "1.75rem" }}>
         <AlertCircle size={16} color={TOKENS.gold} style={{ flexShrink: 0, marginTop: 2 }} />
         <p style={{ fontSize: 13, margin: 0, color: "#5C4210", lineHeight: 1.5 }}>
-          KSA Assist is an independent drafting tool, not an official Federal Government or USPS product. Review every generated response for accuracy before submitting — you attest to what you enter into your application profile.
+          eCareer Designs is an independent drafting tool, not an official product of any employer, agency, or job platform. Review every generated response for accuracy before submitting — you attest to what you enter into your application profile.
         </p>
       </div>
 
@@ -1064,7 +1064,7 @@ export default function ECareerDesign() {
           <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => setMode(null)}>← Change</Button>
           <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Build a general resume</h2>
           <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: "0 0 20px", lineHeight: 1.6 }}>
-            No job posting needed for this path. Head straight to your background — work experience, education, and training — and KSA Assist will turn it into a polished, general-purpose resume.
+            No job posting needed for this path. Head straight to your background — work experience, education, and training — and eCareer Designs will turn it into a polished, general-purpose resume.
           </p>
           <Button variant="primary" onClick={goToBackground} icon={<ChevronRight size={14} />}>
             Continue to background

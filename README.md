@@ -1,6 +1,6 @@
-# KSA Assist
+# eCareer Designs
 
-STAR-format response builder for Federal Government Career applications.
+STAR-format response and resume builder for your next job application.
 
 ## What works out of the box
 - Job title entry, sample requirement library, and paste-a-posting extraction (AI-powered)

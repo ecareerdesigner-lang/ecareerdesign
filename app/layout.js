@@ -1,6 +1,6 @@
 export const metadata = {
-  title: "KSA Assist",
-  description: "STAR-format response builder for Federal Government Career applications.",
+  title: "eCareer Designs",
+  description: "STAR-format response and resume builder for your next job application.",
 };
 
 export default function RootLayout({ children }) {
