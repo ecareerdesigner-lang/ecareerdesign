@@ -276,6 +276,10 @@ export default function ECareerDesign() {
   const [trainingExtracting, setTrainingExtracting] = useState(false);
   const [trainingError, setTrainingError] = useState("");
 
+  const [additionalContext, setAdditionalContext] = useState({
+    projects: "", toolsSystems: "", outcomes: "", certifications: "",
+  });
+
   const [profileSaved, setProfileSaved] = useState(false);
 
   const [budgets, setBudgets] = useState({});
@@ -293,6 +297,7 @@ export default function ECareerDesign() {
         if (saved.education) setEducation(saved.education);
         if (saved.trainingEntries) setTrainingEntries(saved.trainingEntries);
         if (saved.trainingPasteText) setTrainingPasteText(saved.trainingPasteText);
+        if (saved.additionalContext) setAdditionalContext(saved.additionalContext);
       }
     } catch (e) {
       // no saved profile yet
@@ -350,14 +355,14 @@ export default function ECareerDesign() {
   const saveProfile = useCallback(() => {
     try {
       localStorage.setItem("ecareerdesign-profile", JSON.stringify({
-        workExperience, education, trainingEntries, trainingPasteText,
+        workExperience, education, trainingEntries, trainingPasteText, additionalContext,
       }));
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 1800);
     } catch (e) {
       console.error("Storage error", e);
     }
-  }, [workExperience, education, trainingEntries, trainingPasteText]);
+  }, [workExperience, education, trainingEntries, trainingPasteText, additionalContext]);
 
   const filteredLibrary = LIBRARY.filter((l) =>
     jobTitle.trim() === "" ? true : l.title.toLowerCase().includes(jobTitle.toLowerCase())
@@ -515,6 +520,10 @@ export default function ECareerDesign() {
         credential: e.credential,
       })),
       training: trainingEntries.map((t) => ({ dates: `${t.startDate} - ${t.endDate}`, facility: t.facility, course: t.course })),
+      significantProjectsOrInitiatives: additionalContext.projects,
+      programsToolsAndSystemsUsed: additionalContext.toolsSystems,
+      notableMeasuredOutcomes: additionalContext.outcomes,
+      certificationsCrossFunctionalOrDetailAssignments: additionalContext.certifications,
     };
   }
 
@@ -885,6 +894,47 @@ export default function ECareerDesign() {
               </div>
             )}
             <Button variant="secondary" icon={<Plus size={14} />} style={{ marginTop: 8 }} onClick={addTrainingRow}>Add row manually</Button>
+          </Card>
+
+          {/* Additional Context */}
+          <Card style={{ marginBottom: 16 }}>
+            <SectionHeading
+              icon={<Sparkles size={18} color={TOKENS.accent} />}
+              title="Additional context"
+              subtitle="Optional, but helps tailor the Summary of Accomplishments and Special Skills responses in the next step."
+            />
+            <Field label="3–5 significant projects or initiatives">
+              <textarea
+                style={{ ...inputStyle, minHeight: 70, resize: "vertical" }}
+                placeholder="Name each project and describe it in 1-2 sentences"
+                value={additionalContext.projects}
+                onChange={(e) => setAdditionalContext((a) => ({ ...a, projects: e.target.value }))}
+              />
+            </Field>
+            <Field label="Programs, tools, and systems used">
+              <textarea
+                style={{ ...inputStyle, minHeight: 60, resize: "vertical" }}
+                placeholder="e.g., AMS, FDB, DSALS, RADAR/PDAT, Kanban Board reviews, Gemba walks"
+                value={additionalContext.toolsSystems}
+                onChange={(e) => setAdditionalContext((a) => ({ ...a, toolsSystems: e.target.value }))}
+              />
+            </Field>
+            <Field label="Notable measured outcomes">
+              <textarea
+                style={{ ...inputStyle, minHeight: 60, resize: "vertical" }}
+                placeholder="Cost savings, volume handled, efficiency gains, awards"
+                value={additionalContext.outcomes}
+                onChange={(e) => setAdditionalContext((a) => ({ ...a, outcomes: e.target.value }))}
+              />
+            </Field>
+            <Field label="Certifications, cross-functional, or detail assignments">
+              <textarea
+                style={{ ...inputStyle, minHeight: 60, resize: "vertical" }}
+                placeholder="List relevant certifications and detail/cross-functional assignments"
+                value={additionalContext.certifications}
+                onChange={(e) => setAdditionalContext((a) => ({ ...a, certifications: e.target.value }))}
+              />
+            </Field>
           </Card>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
