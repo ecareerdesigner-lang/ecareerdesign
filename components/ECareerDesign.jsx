@@ -93,6 +93,14 @@ function trimToBudget(text, budget) {
   return { text: cut, trimmed: true };
 }
 
+// Sizes the API's max_tokens generously relative to a character budget, so the
+// token limit itself never cuts a response short before our own character-based
+// trim gets a chance to run. English text is rarely denser than ~1 token per
+// character, so budget characters + a fixed buffer is a safe generous ceiling.
+function tokensForBudget(budget) {
+  return Math.min(4096, Math.max(300, budget + 300));
+}
+
 function extractionPrompt(rawText) {
   return `You will be given raw text copied from a federal government job posting. Extract only the distinct Qualifications/Requirements/KSAs as a numbered list. Do not include unrelated posting content (pay grade, location, application instructions). Output strictly as a JSON array of strings, one requirement per item, in the order they appear. Return ONLY the JSON array, no other text, no markdown fences.
 
@@ -646,7 +654,7 @@ export default function ECareerDesign() {
     if (!entry || !entry.basicDescription?.trim()) return;
     updateWorkExperience(id, { generating: true });
     try {
-      const text = await callClaude(workExpandPrompt(entry, jobTitle || selectedLib?.title, requirements), 1000);
+      const text = await callClaude(workExpandPrompt(entry, jobTitle || selectedLib?.title, requirements), tokensForBudget(WORK_EXP_BUDGET));
       const { text: fitted, trimmed } = trimToBudget(text.trim(), WORK_EXP_BUDGET);
       updateWorkExperience(id, { expandedDescription: fitted, generating: false, trimmed });
     } catch (e) {
@@ -729,7 +737,7 @@ export default function ECareerDesign() {
     setResponses((r) => ({ ...r, [req.id]: { ...(r[req.id] || {}), generating: true } }));
     try {
       const budget = budgets[req.id] || 500;
-      const text = await callClaude(starPrompt(req.text, buildBackground(), budget), 1000);
+      const text = await callClaude(starPrompt(req.text, buildBackground(), budget), tokensForBudget(budget));
       const { text: fitted, trimmed } = trimToBudget(text.trim(), budget);
       setResponses((r) => ({ ...r, [req.id]: { text: fitted, generating: false, trimmed } }));
     } catch (e) {
@@ -740,7 +748,7 @@ export default function ECareerDesign() {
   async function generateSkills() {
     setSkills({ text: "", generating: true });
     try {
-      const text = await callClaude(skillsPrompt(jobTitle || selectedLib?.title || "this position", buildBackground(), SKILLS_BUDGET), 800);
+      const text = await callClaude(skillsPrompt(jobTitle || selectedLib?.title || "this position", buildBackground(), SKILLS_BUDGET), tokensForBudget(SKILLS_BUDGET));
       const { text: fitted, trimmed } = trimToBudget(text.trim(), SKILLS_BUDGET);
       setSkills({ text: fitted, generating: false, trimmed });
     } catch (e) {
@@ -753,7 +761,7 @@ export default function ECareerDesign() {
     setResumeError(false);
     try {
       const bg = buildBackground();
-      const text = await callClaude(resumePrompt(bg, contactInfo), 1800);
+      const text = await callClaude(resumePrompt(bg, contactInfo), 3000);
       const parsed = parseJsonObject(text);
       const workHistory = workExperience.map((w, i) => ({
         title: w.positionTitle,
