@@ -56,7 +56,8 @@ const LIBRARY = [
 const TOTAL_BUDGET = 6000;   // Summary of Accomplishments (requirement responses), combined
 const SKILLS_BUDGET = 2000;  // Special Skills & Associations, independent cap
 const WORK_EXP_BUDGET = 1500; // Each work experience description, independent cap per entry
-const STEPS = ["Job & requirements", "Background", "Generate", "Export"];
+const STEPS_APPLICATION = ["Job & requirements", "Background", "Generate", "Export"];
+const STEPS_RESUME = ["Get started", "Background", "Generate", "Export"];
 
 let idCounter = 0;
 function newId(prefix) {
@@ -110,6 +111,25 @@ Candidate background: ${JSON.stringify(background)}
 Target length: aim for about ${target} characters. Do not exceed ${budget} characters under any circumstances — this is a hard limit. Return only the response text, no preamble.`;
 }
 
+function resumePrompt(background, contact) {
+  return `Write a polished, professional resume for a federal government job applicant, based on the candidate's background below. This resume is not targeting any specific posting — write it as a strong general-purpose resume that presents the candidate's full career well.
+
+Structure it as plain text suitable for pasting into a document, using this layout:
+- Header: candidate's name, then contact details on one line
+- PROFESSIONAL SUMMARY: 2-3 sentence overview of the candidate's experience and strengths
+- PROFESSIONAL EXPERIENCE: each position with title, position type, dates, and 2-4 achievement-oriented bullet points (start each bullet with "- ")
+- EDUCATION: institution, dates, subject, credential
+- SKILLS & CERTIFICATIONS: a concise list drawn from the candidate's training and additional context
+Use section headers in capital letters. Draw only on details actually present in the candidate's background — do not invent employers, numbers, dates, or credentials that aren't provided. If a section has no data, omit it entirely rather than inventing content.
+
+Candidate name: ${contact.name || "(not provided)"}
+Contact details: ${[contact.email, contact.phone, contact.location].filter(Boolean).join(" | ") || "(not provided)"}
+
+Candidate background: ${JSON.stringify(background)}
+
+Return only the resume text, no preamble or commentary.`;
+}
+
 function skillsPrompt(jobTitle, background, budget) {
   const target = Math.max(150, Math.floor(budget * 0.85));
   return `Based on the job title "${jobTitle}" and the candidate's background below, write a "Special Skills & Associations" summary for a federal job application — special skills, professional associations, certifications, or affiliations relevant to this role. Only include items grounded in the candidate's actual background — do not fabricate credentials or memberships.
@@ -149,10 +169,10 @@ function parseJsonArray(text) {
   return JSON.parse(cleaned.slice(start, end + 1));
 }
 
-function Stepper({ step }) {
+function Stepper({ step, labels }) {
   return (
     <div style={{ display: "flex", alignItems: "center", marginBottom: "2rem", flexWrap: "wrap", gap: "4px" }}>
-      {STEPS.map((label, i) => {
+      {labels.map((label, i) => {
         const isDone = i < step;
         const isActive = i === step;
         return (
@@ -178,7 +198,7 @@ function Stepper({ step }) {
                 {label}
               </span>
             </div>
-            {i < STEPS.length - 1 && <div style={{ width: 20, height: 1, background: TOKENS.line, margin: "0 4px" }} />}
+            {i < labels.length - 1 && <div style={{ width: 20, height: 1, background: TOKENS.line, margin: "0 4px" }} />}
           </React.Fragment>
         );
       })}
@@ -256,6 +276,7 @@ function CharCounter({ count, budget, trimmed }) {
 
 export default function ECareerDesign() {
   const [step, setStep] = useState(0);
+  const [mode, setMode] = useState(null); // 'application' | 'resume'
   const [jobTitle, setJobTitle] = useState("");
   const [sourceMode, setSourceMode] = useState("library");
   const [rawPosting, setRawPosting] = useState("");
@@ -263,6 +284,9 @@ export default function ECareerDesign() {
   const [requirements, setRequirements] = useState([]);
   const [extracting, setExtracting] = useState(false);
   const [extractError, setExtractError] = useState("");
+
+  const [contactInfo, setContactInfo] = useState({ name: "", email: "", phone: "", location: "" });
+  const [resume, setResume] = useState({ text: "", generating: false });
 
   const [workExperience, setWorkExperience] = useState([]);
   const [education, setEducation] = useState([]);
@@ -293,6 +317,7 @@ export default function ECareerDesign() {
         if (saved.trainingEntries) setTrainingEntries(saved.trainingEntries);
         if (saved.trainingPasteText) setTrainingPasteText(saved.trainingPasteText);
         if (saved.additionalContext) setAdditionalContext(saved.additionalContext);
+        if (saved.contactInfo) setContactInfo(saved.contactInfo);
       }
     } catch (e) {
       // no saved profile yet
@@ -319,14 +344,14 @@ export default function ECareerDesign() {
   const saveProfile = useCallback(() => {
     try {
       localStorage.setItem("ecareerdesign-profile", JSON.stringify({
-        workExperience, education, trainingEntries, trainingPasteText, additionalContext,
+        workExperience, education, trainingEntries, trainingPasteText, additionalContext, contactInfo,
       }));
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 1800);
     } catch (e) {
       console.error("Storage error", e);
     }
-  }, [workExperience, education, trainingEntries, trainingPasteText, additionalContext]);
+  }, [workExperience, education, trainingEntries, trainingPasteText, additionalContext, contactInfo]);
 
   const filteredLibrary = LIBRARY.filter((l) =>
     jobTitle.trim() === "" ? true : l.title.toLowerCase().includes(jobTitle.toLowerCase())
@@ -362,12 +387,14 @@ export default function ECareerDesign() {
   }
 
   function goToBackground() {
-    if (requirements.length === 0) return;
-    setBudgets(evenBudgets(requirements));
-    try {
-      localStorage.setItem("ecareerdesign-inprogress", JSON.stringify({ jobTitle, selectedLib, requirements }));
-    } catch (e) {
-      // non-fatal
+    if (mode === "application" && requirements.length === 0) return;
+    if (requirements.length > 0) {
+      setBudgets(evenBudgets(requirements));
+      try {
+        localStorage.setItem("ecareerdesign-inprogress", JSON.stringify({ jobTitle, selectedLib, requirements }));
+      } catch (e) {
+        // non-fatal
+      }
     }
     setStep(1);
   }
@@ -496,6 +523,16 @@ export default function ECareerDesign() {
     }
   }
 
+  async function generateResume() {
+    setResume({ text: "", generating: true });
+    try {
+      const text = await callClaude(resumePrompt(buildBackground(), contactInfo), 2000);
+      setResume({ text: text.trim(), generating: false });
+    } catch (e) {
+      setResume({ text: "", generating: false, error: true });
+    }
+  }
+
   async function generateEverything() {
     setGenAll(true);
     for (const req of requirements) {
@@ -520,6 +557,11 @@ export default function ECareerDesign() {
   }
 
   function assembleExportText() {
+    if (mode === "resume") {
+      const header = [contactInfo.name, [contactInfo.email, contactInfo.phone, contactInfo.location].filter(Boolean).join(" | ")]
+        .filter(Boolean).join("\n");
+      return [header, resume.text].filter(Boolean).join("\n\n");
+    }
     const parts = [];
     if (workExperience.length) {
       parts.push("WORK EXPERIENCE\n" + "=".repeat(16));
@@ -568,12 +610,14 @@ export default function ECareerDesign() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${(jobTitle || selectedLib?.title || "KSA-Assist-export").replace(/\s+/g, "_")}.txt`;
+    a.download = `${(contactInfo.name || jobTitle || selectedLib?.title || "KSA-Assist-export").replace(/\s+/g, "_")}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   }
 
-  const allGenerated = requirements.length > 0 && requirements.every((r) => responses[r.id]?.text);
+  const allGenerated = mode === "resume"
+    ? !!resume.text
+    : requirements.length > 0 && requirements.every((r) => responses[r.id]?.text);
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", color: TOKENS.ink, maxWidth: 880, margin: "0 auto", padding: "2rem 1.5rem" }}>
@@ -607,10 +651,42 @@ export default function ECareerDesign() {
         </p>
       </div>
 
-      <Stepper step={step} />
+      <Stepper step={step} labels={mode === "resume" ? STEPS_RESUME : STEPS_APPLICATION} />
 
-      {step === 0 && (
+      {step === 0 && mode === null && (
         <Card>
+          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>What do you want to build?</h2>
+          <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: "0 0 20px" }}>
+            You can always come back and try the other option later.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div
+              onClick={() => setMode("application")}
+              style={{ border: `1px solid ${TOKENS.line}`, borderRadius: 4, padding: 20, cursor: "pointer", background: TOKENS.paper }}
+            >
+              <FileText size={20} color={TOKENS.accent} />
+              <p style={{ fontSize: 15, fontWeight: 600, margin: "10px 0 4px" }}>Tailor to a specific job</p>
+              <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: 0, lineHeight: 1.5 }}>
+                Enter a job posting's qualifications and get STAR-format responses for each one, plus a skills summary.
+              </p>
+            </div>
+            <div
+              onClick={() => setMode("resume")}
+              style={{ border: `1px solid ${TOKENS.line}`, borderRadius: 4, padding: 20, cursor: "pointer", background: TOKENS.paper }}
+            >
+              <Award size={20} color={TOKENS.accent} />
+              <p style={{ fontSize: 15, fontWeight: 600, margin: "10px 0 4px" }}>Build a general resume</p>
+              <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: 0, lineHeight: 1.5 }}>
+                Skip the job posting entirely — go straight to your background and get a polished, general-purpose resume.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {step === 0 && mode === "application" && (
+        <Card>
+          <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => { setMode(null); }}>← Change</Button>
           <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Job title and requirements</h2>
           <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: "0 0 20px" }}>
             Search the sample requirement library first. If your title isn't listed, paste the qualifications straight from the posting.
@@ -698,8 +774,35 @@ export default function ECareerDesign() {
         </Card>
       )}
 
+      {step === 0 && mode === "resume" && (
+        <Card>
+          <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => setMode(null)}>← Change</Button>
+          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Build a general resume</h2>
+          <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: "0 0 20px", lineHeight: 1.6 }}>
+            No job posting needed for this path. Head straight to your background — work experience, education, and training — and KSA Assist will turn it into a polished, general-purpose resume.
+          </p>
+          <Button variant="primary" onClick={goToBackground} icon={<ChevronRight size={14} />}>
+            Continue to background
+          </Button>
+        </Card>
+      )}
+
+
       {step === 1 && (
         <div>
+          {mode === "resume" && (
+            <Card style={{ marginBottom: 16 }}>
+              <SectionHeading icon={<FileText size={18} color={TOKENS.accent} />} title="Contact info" subtitle="Goes at the top of your resume." />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                <input style={smallInputStyle} placeholder="Full name" value={contactInfo.name} onChange={(e) => setContactInfo((c) => ({ ...c, name: e.target.value }))} />
+                <input style={smallInputStyle} placeholder="Location (city, state)" value={contactInfo.location} onChange={(e) => setContactInfo((c) => ({ ...c, location: e.target.value }))} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <input style={smallInputStyle} placeholder="Email" value={contactInfo.email} onChange={(e) => setContactInfo((c) => ({ ...c, email: e.target.value }))} />
+                <input style={smallInputStyle} placeholder="Phone" value={contactInfo.phone} onChange={(e) => setContactInfo((c) => ({ ...c, phone: e.target.value }))} />
+              </div>
+            </Card>
+          )}
           {/* Work Experience */}
           <Card style={{ marginBottom: 16 }}>
             <SectionHeading icon={<Briefcase size={18} color={TOKENS.accent} />} title="Work experience" subtitle="Add each relevant position. Enter basic notes, then let the AI expand them — capped at 1,500 characters each." />
@@ -863,7 +966,51 @@ export default function ECareerDesign() {
         </div>
       )}
 
-      {step === 2 && (
+      {step === 2 && mode === "resume" && (
+        <div>
+          <Card style={{ marginBottom: 16 }}>
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Your resume</h2>
+            <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: "0 0 16px" }}>
+              Built from your work experience, education, training, and additional context — no job posting involved.
+            </p>
+            {resume.generating ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px 0", color: TOKENS.inkSoft, fontSize: 13 }}>
+                <Loader2 size={14} className="spin" /> Writing your resume...
+              </div>
+            ) : resume.text ? (
+              <div>
+                <textarea
+                  style={{ ...inputStyle, minHeight: 420, resize: "vertical", background: "#fff", fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, lineHeight: 1.6 }}
+                  value={resume.text}
+                  onChange={(e) => setResume((r) => ({ ...r, text: e.target.value }))}
+                />
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.inkSoft }}>
+                    {resume.text.length.toLocaleString()} characters
+                  </span>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <Button variant="ghost" icon={<RefreshCw size={13} />} onClick={generateResume}>Regenerate</Button>
+                    <Button variant="ghost" icon={copiedKey === "resume" ? <Check size={13} /> : <Copy size={13} />} onClick={() => copyText("resume", resume.text)}>
+                      {copiedKey === "resume" ? "Copied" : "Copy"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <Button variant="primary" icon={<Sparkles size={14} />} onClick={generateResume}>Generate resume</Button>
+            )}
+            {resume.error && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: 10 }}>Something went wrong generating the resume. Try again.</p>}
+          </Card>
+
+          <div style={{ textAlign: "right" }}>
+            <Button variant="primary" icon={<ChevronRight size={14} />} onClick={() => setStep(3)} disabled={!allGenerated}>
+              Continue to export
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {step === 2 && mode === "application" && (
         <div>
           <Card style={{ marginBottom: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
@@ -1001,69 +1148,83 @@ export default function ECareerDesign() {
           </div>
 
           <div style={{ borderTop: `1px solid ${TOKENS.line}`, paddingTop: 16 }}>
-            {workExperience.length > 0 && (
-              <div style={{ marginBottom: 22 }}>
-                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.accent, margin: "0 0 8px", textTransform: "uppercase" }}>Work Experience</p>
-                {workExperience.map((w) => (
-                  <div key={w.id} style={{ marginBottom: 14 }}>
-                    <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{w.positionTitle || "(untitled position)"}</p>
-                    <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "2px 0 6px" }}>
-                      {w.postalType} · {w.startDate || "?"} – {w.current ? "Present" : (w.endDate || "?")}
-                    </p>
-                    <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0 }}>{w.expandedDescription || w.basicDescription}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {education.length > 0 && (
-              <div style={{ marginBottom: 22 }}>
-                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.accent, margin: "0 0 8px", textTransform: "uppercase" }}>Education</p>
-                {education.map((e) => (
-                  <div key={e.id} style={{ marginBottom: 10 }}>
-                    <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{e.institution || "(institution)"}</p>
-                    <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "2px 0 0" }}>
-                      {e.startDate || "?"} – {e.endDate || "?"} · {e.subject} · {e.credential}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {skills.text && (
-              <div style={{ marginBottom: 22 }}>
-                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.gold, margin: "0 0 8px", textTransform: "uppercase" }}>
-                  Special Skills & Associations — {skills.text.length.toLocaleString()} chars
-                </p>
-                <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0 }}>{skills.text}</p>
-              </div>
-            )}
-
-            {trainingEntries.length > 0 && (
-              <div style={{ marginBottom: 22 }}>
-                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.accent, margin: "0 0 8px", textTransform: "uppercase" }}>Training</p>
-                {trainingEntries.map((t) => (
-                  <p key={t.id} style={{ fontSize: 13, margin: "0 0 4px" }}>
-                    {t.startDate} – {t.endDate} · {t.facility} · {t.course}
-                  </p>
-                ))}
-              </div>
-            )}
-
-            {requirements.length > 0 && (
+            {mode === "resume" ? (
               <div>
-                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.accent, margin: "0 0 8px", textTransform: "uppercase" }}>
-                  Summary of Accomplishments — {totalChars.toLocaleString()} chars
-                </p>
-                {requirements.map((r, i) => (
-                  <div key={r.id} style={{ marginBottom: 18 }}>
-                    <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "0 0 4px" }}>
-                      Requirement {i + 1} — {charCount(r.id).toLocaleString()} chars
-                    </p>
-                    <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0 }}>{responses[r.id]?.text}</p>
-                  </div>
-                ))}
+                {contactInfo.name && <p style={{ fontSize: 16, fontWeight: 600, margin: "0 0 2px" }}>{contactInfo.name}</p>}
+                {(contactInfo.email || contactInfo.phone || contactInfo.location) && (
+                  <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "0 0 14px" }}>
+                    {[contactInfo.email, contactInfo.phone, contactInfo.location].filter(Boolean).join(" · ")}
+                  </p>
+                )}
+                <p style={{ fontSize: 14, lineHeight: 1.7, margin: 0, whiteSpace: "pre-wrap", fontFamily: "'IBM Plex Mono', monospace" }}>{resume.text}</p>
               </div>
+            ) : (
+              <>
+                {workExperience.length > 0 && (
+                  <div style={{ marginBottom: 22 }}>
+                    <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.accent, margin: "0 0 8px", textTransform: "uppercase" }}>Work Experience</p>
+                    {workExperience.map((w) => (
+                      <div key={w.id} style={{ marginBottom: 14 }}>
+                        <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{w.positionTitle || "(untitled position)"}</p>
+                        <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "2px 0 6px" }}>
+                          {w.postalType} · {w.startDate || "?"} – {w.current ? "Present" : (w.endDate || "?")}
+                        </p>
+                        <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0 }}>{w.expandedDescription || w.basicDescription}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {education.length > 0 && (
+                  <div style={{ marginBottom: 22 }}>
+                    <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.accent, margin: "0 0 8px", textTransform: "uppercase" }}>Education</p>
+                    {education.map((e) => (
+                      <div key={e.id} style={{ marginBottom: 10 }}>
+                        <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{e.institution || "(institution)"}</p>
+                        <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "2px 0 0" }}>
+                          {e.startDate || "?"} – {e.endDate || "?"} · {e.subject} · {e.credential}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {skills.text && (
+                  <div style={{ marginBottom: 22 }}>
+                    <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.gold, margin: "0 0 8px", textTransform: "uppercase" }}>
+                      Special Skills & Associations — {skills.text.length.toLocaleString()} chars
+                    </p>
+                    <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0 }}>{skills.text}</p>
+                  </div>
+                )}
+
+                {trainingEntries.length > 0 && (
+                  <div style={{ marginBottom: 22 }}>
+                    <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.accent, margin: "0 0 8px", textTransform: "uppercase" }}>Training</p>
+                    {trainingEntries.map((t) => (
+                      <p key={t.id} style={{ fontSize: 13, margin: "0 0 4px" }}>
+                        {t.startDate} – {t.endDate} · {t.facility} · {t.course}
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                {requirements.length > 0 && (
+                  <div>
+                    <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.accent, margin: "0 0 8px", textTransform: "uppercase" }}>
+                      Summary of Accomplishments — {totalChars.toLocaleString()} chars
+                    </p>
+                    {requirements.map((r, i) => (
+                      <div key={r.id} style={{ marginBottom: 18 }}>
+                        <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "0 0 4px" }}>
+                          Requirement {i + 1} — {charCount(r.id).toLocaleString()} chars
+                        </p>
+                        <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0 }}>{responses[r.id]?.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
 
