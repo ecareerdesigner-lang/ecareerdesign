@@ -1,9 +1,9 @@
 "use client";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Search, FileText, Lock, Check, RefreshCw, Copy, Download,
-  ChevronRight, ChevronDown, Sparkles, AlertCircle, Save,
-  ClipboardList, Package, CheckCircle2, Loader2
+  ChevronRight, Sparkles, AlertCircle, Save, Plus, Trash2,
+  Package, CheckCircle2, Loader2, Briefcase, GraduationCap, Award
 } from "lucide-react";
 
 const TOKENS = {
@@ -17,7 +17,6 @@ const TOKENS = {
   gold: "#B98A2E",
   goldSoft: "#F3E7D1",
   green: "#2F6F4E",
-  greenSoft: "#DFEBE3",
   red: "#B23A2E",
   redSoft: "#F6DEDA",
 };
@@ -54,18 +53,16 @@ const LIBRARY = [
   },
 ];
 
-const INTAKE_FIELDS = [
-  { key: "position", label: "Current position, grade/level, years in role", placeholder: "e.g., Manager, Operations Programs Support, EAS-20, 4 years" },
-  { key: "projects", label: "3–5 significant projects or initiatives", placeholder: "Name each project and describe it in 1-2 sentences" },
-  { key: "tools", label: "Programs, tools, and systems used", placeholder: "e.g., AMS, FDB, DSALS, RADAR/PDAT, Kanban Board reviews, Gemba walks" },
-  { key: "outcomes", label: "Notable measurable outcomes", placeholder: "Cost savings, volume handled, efficiency gains, awards" },
-  { key: "leadership", label: "Leadership / supervisory scope", placeholder: "Team size, budget authority" },
-  { key: "training", label: "Training, certifications, cross-functional or detail assignments", placeholder: "List relevant training and assignments" },
-];
-
-const TOTAL_BUDGET = 6000;
-const SKILLS_BUDGET = 500;
+const TOTAL_BUDGET = 6000;   // Summary of Accomplishments (requirement responses), combined
+const SKILLS_BUDGET = 2000;  // Special Skills & Associations, independent cap
+const WORK_EXP_BUDGET = 1500; // Each work experience description, independent cap per entry
 const STEPS = ["Job & requirements", "Payment", "Background", "Generate", "Export"];
+
+let idCounter = 0;
+function newId(prefix) {
+  idCounter += 1;
+  return `${prefix}-${Date.now()}-${idCounter}`;
+}
 
 async function callClaude(prompt, maxTokens = 1000) {
   const response = await fetch("/api/claude", {
@@ -82,24 +79,6 @@ async function callClaude(prompt, maxTokens = 1000) {
   return text;
 }
 
-function extractionPrompt(rawText) {
-  return `You will be given raw text copied from a USPS eCareer job posting. Extract only the distinct Qualifications/Requirements/KSAs as a numbered list. Do not include unrelated posting content (pay grade, location, application instructions). Output strictly as a JSON array of strings, one requirement per item, in the order they appear. Return ONLY the JSON array, no other text, no markdown fences.
-
-Posting text:
-${rawText}`;
-}
-
-function starPrompt(requirementText, profile, budget) {
-  const target = Math.max(150, Math.floor(budget * 0.85));
-  return `You are helping a USPS employee draft a response to one job qualification requirement for an internal eCareer application. Using the requirement below and the candidate's background information, write a STAR-format response (Situation, Task, Action, Result) as flowing narrative paragraphs — do NOT include visible "Situation:"/"Task:"/"Action:"/"Result:" subheadings.
-
-Draw only on details actually present in the candidate's background information below. Do not invent specifics (names, numbers, dates) that weren't provided. Use accurate USPS terminology where the candidate has supplied it.
-
-Requirement: ${requirementText}
-Candidate background: ${JSON.stringify(profile)}
-Target length: aim for about ${target} characters. Do not exceed ${budget} characters under any circumstances — this is a hard limit, not a suggestion. Return only the response text, no preamble.`;
-}
-
 function trimToBudget(text, budget) {
   if (!text || text.length <= budget) return { text, trimmed: false };
   let cut = text.slice(0, budget);
@@ -113,11 +92,53 @@ function trimToBudget(text, budget) {
   return { text: cut, trimmed: true };
 }
 
-function skillsPrompt(jobTitle, profile, budget) {
-  return `Based on the job title "${jobTitle}" and the candidate's background below, write a brief summary (3-5 sentences) of special skills, professional associations, certifications, or affiliations relevant to this role. Only include items grounded in the candidate's actual background — do not fabricate credentials or memberships.
+function extractionPrompt(rawText) {
+  return `You will be given raw text copied from a USPS eCareer job posting. Extract only the distinct Qualifications/Requirements/KSAs as a numbered list. Do not include unrelated posting content (pay grade, location, application instructions). Output strictly as a JSON array of strings, one requirement per item, in the order they appear. Return ONLY the JSON array, no other text, no markdown fences.
 
-Candidate background: ${JSON.stringify(profile)}
-Keep it under ${budget} characters — this is a hard limit. Return only the summary text, no preamble.`;
+Posting text:
+${rawText}`;
+}
+
+function starPrompt(requirementText, background, budget) {
+  const target = Math.max(150, Math.floor(budget * 0.85));
+  return `You are helping a USPS employee draft one entry of a "Summary of Accomplishments" response for an internal eCareer application, addressing a single qualification requirement.  Write a STAR-format response (Situation, Task, Action, Result) as flowing narrative paragraphs — do NOT include visible "Situation:"/"Task:"/"Action:"/"Result:" subheadings.
+
+Draw only on details actually present in the candidate's background information below (work experience, education, training). Do not invent specifics (names, numbers, dates) that weren't provided. Use accurate USPS terminology where the candidate has supplied it.
+
+Requirement: ${requirementText}
+Candidate background: ${JSON.stringify(background)}
+Target length: aim for about ${target} characters. Do not exceed ${budget} characters under any circumstances — this is a hard limit. Return only the response text, no preamble.`;
+}
+
+function skillsPrompt(jobTitle, background, budget) {
+  const target = Math.max(150, Math.floor(budget * 0.85));
+  return `Based on the job title "${jobTitle}" and the candidate's background below, write a "Special Skills & Associations" summary for a USPS eCareer application — special skills, professional associations, certifications, or affiliations relevant to this role. Only include items grounded in the candidate's actual background — do not fabricate credentials or memberships.
+
+Candidate background: ${JSON.stringify(background)}
+Target length: aim for about ${target} characters. Do not exceed ${budget} characters under any circumstances — this is a hard limit. Return only the summary text, no preamble.`;
+}
+
+function workExpandPrompt(entry, jobTitle, requirements) {
+  const dates = `${entry.startDate || "unspecified"} to ${entry.current ? "Present" : (entry.endDate || "unspecified")}`;
+  const reqList = (requirements || []).map((r) => r.text).join(" | ");
+  return `Expand the candidate's basic notes below into a polished, professional "Work Experience" description for a USPS eCareer application. Draw only on the facts the candidate provided — do not invent employers, numbers, programs, or specifics that aren't present. Where genuinely relevant, you may emphasize aspects that connect to the target position's requirements listed below, without fabricating experience the candidate didn't describe.
+
+Position title: ${entry.positionTitle || "unspecified"}
+Postal / Non-Postal: ${entry.postalType}
+Dates: ${dates}
+Candidate's basic notes: ${entry.basicDescription}
+
+Target position being applied for: ${jobTitle || "unspecified"}
+Target position requirements (context only, do not copy verbatim): ${reqList || "none provided"}
+
+Do not exceed ${WORK_EXP_BUDGET} characters under any circumstances — this is a hard limit. Return only the description text, no preamble.`;
+}
+
+function trainingExtractionPrompt(rawText) {
+  return `You will be given a raw pasted USPS training record for an employee. Identify training completed within roughly the last 15 years that would be worth including on a job application. For each relevant item extract: start date, end date (same as start date if it was a single day), facility or provider name, and the course/training title. Output strictly as a JSON array of objects with keys "startDate", "endDate", "facility", "course", ordered by start date descending (most recent first). Return ONLY the JSON array, no other text, no markdown fences.
+
+Training record text:
+${rawText}`;
 }
 
 function parseJsonArray(text) {
@@ -139,16 +160,9 @@ function Stepper({ step }) {
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <div
                 style={{
-                  width: 26,
-                  height: 26,
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: 12,
-                  fontWeight: 500,
-                  flexShrink: 0,
+                  width: 26, height: 26, borderRadius: "50%",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, fontWeight: 500, flexShrink: 0,
                   background: isActive ? TOKENS.accent : isDone ? TOKENS.ink : TOKENS.surface,
                   color: isActive || isDone ? "#fff" : TOKENS.inkSoft,
                   border: `1px solid ${isActive ? TOKENS.accent : isDone ? TOKENS.ink : TOKENS.line}`,
@@ -156,21 +170,15 @@ function Stepper({ step }) {
               >
                 {isDone ? <Check size={13} /> : i + 1}
               </div>
-              <span
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: 13,
-                  color: isActive ? TOKENS.ink : TOKENS.inkSoft,
-                  fontWeight: isActive ? 600 : 400,
-                  whiteSpace: "nowrap",
-                }}
-              >
+              <span style={{
+                fontFamily: "'Inter', sans-serif", fontSize: 13,
+                color: isActive ? TOKENS.ink : TOKENS.inkSoft,
+                fontWeight: isActive ? 600 : 400, whiteSpace: "nowrap",
+              }}>
                 {label}
               </span>
             </div>
-            {i < STEPS.length - 1 && (
-              <div style={{ width: 20, height: 1, background: TOKENS.line, margin: "0 4px" }} />
-            )}
+            {i < STEPS.length - 1 && <div style={{ width: 20, height: 1, background: TOKENS.line, margin: "0 4px" }} />}
           </React.Fragment>
         );
       })}
@@ -180,15 +188,7 @@ function Stepper({ step }) {
 
 function Card({ children, style }) {
   return (
-    <div
-      style={{
-        background: TOKENS.surface,
-        border: `1px solid ${TOKENS.line}`,
-        borderRadius: 4,
-        padding: "1.5rem",
-        ...style,
-      }}
-    >
+    <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.line}`, borderRadius: 4, padding: "1.5rem", ...style }}>
       {children}
     </div>
   );
@@ -196,32 +196,21 @@ function Card({ children, style }) {
 
 function Button({ children, onClick, variant = "secondary", disabled, icon, style }) {
   const base = {
-    fontFamily: "'Inter', sans-serif",
-    fontSize: 14,
-    fontWeight: 500,
-    padding: "10px 18px",
-    borderRadius: 3,
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 8,
-    cursor: disabled ? "default" : "pointer",
-    opacity: disabled ? 0.5 : 1,
-    border: "1px solid transparent",
-    transition: "background 0.15s, border-color 0.15s",
+    fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500, padding: "10px 18px",
+    borderRadius: 3, display: "inline-flex", alignItems: "center", gap: 8,
+    cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1,
+    border: "1px solid transparent", transition: "background 0.15s, border-color 0.15s",
   };
   const variants = {
     primary: { background: TOKENS.accent, color: "#fff", borderColor: TOKENS.accent },
     secondary: { background: TOKENS.surface, color: TOKENS.ink, borderColor: TOKENS.line },
     ink: { background: TOKENS.ink, color: "#fff", borderColor: TOKENS.ink },
     ghost: { background: "transparent", color: TOKENS.inkSoft, borderColor: "transparent" },
+    dangerGhost: { background: "transparent", color: TOKENS.red, borderColor: "transparent" },
   };
   return (
-    <button
-      onClick={disabled ? undefined : onClick}
-      style={{ ...base, ...variants[variant], ...style }}
-    >
-      {icon}
-      {children}
+    <button onClick={disabled ? undefined : onClick} style={{ ...base, ...variants[variant], ...style }}>
+      {icon}{children}
     </button>
   );
 }
@@ -238,17 +227,32 @@ function Field({ label, children }) {
 }
 
 const inputStyle = {
-  width: "100%",
-  boxSizing: "border-box",
-  fontFamily: "'Inter', sans-serif",
-  fontSize: 14,
-  color: TOKENS.ink,
-  padding: "10px 12px",
-  border: `1px solid ${TOKENS.line}`,
-  borderRadius: 3,
-  background: TOKENS.paper,
-  outline: "none",
+  width: "100%", boxSizing: "border-box", fontFamily: "'Inter', sans-serif", fontSize: 14,
+  color: TOKENS.ink, padding: "10px 12px", border: `1px solid ${TOKENS.line}`, borderRadius: 3,
+  background: TOKENS.paper, outline: "none",
 };
+const smallInputStyle = { ...inputStyle, fontSize: 13, padding: "8px 10px" };
+
+function SectionHeading({ icon, title, subtitle }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+      {icon}
+      <div>
+        <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 17, margin: 0 }}>{title}</h3>
+        {subtitle && <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "2px 0 0" }}>{subtitle}</p>}
+      </div>
+    </div>
+  );
+}
+
+function CharCounter({ count, budget, trimmed }) {
+  return (
+    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: count > budget ? TOKENS.red : TOKENS.inkSoft }}>
+      {count.toLocaleString()} / {budget.toLocaleString()} chars
+      {trimmed && <span style={{ color: TOKENS.gold, marginLeft: 8 }}>· trimmed to fit budget</span>}
+    </span>
+  );
+}
 
 export default function ECareerDesign() {
   const [step, setStep] = useState(0);
@@ -265,8 +269,13 @@ export default function ECareerDesign() {
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState("");
 
-  const [profile, setProfile] = useState({});
-  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [workExperience, setWorkExperience] = useState([]);
+  const [education, setEducation] = useState([]);
+  const [trainingPasteText, setTrainingPasteText] = useState("");
+  const [trainingEntries, setTrainingEntries] = useState([]);
+  const [trainingExtracting, setTrainingExtracting] = useState(false);
+  const [trainingError, setTrainingError] = useState("");
+
   const [profileSaved, setProfileSaved] = useState(false);
 
   const [budgets, setBudgets] = useState({});
@@ -278,18 +287,18 @@ export default function ECareerDesign() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem("ecareerdesign-profile");
-      if (raw) setProfile(JSON.parse(raw));
+      if (raw) {
+        const saved = JSON.parse(raw);
+        if (saved.workExperience) setWorkExperience(saved.workExperience);
+        if (saved.education) setEducation(saved.education);
+        if (saved.trainingEntries) setTrainingEntries(saved.trainingEntries);
+        if (saved.trainingPasteText) setTrainingPasteText(saved.trainingPasteText);
+      }
     } catch (e) {
       // no saved profile yet
-    } finally {
-      setProfileLoaded(true);
     }
   }, []);
 
-  // Restore the in-progress application (job title, requirements) and verify
-  // payment if we're being redirected back from Stripe Checkout. A full
-  // Checkout redirect reloads the page, so React state has to be rebuilt
-  // from localStorage plus the returned session_id.
   useEffect(() => {
     try {
       const raw = localStorage.getItem("ecareerdesign-inprogress");
@@ -338,15 +347,17 @@ export default function ECareerDesign() {
     }
   }, []);
 
-  const saveProfile = useCallback((p) => {
+  const saveProfile = useCallback(() => {
     try {
-      localStorage.setItem("ecareerdesign-profile", JSON.stringify(p));
+      localStorage.setItem("ecareerdesign-profile", JSON.stringify({
+        workExperience, education, trainingEntries, trainingPasteText,
+      }));
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 1800);
     } catch (e) {
       console.error("Storage error", e);
     }
-  }, []);
+  }, [workExperience, education, trainingEntries, trainingPasteText]);
 
   const filteredLibrary = LIBRARY.filter((l) =>
     jobTitle.trim() === "" ? true : l.title.toLowerCase().includes(jobTitle.toLowerCase())
@@ -375,7 +386,7 @@ export default function ECareerDesign() {
 
   function evenBudgets(reqs) {
     const n = reqs.length || 1;
-    const per = Math.floor((TOTAL_BUDGET - SKILLS_BUDGET) / n);
+    const per = Math.floor(TOTAL_BUDGET / n);
     const b = {};
     reqs.forEach((r) => (b[r.id] = per));
     return b;
@@ -385,12 +396,9 @@ export default function ECareerDesign() {
     if (requirements.length === 0) return;
     setBudgets(evenBudgets(requirements));
     try {
-      localStorage.setItem(
-        "ecareerdesign-inprogress",
-        JSON.stringify({ jobTitle, selectedLib, requirements })
-      );
+      localStorage.setItem("ecareerdesign-inprogress", JSON.stringify({ jobTitle, selectedLib, requirements }));
     } catch (e) {
-      // non-fatal, worst case the user re-enters their title after payment
+      // non-fatal
     }
     setStep(1);
   }
@@ -402,10 +410,7 @@ export default function ECareerDesign() {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jobTitle: jobTitle || selectedLib?.title,
-          origin: window.location.origin,
-        }),
+        body: JSON.stringify({ jobTitle: jobTitle || selectedLib?.title, origin: window.location.origin }),
       });
       const data = await res.json();
       if (data.url) {
@@ -421,35 +426,118 @@ export default function ECareerDesign() {
   }
 
   function goToGenerate() {
-    saveProfile(profile);
+    saveProfile();
     setStep(3);
   }
 
-  const totalUsed = Object.values(budgets).reduce((a, b) => a + (Number(b) || 0), 0) + SKILLS_BUDGET;
+  // ---------- Work Experience ----------
+  function addWorkExperience() {
+    setWorkExperience((w) => [...w, {
+      id: newId("we"), positionTitle: "", postalType: "Postal",
+      startDate: "", endDate: "", current: false,
+      basicDescription: "", expandedDescription: "", generating: false, trimmed: false,
+    }]);
+  }
+  function updateWorkExperience(id, patch) {
+    setWorkExperience((w) => w.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+  }
+  function removeWorkExperience(id) {
+    setWorkExperience((w) => w.filter((e) => e.id !== id));
+  }
+  async function expandWorkExperience(id) {
+    const entry = workExperience.find((e) => e.id === id);
+    if (!entry || !entry.basicDescription?.trim()) return;
+    updateWorkExperience(id, { generating: true });
+    try {
+      const text = await callClaude(workExpandPrompt(entry, jobTitle || selectedLib?.title, requirements), 1000);
+      const { text: fitted, trimmed } = trimToBudget(text.trim(), WORK_EXP_BUDGET);
+      updateWorkExperience(id, { expandedDescription: fitted, generating: false, trimmed });
+    } catch (e) {
+      updateWorkExperience(id, { generating: false });
+    }
+  }
+
+  // ---------- Education ----------
+  function addEducation() {
+    setEducation((ed) => [...ed, {
+      id: newId("ed"), institution: "", startDate: "", endDate: "", subject: "", credential: "",
+    }]);
+  }
+  function updateEducation(id, patch) {
+    setEducation((ed) => ed.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+  }
+  function removeEducation(id) {
+    setEducation((ed) => ed.filter((e) => e.id !== id));
+  }
+
+  // ---------- Training ----------
+  async function extractTraining() {
+    if (!trainingPasteText.trim()) return;
+    setTrainingExtracting(true);
+    setTrainingError("");
+    try {
+      const text = await callClaude(trainingExtractionPrompt(trainingPasteText), 1000);
+      const arr = parseJsonArray(text);
+      setTrainingEntries(arr.map((t) => ({
+        id: newId("tr"),
+        startDate: t.startDate || "", endDate: t.endDate || "",
+        facility: t.facility || "", course: t.course || "",
+      })));
+    } catch (e) {
+      setTrainingError("Could not parse a training list from that text. You can also add entries manually below.");
+    } finally {
+      setTrainingExtracting(false);
+    }
+  }
+  function addTrainingRow() {
+    setTrainingEntries((t) => [...t, { id: newId("tr"), startDate: "", endDate: "", facility: "", course: "" }]);
+  }
+  function updateTrainingRow(id, patch) {
+    setTrainingEntries((t) => t.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  }
+  function removeTrainingRow(id) {
+    setTrainingEntries((t) => t.filter((r) => r.id !== id));
+  }
+
+  // ---------- Background context for AI prompts ----------
+  function buildBackground() {
+    return {
+      workExperience: workExperience.map((w) => ({
+        positionTitle: w.positionTitle,
+        type: w.postalType,
+        dates: `${w.startDate || "?"} - ${w.current ? "Present" : (w.endDate || "?")}`,
+        description: w.expandedDescription || w.basicDescription || "",
+      })),
+      education: education.map((e) => ({
+        institution: e.institution,
+        dates: `${e.startDate || "?"} - ${e.endDate || "?"}`,
+        subject: e.subject,
+        credential: e.credential,
+      })),
+      training: trainingEntries.map((t) => ({ dates: `${t.startDate} - ${t.endDate}`, facility: t.facility, course: t.course })),
+    };
+  }
+
+  // ---------- Requirements / Summary of Accomplishments ----------
+  const totalUsed = Object.values(budgets).reduce((a, b) => a + (Number(b) || 0), 0);
   const overBudget = totalUsed > TOTAL_BUDGET;
 
   async function generateOne(req) {
     setResponses((r) => ({ ...r, [req.id]: { ...(r[req.id] || {}), generating: true } }));
     try {
       const budget = budgets[req.id] || 500;
-      const text = await callClaude(starPrompt(req.text, profile, budget), 1000);
+      const text = await callClaude(starPrompt(req.text, buildBackground(), budget), 1000);
       const { text: fitted, trimmed } = trimToBudget(text.trim(), budget);
-      setResponses((r) => ({
-        ...r,
-        [req.id]: { text: fitted, generating: false, trimmed },
-      }));
+      setResponses((r) => ({ ...r, [req.id]: { text: fitted, generating: false, trimmed } }));
     } catch (e) {
-      setResponses((r) => ({
-        ...r,
-        [req.id]: { text: "", generating: false, error: true },
-      }));
+      setResponses((r) => ({ ...r, [req.id]: { text: "", generating: false, error: true } }));
     }
   }
 
   async function generateSkills() {
     setSkills({ text: "", generating: true });
     try {
-      const text = await callClaude(skillsPrompt(jobTitle || selectedLib?.title || "this position", profile, SKILLS_BUDGET), 600);
+      const text = await callClaude(skillsPrompt(jobTitle || selectedLib?.title || "this position", buildBackground(), SKILLS_BUDGET), 800);
       const { text: fitted, trimmed } = trimToBudget(text.trim(), SKILLS_BUDGET);
       setSkills({ text: fitted, generating: false, trimmed });
     } catch (e) {
@@ -469,12 +557,10 @@ export default function ECareerDesign() {
   function updateResponseText(id, text) {
     setResponses((r) => ({ ...r, [id]: { ...r[id], text } }));
   }
-
   function charCount(id) {
     return (responses[id]?.text || "").length;
   }
-
-  const totalChars = requirements.reduce((sum, r) => sum + charCount(r.id), 0) + (skills.text?.length || 0);
+  const totalChars = requirements.reduce((sum, r) => sum + charCount(r.id), 0);
 
   function copyText(key, text) {
     navigator.clipboard?.writeText(text);
@@ -482,24 +568,56 @@ export default function ECareerDesign() {
     setTimeout(() => setCopiedKey(""), 1500);
   }
 
-  function copyAll() {
-    const parts = requirements.map(
-      (r, i) => `Requirement ${i + 1}: ${r.text}\n\n${responses[r.id]?.text || ""}`
-    );
-    parts.push(`Special Skills & Associations:\n\n${skills.text || ""}`);
-    copyText("all", parts.join("\n\n---\n\n"));
+  function assembleExportText() {
+    const parts = [];
+    if (workExperience.length) {
+      parts.push("WORK EXPERIENCE\n" + "=".repeat(16));
+      workExperience.forEach((w) => {
+        const desc = w.expandedDescription || w.basicDescription || "";
+        parts.push(
+          `${w.positionTitle || "(untitled position)"}\n` +
+          `${w.postalType} | ${w.startDate || "?"} - ${w.current ? "Present" : (w.endDate || "?")}\n\n` +
+          desc
+        );
+      });
+    }
+    if (education.length) {
+      parts.push("EDUCATION\n" + "=".repeat(9));
+      education.forEach((e) => {
+        parts.push(
+          `${e.institution || "(institution)"}\n` +
+          `${e.startDate || "?"} - ${e.endDate || "?"} | ${e.subject || ""}\n` +
+          `${e.credential || ""}`
+        );
+      });
+    }
+    if (skills.text) {
+      parts.push("SPECIAL SKILLS & ASSOCIATIONS\n" + "=".repeat(29) + "\n\n" + skills.text);
+    }
+    if (trainingEntries.length) {
+      parts.push("TRAINING\n" + "=".repeat(8));
+      trainingEntries.forEach((t) => {
+        parts.push(`${t.startDate} - ${t.endDate} | ${t.facility} | ${t.course}`);
+      });
+    }
+    if (requirements.length) {
+      parts.push("SUMMARY OF ACCOMPLISHMENTS\n" + "=".repeat(26));
+      requirements.forEach((r, i) => {
+        parts.push(`Requirement ${i + 1}: ${r.text}\n\n${responses[r.id]?.text || ""}`);
+      });
+    }
+    return parts.join("\n\n\n");
   }
 
+  function copyAll() {
+    copyText("all", assembleExportText());
+  }
   function downloadText() {
-    const parts = requirements.map(
-      (r, i) => `Requirement ${i + 1}: ${r.text}\n\n${responses[r.id]?.text || ""}`
-    );
-    parts.push(`Special Skills & Associations\n\n${skills.text || ""}`);
-    const blob = new Blob([parts.join("\n\n\n")], { type: "text/plain" });
+    const blob = new Blob([assembleExportText()], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${(jobTitle || selectedLib?.title || "eCareerDesign-responses").replace(/\s+/g, "_")}.txt`;
+    a.download = `${(jobTitle || selectedLib?.title || "eCareerDesign-export").replace(/\s+/g, "_")}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -510,9 +628,11 @@ export default function ECareerDesign() {
     <div style={{ fontFamily: "'Inter', sans-serif", color: TOKENS.ink, maxWidth: 880, margin: "0 auto", padding: "2rem 1.5rem" }}>
       <style>{`
         ${FONTS_IMPORT}
-        input:focus, textarea:focus { border-color: ${TOKENS.accent} !important; }
+        input:focus, textarea:focus, select:focus { border-color: ${TOKENS.accent} !important; }
         ::placeholder { color: #9AA39B; }
-        textarea { font-family: 'Inter', sans-serif; }
+        textarea, select { font-family: 'Inter', sans-serif; }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
       <div style={{ marginBottom: "1.75rem" }}>
@@ -521,7 +641,7 @@ export default function ECareerDesign() {
             eCareerDesign
           </h1>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.inkSoft, border: `1px solid ${TOKENS.line}`, padding: "2px 8px", borderRadius: 2 }}>
-            v1.0 demo
+            v1.1
           </span>
         </div>
         <p style={{ fontSize: 14, color: TOKENS.inkSoft, margin: "6px 0 0", maxWidth: 620 }}>
@@ -576,12 +696,8 @@ export default function ECareerDesign() {
                     padding: "12px 14px",
                     border: `1px solid ${selectedLib?.title === entry.title ? TOKENS.accent : TOKENS.line}`,
                     background: selectedLib?.title === entry.title ? TOKENS.accentSoft : TOKENS.paper,
-                    borderRadius: 3,
-                    marginBottom: 8,
-                    cursor: "pointer",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                    borderRadius: 3, marginBottom: 8, cursor: "pointer",
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
                   }}
                 >
                   <div>
@@ -592,7 +708,7 @@ export default function ECareerDesign() {
                 </div>
               ))}
               <p style={{ fontSize: 12, color: TOKENS.inkSoft, marginTop: 10 }}>
-                Sample entries for this demo. In production, Option B's library is populated and kept current by an admin.
+                Sample entries for this demo. In production, this library is populated and kept current by an admin.
               </p>
             </div>
           )}
@@ -653,9 +769,7 @@ export default function ECareerDesign() {
               <CheckCircle2 size={18} /> Payment confirmed
             </div>
           )}
-          {paymentError && (
-            <p style={{ fontSize: 13, color: TOKENS.red, marginTop: 14 }}>{paymentError}</p>
-          )}
+          {paymentError && <p style={{ fontSize: 13, color: TOKENS.red, marginTop: 14 }}>{paymentError}</p>}
           <p style={{ fontSize: 12, color: TOKENS.inkSoft, marginTop: 18 }}>
             Payment is processed securely by Stripe. You'll be redirected to Stripe's checkout page and back here once it's complete.
           </p>
@@ -663,37 +777,126 @@ export default function ECareerDesign() {
       )}
 
       {step === 2 && (
-        <Card>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div>
-              <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Background profile</h2>
-              <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: "0 0 20px" }}>
-                This is saved to your profile and reused for future job title applications.
-              </p>
+        <div>
+          {/* Work Experience */}
+          <Card style={{ marginBottom: 16 }}>
+            <SectionHeading icon={<Briefcase size={18} color={TOKENS.accent} />} title="Work experience" subtitle="Add each relevant position. Enter basic notes, then let the AI expand them — capped at 1,500 characters each." />
+            {workExperience.map((w, i) => (
+              <div key={w.id} style={{ border: `1px solid ${TOKENS.line}`, borderRadius: 3, padding: 14, marginBottom: 12, background: TOKENS.paper }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.inkSoft }}>Position {i + 1}</span>
+                  <Button variant="dangerGhost" icon={<Trash2 size={13} />} onClick={() => removeWorkExperience(w.id)}>Remove</Button>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10, marginBottom: 10 }}>
+                  <input style={smallInputStyle} placeholder="Position title" value={w.positionTitle} onChange={(e) => updateWorkExperience(w.id, { positionTitle: e.target.value })} />
+                  <select style={smallInputStyle} value={w.postalType} onChange={(e) => updateWorkExperience(w.id, { postalType: e.target.value })}>
+                    <option>Postal</option>
+                    <option>Non-Postal</option>
+                  </select>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 10, alignItems: "center", marginBottom: 10 }}>
+                  <input style={smallInputStyle} placeholder="Start date (MM/DD/YYYY)" value={w.startDate} onChange={(e) => updateWorkExperience(w.id, { startDate: e.target.value })} />
+                  <input style={smallInputStyle} placeholder="End date (MM/DD/YYYY)" value={w.endDate} disabled={w.current} onChange={(e) => updateWorkExperience(w.id, { endDate: e.target.value })} />
+                  <label style={{ fontSize: 12, color: TOKENS.inkSoft, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+                    <input type="checkbox" checked={w.current} onChange={(e) => updateWorkExperience(w.id, { current: e.target.checked, endDate: e.target.checked ? "" : w.endDate })} />
+                    Currently here
+                  </label>
+                </div>
+                <textarea
+                  style={{ ...smallInputStyle, minHeight: 60, resize: "vertical", marginBottom: 8 }}
+                  placeholder="Basic notes: what did this role involve? Key duties, tools, outcomes..."
+                  value={w.basicDescription}
+                  onChange={(e) => updateWorkExperience(w.id, { basicDescription: e.target.value })}
+                />
+                {w.generating ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, color: TOKENS.inkSoft, fontSize: 13 }}>
+                    <Loader2 size={14} className="spin" /> Expanding...
+                  </div>
+                ) : w.expandedDescription ? (
+                  <div>
+                    <textarea
+                      style={{ ...smallInputStyle, minHeight: 90, resize: "vertical", background: "#fff" }}
+                      value={w.expandedDescription}
+                      onChange={(e) => updateWorkExperience(w.id, { expandedDescription: e.target.value })}
+                    />
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
+                      <CharCounter count={w.expandedDescription.length} budget={WORK_EXP_BUDGET} trimmed={w.trimmed} />
+                      <Button variant="ghost" icon={<RefreshCw size={13} />} onClick={() => expandWorkExperience(w.id)}>Regenerate</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button variant="secondary" icon={<Sparkles size={13} />} onClick={() => expandWorkExperience(w.id)} disabled={!w.basicDescription?.trim()}>
+                    Expand with AI
+                  </Button>
+                )}
+              </div>
+            ))}
+            <Button variant="secondary" icon={<Plus size={14} />} onClick={addWorkExperience}>Add work experience</Button>
+          </Card>
+
+          {/* Education */}
+          <Card style={{ marginBottom: 16 }}>
+            <SectionHeading icon={<GraduationCap size={18} color={TOKENS.accent} />} title="Education" subtitle="Secondary and post-secondary education, with dates attended." />
+            {education.map((e, i) => (
+              <div key={e.id} style={{ border: `1px solid ${TOKENS.line}`, borderRadius: 3, padding: 14, marginBottom: 12, background: TOKENS.paper }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.inkSoft }}>Education {i + 1}</span>
+                  <Button variant="dangerGhost" icon={<Trash2 size={13} />} onClick={() => removeEducation(e.id)}>Remove</Button>
+                </div>
+                <input style={{ ...smallInputStyle, marginBottom: 10 }} placeholder="School / institution" value={e.institution} onChange={(ev) => updateEducation(e.id, { institution: ev.target.value })} />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                  <input style={smallInputStyle} placeholder="Start date" value={e.startDate} onChange={(ev) => updateEducation(e.id, { startDate: ev.target.value })} />
+                  <input style={smallInputStyle} placeholder="End date" value={e.endDate} onChange={(ev) => updateEducation(e.id, { endDate: ev.target.value })} />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <input style={smallInputStyle} placeholder="Subject studied" value={e.subject} onChange={(ev) => updateEducation(e.id, { subject: ev.target.value })} />
+                  <input style={smallInputStyle} placeholder="Degree / certificate / status" value={e.credential} onChange={(ev) => updateEducation(e.id, { credential: ev.target.value })} />
+                </div>
+              </div>
+            ))}
+            <Button variant="secondary" icon={<Plus size={14} />} onClick={addEducation}>Add education</Button>
+          </Card>
+
+          {/* Training */}
+          <Card style={{ marginBottom: 16 }}>
+            <SectionHeading icon={<Award size={18} color={TOKENS.accent} />} title="Training" subtitle="Paste a training record and the app will pull out anything relevant from the last ~15 years — or add rows manually." />
+            <textarea
+              style={{ ...inputStyle, minHeight: 100, resize: "vertical", marginBottom: 10 }}
+              placeholder="Paste your training record here..."
+              value={trainingPasteText}
+              onChange={(e) => setTrainingPasteText(e.target.value)}
+            />
+            <Button variant="ink" icon={trainingExtracting ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />} onClick={extractTraining} disabled={trainingExtracting || !trainingPasteText.trim()}>
+              {trainingExtracting ? "Extracting..." : "Extract training from record"}
+            </Button>
+            {trainingError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: 10 }}>{trainingError}</p>}
+
+            {trainingEntries.length > 0 && (
+              <div style={{ marginTop: 16 }}>
+                {trainingEntries.map((t) => (
+                  <div key={t.id} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.4fr 1.6fr auto", gap: 8, marginBottom: 8, alignItems: "center" }}>
+                    <input style={smallInputStyle} placeholder="Start date" value={t.startDate} onChange={(e) => updateTrainingRow(t.id, { startDate: e.target.value })} />
+                    <input style={smallInputStyle} placeholder="End date" value={t.endDate} onChange={(e) => updateTrainingRow(t.id, { endDate: e.target.value })} />
+                    <input style={smallInputStyle} placeholder="Facility / provider" value={t.facility} onChange={(e) => updateTrainingRow(t.id, { facility: e.target.value })} />
+                    <input style={smallInputStyle} placeholder="Course" value={t.course} onChange={(e) => updateTrainingRow(t.id, { course: e.target.value })} />
+                    <Button variant="dangerGhost" icon={<Trash2 size={13} />} onClick={() => removeTrainingRow(t.id)} />
+                  </div>
+                ))}
+              </div>
+            )}
+            <Button variant="secondary" icon={<Plus size={14} />} style={{ marginTop: 8 }} onClick={addTrainingRow}>Add row manually</Button>
+          </Card>
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            {profileSaved ? (
+              <span style={{ fontSize: 12, color: TOKENS.green, display: "flex", alignItems: "center", gap: 4 }}><Check size={13} /> Saved</span>
+            ) : <span />}
+            <div style={{ display: "flex", gap: 10 }}>
+              <Button variant="secondary" icon={<Save size={14} />} onClick={saveProfile}>Save profile</Button>
+              <Button variant="primary" icon={<ChevronRight size={14} />} onClick={goToGenerate}>Continue to generation</Button>
             </div>
-            {profileSaved && <span style={{ fontSize: 12, color: TOKENS.green, display: "flex", alignItems: "center", gap: 4 }}><Check size={13} /> Saved</span>}
           </div>
-
-          {INTAKE_FIELDS.map((f) => (
-            <Field key={f.key} label={f.label}>
-              <textarea
-                style={{ ...inputStyle, minHeight: 64, resize: "vertical" }}
-                value={profile[f.key] || ""}
-                onChange={(e) => setProfile((p) => ({ ...p, [f.key]: e.target.value }))}
-                placeholder={f.placeholder}
-              />
-            </Field>
-          ))}
-
-          <div style={{ display: "flex", gap: 10 }}>
-            <Button variant="secondary" icon={<Save size={14} />} onClick={() => saveProfile(profile)}>
-              Save profile
-            </Button>
-            <Button variant="primary" icon={<ChevronRight size={14} />} onClick={goToGenerate}>
-              Continue to generation
-            </Button>
-          </div>
-        </Card>
+        </div>
       )}
 
       {step === 3 && (
@@ -701,21 +904,17 @@ export default function ECareerDesign() {
           <Card style={{ marginBottom: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
               <div>
-                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Character budget</h2>
+                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Summary of Accomplishments</h2>
                 <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: 0 }}>
-                  Adjust per-requirement targets. Total cap is 6,000 characters, including a {SKILLS_BUDGET.toLocaleString()}-character reserve for the skills summary below.
+                  Adjust per-requirement targets. Combined hard cap is 6,000 characters.
                 </p>
               </div>
               <div style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 20,
-                fontVariantNumeric: "tabular-nums",
+                fontFamily: "'IBM Plex Mono', monospace", fontSize: 20, fontVariantNumeric: "tabular-nums",
                 border: `1px solid ${overBudget ? TOKENS.red : TOKENS.ink}`,
                 background: overBudget ? TOKENS.redSoft : TOKENS.ink,
                 color: overBudget ? TOKENS.red : "#fff",
-                padding: "8px 14px",
-                borderRadius: 3,
-                letterSpacing: "0.02em",
+                padding: "8px 14px", borderRadius: 3, letterSpacing: "0.02em",
               }}>
                 {totalChars.toLocaleString()} / {TOTAL_BUDGET.toLocaleString()}
               </div>
@@ -734,9 +933,7 @@ export default function ECareerDesign() {
                 </div>
               ))}
             </div>
-            {overBudget && (
-              <p style={{ color: TOKENS.red, fontSize: 12, marginTop: 10 }}>Allocated budget exceeds the 6,000 character cap. Reduce one or more targets.</p>
-            )}
+            {overBudget && <p style={{ color: TOKENS.red, fontSize: 12, marginTop: 10 }}>Allocated budget exceeds the 6,000 character cap. Reduce one or more targets.</p>}
             <div style={{ marginTop: 16 }}>
               <Button variant="primary" icon={genAll ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />} onClick={generateEverything} disabled={genAll}>
                 {genAll ? "Generating..." : "Generate all responses"}
@@ -748,11 +945,9 @@ export default function ECareerDesign() {
             const resp = responses[r.id];
             return (
               <Card key={r.id} style={{ marginBottom: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-                  <div style={{ display: "flex", gap: 10 }}>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.accent, marginTop: 2 }}>{String(i + 1).padStart(2, "0")}</span>
-                    <p style={{ fontSize: 13, fontWeight: 500, margin: 0, color: TOKENS.ink }}>{r.text}</p>
-                  </div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.accent, marginTop: 2 }}>{String(i + 1).padStart(2, "0")}</span>
+                  <p style={{ fontSize: 13, fontWeight: 500, margin: 0, color: TOKENS.ink }}>{r.text}</p>
                 </div>
 
                 {resp?.generating ? (
@@ -767,14 +962,7 @@ export default function ECareerDesign() {
                       onChange={(e) => updateResponseText(r.id, e.target.value)}
                     />
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
-                      <span style={{
-                        fontFamily: "'IBM Plex Mono', monospace",
-                        fontSize: 12,
-                        color: charCount(r.id) > (budgets[r.id] || TOTAL_BUDGET) ? TOKENS.red : TOKENS.inkSoft,
-                      }}>
-                        {charCount(r.id).toLocaleString()} / {(budgets[r.id] || 0).toLocaleString()} chars
-                        {resp.trimmed && <span style={{ color: TOKENS.gold, marginLeft: 8 }}>· trimmed to fit budget</span>}
-                      </span>
+                      <CharCounter count={charCount(r.id)} budget={budgets[r.id] || 0} trimmed={resp.trimmed} />
                       <div style={{ display: "flex", gap: 8 }}>
                         <Button variant="ghost" icon={<RefreshCw size={13} />} onClick={() => generateOne(r)}>Regenerate</Button>
                         <Button variant="ghost" icon={copiedKey === r.id ? <Check size={13} /> : <Copy size={13} />} onClick={() => copyText(r.id, resp.text)}>
@@ -794,11 +982,12 @@ export default function ECareerDesign() {
 
           <Card style={{ marginBottom: 16, borderColor: TOKENS.gold }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 16, margin: 0 }}>Special skills and associations</h3>
+              <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 16, margin: 0 }}>Special Skills & Associations</h3>
               {!skills.text && !skills.generating && (
                 <Button variant="secondary" icon={<Sparkles size={13} />} onClick={generateSkills}>Generate</Button>
               )}
             </div>
+            <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "4px 0 0" }}>Independent hard cap of {SKILLS_BUDGET.toLocaleString()} characters.</p>
             {skills.generating ? (
               <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px 0", color: TOKENS.inkSoft, fontSize: 13 }}>
                 <Loader2 size={14} className="spin" /> Writing summary...
@@ -806,19 +995,12 @@ export default function ECareerDesign() {
             ) : skills.text ? (
               <div style={{ marginTop: 12 }}>
                 <textarea
-                  style={{ ...inputStyle, minHeight: 80, resize: "vertical", background: "#fff" }}
+                  style={{ ...inputStyle, minHeight: 100, resize: "vertical", background: "#fff" }}
                   value={skills.text}
                   onChange={(e) => setSkills((s) => ({ ...s, text: e.target.value }))}
                 />
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
-                  <span style={{
-                    fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: 12,
-                    color: skills.text.length > SKILLS_BUDGET ? TOKENS.red : TOKENS.inkSoft,
-                  }}>
-                    {skills.text.length.toLocaleString()} / {SKILLS_BUDGET.toLocaleString()} chars
-                    {skills.trimmed && <span style={{ color: TOKENS.gold, marginLeft: 8 }}>· trimmed to fit budget</span>}
-                  </span>
+                  <CharCounter count={skills.text.length} budget={SKILLS_BUDGET} trimmed={skills.trimmed} />
                   <div style={{ display: "flex", gap: 8 }}>
                     <Button variant="ghost" icon={<RefreshCw size={13} />} onClick={generateSkills}>Regenerate</Button>
                     <Button variant="ghost" icon={copiedKey === "skills" ? <Check size={13} /> : <Copy size={13} />} onClick={() => copyText("skills", skills.text)}>
@@ -842,7 +1024,7 @@ export default function ECareerDesign() {
         <Card>
           <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Export</h2>
           <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: "0 0 20px" }}>
-            Copy responses directly into eCareer's web form, or download everything as text to paste into Word.
+            Copy sections directly into eCareer's web form, or download everything as text to paste into Word.
           </p>
 
           <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
@@ -855,29 +1037,77 @@ export default function ECareerDesign() {
           </div>
 
           <div style={{ borderTop: `1px solid ${TOKENS.line}`, paddingTop: 16 }}>
-            {requirements.map((r, i) => (
-              <div key={r.id} style={{ marginBottom: 18 }}>
-                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.accent, margin: "0 0 4px" }}>
-                  Requirement {i + 1} — {charCount(r.id).toLocaleString()} chars
-                </p>
-                <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0, color: TOKENS.ink }}>{responses[r.id]?.text}</p>
+            {workExperience.length > 0 && (
+              <div style={{ marginBottom: 22 }}>
+                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.accent, margin: "0 0 8px", textTransform: "uppercase" }}>Work Experience</p>
+                {workExperience.map((w) => (
+                  <div key={w.id} style={{ marginBottom: 14 }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{w.positionTitle || "(untitled position)"}</p>
+                    <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "2px 0 6px" }}>
+                      {w.postalType} · {w.startDate || "?"} – {w.current ? "Present" : (w.endDate || "?")}
+                    </p>
+                    <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0 }}>{w.expandedDescription || w.basicDescription}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-            <div>
-              <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.gold, margin: "0 0 4px" }}>
-                Special skills and associations
-              </p>
-              <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0, color: TOKENS.ink }}>{skills.text}</p>
-            </div>
+            )}
+
+            {education.length > 0 && (
+              <div style={{ marginBottom: 22 }}>
+                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.accent, margin: "0 0 8px", textTransform: "uppercase" }}>Education</p>
+                {education.map((e) => (
+                  <div key={e.id} style={{ marginBottom: 10 }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{e.institution || "(institution)"}</p>
+                    <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "2px 0 0" }}>
+                      {e.startDate || "?"} – {e.endDate || "?"} · {e.subject} · {e.credential}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {skills.text && (
+              <div style={{ marginBottom: 22 }}>
+                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.gold, margin: "0 0 8px", textTransform: "uppercase" }}>
+                  Special Skills & Associations — {skills.text.length.toLocaleString()} chars
+                </p>
+                <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0 }}>{skills.text}</p>
+              </div>
+            )}
+
+            {trainingEntries.length > 0 && (
+              <div style={{ marginBottom: 22 }}>
+                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.accent, margin: "0 0 8px", textTransform: "uppercase" }}>Training</p>
+                {trainingEntries.map((t) => (
+                  <p key={t.id} style={{ fontSize: 13, margin: "0 0 4px" }}>
+                    {t.startDate} – {t.endDate} · {t.facility} · {t.course}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            {requirements.length > 0 && (
+              <div>
+                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.accent, margin: "0 0 8px", textTransform: "uppercase" }}>
+                  Summary of Accomplishments — {totalChars.toLocaleString()} chars
+                </p>
+                {requirements.map((r, i) => (
+                  <div key={r.id} style={{ marginBottom: 18 }}>
+                    <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "0 0 4px" }}>
+                      Requirement {i + 1} — {charCount(r.id).toLocaleString()} chars
+                    </p>
+                    <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0 }}>{responses[r.id]?.text}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <p style={{ fontSize: 12, color: TOKENS.inkSoft, marginTop: 20, borderTop: `1px solid ${TOKENS.line}`, paddingTop: 16 }}>
-            This demo exports plain text. The production build generates a formatted .docx with flowing narrative paragraphs (no visible STAR subheadings), matching the build spec's export requirement — that step runs server-side using the docx library.
+            This demo exports plain text. A production build would generate a formatted .docx matching this same structure, using the docx library server-side.
           </p>
         </Card>
       )}
-
-      <style>{`.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
