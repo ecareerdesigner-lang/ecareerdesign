@@ -112,22 +112,26 @@ Target length: aim for about ${target} characters. Do not exceed ${budget} chara
 }
 
 function resumePrompt(background, contact) {
-  return `Write a polished, professional resume for a federal government job applicant, based on the candidate's background below. This resume is not targeting any specific posting — write it as a strong general-purpose resume that presents the candidate's full career well.
+  return `Write content for a polished, professional resume for a federal government job applicant, based on the candidate's background below. This resume is not targeting any specific posting — write it as a strong general-purpose resume that presents the candidate's full career well.
 
-Structure it as plain text suitable for pasting into a document, using this layout:
-- Header: candidate's name, then contact details on one line
-- PROFESSIONAL SUMMARY: 2-3 sentence overview of the candidate's experience and strengths
-- PROFESSIONAL EXPERIENCE: each position with title, position type, dates, and 2-4 achievement-oriented bullet points (start each bullet with "- ")
-- EDUCATION: institution, dates, subject, credential
-- SKILLS & CERTIFICATIONS: a concise list drawn from the candidate's training and additional context
-Use section headers in capital letters. Draw only on details actually present in the candidate's background — do not invent employers, numbers, dates, or credentials that aren't provided. If a section has no data, omit it entirely rather than inventing content.
+Output STRICT JSON in exactly this shape, nothing else:
+{
+  "summary": "2-3 sentence professional summary",
+  "skills": ["short skill phrase", "..."],
+  "workHistory": [
+    { "bullets": ["achievement-oriented bullet, one sentence, no leading dash", "..."] }
+  ]
+}
+
+Rules:
+- "skills" should have 6 to 10 short phrases (2-4 words each), drawn from the candidate's tools, training, and additional context.
+- "workHistory" must have exactly one entry per work experience item listed below, IN THE SAME ORDER, each with 3-4 bullet points.
+- Every bullet must be grounded in details actually present in the candidate's background — do not invent employers, numbers, dates, or credentials that aren't provided.
+- Return ONLY the JSON object. No markdown fences, no commentary.
 
 Candidate name: ${contact.name || "(not provided)"}
-Contact details: ${[contact.email, contact.phone, contact.location].filter(Boolean).join(" | ") || "(not provided)"}
 
-Candidate background: ${JSON.stringify(background)}
-
-Return only the resume text, no preamble or commentary.`;
+Candidate background: ${JSON.stringify(background)}`;
 }
 
 function skillsPrompt(jobTitle, background, budget) {
@@ -144,6 +148,8 @@ function workExpandPrompt(entry, jobTitle, requirements) {
   return `Expand the candidate's basic notes below into a polished, professional "Work Experience" description for a federal job application. Draw only on the facts the candidate provided — do not invent employers, numbers, programs, or specifics that aren't present. Where genuinely relevant, you may emphasize aspects that connect to the target position's requirements listed below, without fabricating experience the candidate didn't describe.
 
 Position title: ${entry.positionTitle || "unspecified"}
+Employer / organization: ${entry.employer || "unspecified"}
+Location: ${entry.location || "unspecified"}
 Position type: ${entry.postalType}
 Dates: ${dates}
 Candidate's basic notes: ${entry.basicDescription}
@@ -168,6 +174,21 @@ function parseJsonArray(text) {
   if (start === -1 || end === -1) throw new Error("no array found");
   return JSON.parse(cleaned.slice(start, end + 1));
 }
+
+function parseJsonObject(text) {
+  const cleaned = text.replace(/```json|```/g, "").trim();
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+  if (start === -1 || end === -1) throw new Error("no object found");
+  return JSON.parse(cleaned.slice(start, end + 1));
+}
+
+const RESUME_COLORS = ["#1B3A5C", "#C1440E", "#2F6F4E", "#7A3B3B", "#6B7280", "#B98A2E", "#1E293B", "#0F766E"];
+const RESUME_TEMPLATES = [
+  { id: "sidebar", label: "Sidebar" },
+  { id: "classic", label: "Classic" },
+  { id: "minimal", label: "Minimal" },
+];
 
 function Stepper({ step, labels }) {
   return (
@@ -274,6 +295,204 @@ function CharCounter({ count, budget, trimmed }) {
   );
 }
 
+const resumePageStyle = {
+  maxWidth: 700, margin: "0 auto", background: "#fff",
+  boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)",
+  fontFamily: "'Inter', sans-serif", color: "#1a1a1a", overflow: "hidden",
+};
+
+function ResumeSidebarTemplate({ contact, data, color }) {
+  return (
+    <div style={{ ...resumePageStyle, display: "flex", borderRadius: 4 }}>
+      <div style={{ width: "34%", background: color, color: "#fff", padding: "28px 20px" }}>
+        <p style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 600, margin: "0 0 4px", lineHeight: 1.2 }}>{contact.name || "Your Name"}</p>
+        <div style={{ fontSize: 11, opacity: 0.9, lineHeight: 1.7, marginBottom: 22 }}>
+          {contact.email && <p style={{ margin: 0 }}>{contact.email}</p>}
+          {contact.phone && <p style={{ margin: 0 }}>{contact.phone}</p>}
+          {contact.location && <p style={{ margin: 0 }}>{contact.location}</p>}
+        </div>
+        {data.skills?.length > 0 && (
+          <div style={{ marginBottom: 22 }}>
+            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", opacity: 0.85, margin: "0 0 8px" }}>SKILLS</p>
+            {data.skills.map((s, i) => <p key={i} style={{ fontSize: 12, margin: "0 0 5px", opacity: 0.95 }}>{s}</p>)}
+          </div>
+        )}
+        {data.education?.length > 0 && (
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", opacity: 0.85, margin: "0 0 8px" }}>EDUCATION</p>
+            {data.education.map((e, i) => (
+              <div key={i} style={{ marginBottom: 10 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, margin: 0 }}>{[e.credential, e.subject].filter(Boolean).join(": ")}</p>
+                <p style={{ fontSize: 11, opacity: 0.85, margin: "2px 0 0" }}>{e.institution}</p>
+                <p style={{ fontSize: 11, opacity: 0.85, margin: 0 }}>{e.dates}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div style={{ flex: 1, padding: "28px 22px" }}>
+        {data.summary && (
+          <div style={{ marginBottom: 20 }}>
+            <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.06em", color, margin: "0 0 8px" }}>PROFESSIONAL SUMMARY</p>
+            <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>{data.summary}</p>
+          </div>
+        )}
+        {data.workHistory?.length > 0 && (
+          <div>
+            <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.06em", color, margin: "0 0 10px" }}>WORK HISTORY</p>
+            {data.workHistory.map((w, i) => (
+              <div key={i} style={{ marginBottom: 16 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>{w.title || "(untitled position)"}</p>
+                <p style={{ fontSize: 12, color: "#555", margin: "1px 0 4px" }}>
+                  {[w.employer, w.location].filter(Boolean).join(" — ")}{w.dates ? ` · ${w.dates}` : ""}
+                </p>
+                <ul style={{ margin: 0, paddingLeft: 16 }}>
+                  {(w.bullets || []).map((b, bi) => (
+                    <li key={bi} style={{ fontSize: 12.5, lineHeight: 1.55, marginBottom: 3 }}>{b}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ResumeClassicTemplate({ contact, data, color }) {
+  const sectionHeading = (label) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "22px 0 10px" }}>
+      <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color, whiteSpace: "nowrap" }}>{label}</span>
+      <span style={{ flex: 1, height: 1, background: color, opacity: 0.4 }} />
+    </div>
+  );
+  return (
+    <div style={{ ...resumePageStyle, border: `2px solid ${color}`, borderRadius: 4, padding: "32px 36px" }}>
+      <div style={{ textAlign: "center", marginBottom: 6 }}>
+        <p style={{ fontFamily: "'Fraunces', serif", fontSize: 24, fontWeight: 600, letterSpacing: "0.03em", margin: 0 }}>{contact.name || "Your Name"}</p>
+        <p style={{ fontSize: 12, color: "#555", margin: "6px 0 0" }}>
+          {[contact.location, contact.phone, contact.email].filter(Boolean).join("  ·  ")}
+        </p>
+      </div>
+
+      {data.summary && (
+        <div>
+          {sectionHeading("PROFESSIONAL SUMMARY")}
+          <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0, textAlign: "center" }}>{data.summary}</p>
+        </div>
+      )}
+
+      {data.skills?.length > 0 && (
+        <div>
+          {sectionHeading("SKILLS")}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 24px" }}>
+            {data.skills.map((s, i) => <p key={i} style={{ fontSize: 12.5, margin: 0 }}>• {s}</p>)}
+          </div>
+        </div>
+      )}
+
+      {data.workHistory?.length > 0 && (
+        <div>
+          {sectionHeading("WORK HISTORY")}
+          {data.workHistory.map((w, i) => (
+            <div key={i} style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>{w.title || "(untitled position)"}</p>
+                <p style={{ fontSize: 12, color: "#555", margin: 0 }}>{w.dates}</p>
+              </div>
+              <p style={{ fontSize: 12, color: "#555", fontStyle: "italic", margin: "1px 0 5px" }}>
+                {[w.employer, w.location].filter(Boolean).join(" — ")}
+              </p>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {(w.bullets || []).map((b, bi) => (
+                  <li key={bi} style={{ fontSize: 12.5, lineHeight: 1.55, marginBottom: 3 }}>{b}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {data.education?.length > 0 && (
+        <div>
+          {sectionHeading("EDUCATION")}
+          {data.education.map((e, i) => (
+            <p key={i} style={{ fontSize: 12.5, margin: "0 0 4px" }}>
+              <strong>{[e.credential, e.subject].filter(Boolean).join(": ")}</strong>
+              {" — "}{e.institution}{e.dates ? `, ${e.dates}` : ""}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ResumeMinimalTemplate({ contact, data, color }) {
+  const sectionHeading = (label) => (
+    <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color, margin: "22px 0 8px" }}>{label}</p>
+  );
+  return (
+    <div style={{ ...resumePageStyle, padding: "32px 36px" }}>
+      <p style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 600, color, margin: 0 }}>{contact.name || "Your Name"}</p>
+      <p style={{ fontSize: 12, color: "#666", margin: "4px 0 0" }}>
+        {[contact.email, contact.phone, contact.location].filter(Boolean).join("   ")}
+      </p>
+
+      {data.summary && (
+        <div>
+          {sectionHeading("Professional Summary")}
+          <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>{data.summary}</p>
+        </div>
+      )}
+
+      {data.skills?.length > 0 && (
+        <div>
+          {sectionHeading("Skills")}
+          <p style={{ fontSize: 12.5, lineHeight: 1.8, margin: 0 }}>{data.skills.join("   ·   ")}</p>
+        </div>
+      )}
+
+      {data.workHistory?.length > 0 && (
+        <div>
+          {sectionHeading("Work History")}
+          {data.workHistory.map((w, i) => (
+            <div key={i} style={{ marginBottom: 14 }}>
+              <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>
+                {w.title || "(untitled position)"}{w.employer ? `, ${w.employer}` : ""}
+              </p>
+              <p style={{ fontSize: 12, color: "#666", margin: "1px 0 5px" }}>
+                {[w.location, w.dates].filter(Boolean).join(" · ")}
+              </p>
+              {(w.bullets || []).map((b, bi) => (
+                <p key={bi} style={{ fontSize: 12.5, lineHeight: 1.55, margin: "0 0 3px" }}>{b}</p>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {data.education?.length > 0 && (
+        <div>
+          {sectionHeading("Education")}
+          {data.education.map((e, i) => (
+            <p key={i} style={{ fontSize: 12.5, margin: "0 0 4px" }}>
+              {[e.credential, e.subject].filter(Boolean).join(": ")} — {e.institution}{e.dates ? `, ${e.dates}` : ""}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ResumePreview({ template, contact, data, color }) {
+  if (template === "classic") return <ResumeClassicTemplate contact={contact} data={data} color={color} />;
+  if (template === "minimal") return <ResumeMinimalTemplate contact={contact} data={data} color={color} />;
+  return <ResumeSidebarTemplate contact={contact} data={data} color={color} />;
+}
+
 export default function ECareerDesign() {
   const [step, setStep] = useState(0);
   const [mode, setMode] = useState(null); // 'application' | 'resume'
@@ -286,7 +505,11 @@ export default function ECareerDesign() {
   const [extractError, setExtractError] = useState("");
 
   const [contactInfo, setContactInfo] = useState({ name: "", email: "", phone: "", location: "" });
-  const [resume, setResume] = useState({ text: "", generating: false });
+  const [resumeData, setResumeData] = useState(null);
+  const [resumeGenerating, setResumeGenerating] = useState(false);
+  const [resumeError, setResumeError] = useState(false);
+  const [resumeTemplate, setResumeTemplate] = useState("sidebar");
+  const [resumeColor, setResumeColor] = useState(RESUME_COLORS[0]);
 
   const [workExperience, setWorkExperience] = useState([]);
   const [education, setEducation] = useState([]);
@@ -407,7 +630,7 @@ export default function ECareerDesign() {
   // ---------- Work Experience ----------
   function addWorkExperience() {
     setWorkExperience((w) => [...w, {
-      id: newId("we"), positionTitle: "", postalType: "Federal",
+      id: newId("we"), positionTitle: "", employer: "", location: "", postalType: "Federal",
       startDate: "", endDate: "", current: false,
       basicDescription: "", expandedDescription: "", generating: false, trimmed: false,
     }]);
@@ -478,6 +701,8 @@ export default function ECareerDesign() {
     return {
       workExperience: workExperience.map((w) => ({
         positionTitle: w.positionTitle,
+        employer: w.employer,
+        location: w.location,
         type: w.postalType,
         dates: `${w.startDate || "?"} - ${w.current ? "Present" : (w.endDate || "?")}`,
         description: w.expandedDescription || w.basicDescription || "",
@@ -524,12 +749,35 @@ export default function ECareerDesign() {
   }
 
   async function generateResume() {
-    setResume({ text: "", generating: true });
+    setResumeGenerating(true);
+    setResumeError(false);
     try {
-      const text = await callClaude(resumePrompt(buildBackground(), contactInfo), 2000);
-      setResume({ text: text.trim(), generating: false });
+      const bg = buildBackground();
+      const text = await callClaude(resumePrompt(bg, contactInfo), 1800);
+      const parsed = parseJsonObject(text);
+      const workHistory = workExperience.map((w, i) => ({
+        title: w.positionTitle,
+        employer: w.employer,
+        location: w.location,
+        dates: `${w.startDate || "?"} - ${w.current ? "Present" : (w.endDate || "?")}`,
+        bullets: parsed.workHistory?.[i]?.bullets || [],
+      }));
+      const educationList = education.map((e) => ({
+        credential: e.credential,
+        subject: e.subject,
+        institution: e.institution,
+        dates: `${e.startDate || "?"} - ${e.endDate || "?"}`,
+      }));
+      setResumeData({
+        summary: parsed.summary || "",
+        skills: parsed.skills || [],
+        workHistory,
+        education: educationList,
+      });
     } catch (e) {
-      setResume({ text: "", generating: false, error: true });
+      setResumeError(true);
+    } finally {
+      setResumeGenerating(false);
     }
   }
 
@@ -556,19 +804,56 @@ export default function ECareerDesign() {
     setTimeout(() => setCopiedKey(""), 1500);
   }
 
+  function buildResumePlainText() {
+    if (!resumeData) return "";
+    const lines = [];
+    if (contactInfo.name) lines.push(contactInfo.name);
+    const contactLine = [contactInfo.email, contactInfo.phone, contactInfo.location].filter(Boolean).join(" | ");
+    if (contactLine) lines.push(contactLine);
+    lines.push("");
+    if (resumeData.summary) {
+      lines.push("PROFESSIONAL SUMMARY");
+      lines.push(resumeData.summary);
+      lines.push("");
+    }
+    if (resumeData.skills?.length) {
+      lines.push("SKILLS");
+      lines.push(resumeData.skills.join(" | "));
+      lines.push("");
+    }
+    if (resumeData.workHistory?.length) {
+      lines.push("WORK HISTORY");
+      resumeData.workHistory.forEach((w) => {
+        lines.push(`${w.title || "(untitled position)"}${w.employer ? " — " + w.employer : ""}`);
+        const meta = [w.location, w.dates].filter(Boolean).join(" | ");
+        if (meta) lines.push(meta);
+        (w.bullets || []).forEach((b) => lines.push(`- ${b}`));
+        lines.push("");
+      });
+    }
+    if (resumeData.education?.length) {
+      lines.push("EDUCATION");
+      resumeData.education.forEach((e) => {
+        lines.push([e.credential, e.subject].filter(Boolean).join(": "));
+        lines.push(`${e.institution || ""}${e.dates ? " — " + e.dates : ""}`.trim());
+        lines.push("");
+      });
+    }
+    return lines.join("\n").trim();
+  }
+
   function assembleExportText() {
     if (mode === "resume") {
-      const header = [contactInfo.name, [contactInfo.email, contactInfo.phone, contactInfo.location].filter(Boolean).join(" | ")]
-        .filter(Boolean).join("\n");
-      return [header, resume.text].filter(Boolean).join("\n\n");
+      return buildResumePlainText();
     }
     const parts = [];
     if (workExperience.length) {
       parts.push("WORK EXPERIENCE\n" + "=".repeat(16));
       workExperience.forEach((w) => {
         const desc = w.expandedDescription || w.basicDescription || "";
+        const orgLine = [w.employer, w.location].filter(Boolean).join(" — ");
         parts.push(
-          `${w.positionTitle || "(untitled position)"}\n` +
+          `${w.positionTitle || "(untitled position)"}${orgLine ? "\n" + orgLine : ""}\n` +
           `${w.postalType} | ${w.startDate || "?"} - ${w.current ? "Present" : (w.endDate || "?")}\n\n` +
           desc
         );
@@ -616,7 +901,7 @@ export default function ECareerDesign() {
   }
 
   const allGenerated = mode === "resume"
-    ? !!resume.text
+    ? !!resumeData
     : requirements.length > 0 && requirements.every((r) => responses[r.id]?.text);
 
   return (
@@ -820,6 +1105,10 @@ export default function ECareerDesign() {
                     <option>Non-Postal</option>
                   </select>
                 </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                  <input style={smallInputStyle} placeholder="Employer / organization" value={w.employer} onChange={(e) => updateWorkExperience(w.id, { employer: e.target.value })} />
+                  <input style={smallInputStyle} placeholder="Location (city, state)" value={w.location} onChange={(e) => updateWorkExperience(w.id, { location: e.target.value })} />
+                </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 10, alignItems: "center", marginBottom: 10 }}>
                   <input style={smallInputStyle} placeholder="Start date (MM/DD/YYYY)" value={w.startDate} onChange={(e) => updateWorkExperience(w.id, { startDate: e.target.value })} />
                   <input style={smallInputStyle} placeholder="End date (MM/DD/YYYY)" value={w.endDate} disabled={w.current} onChange={(e) => updateWorkExperience(w.id, { endDate: e.target.value })} />
@@ -973,33 +1262,58 @@ export default function ECareerDesign() {
             <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: "0 0 16px" }}>
               Built from your work experience, education, training, and additional context — no job posting involved.
             </p>
-            {resume.generating ? (
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 24, marginBottom: 18 }}>
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 500, color: TOKENS.ink, margin: "0 0 8px" }}>Template</p>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {RESUME_TEMPLATES.map((t) => (
+                    <Button key={t.id} variant={resumeTemplate === t.id ? "ink" : "secondary"} onClick={() => setResumeTemplate(t.id)}>
+                      {t.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 500, color: TOKENS.ink, margin: "0 0 8px" }}>Color</p>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {RESUME_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setResumeColor(c)}
+                      style={{
+                        width: 26, height: 26, borderRadius: "50%", background: c, cursor: "pointer",
+                        border: resumeColor === c ? `2px solid ${TOKENS.ink}` : "2px solid transparent",
+                        outline: resumeColor === c ? `2px solid ${c}` : "none",
+                        outlineOffset: 2,
+                      }}
+                      aria-label={c}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {resumeGenerating ? (
               <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px 0", color: TOKENS.inkSoft, fontSize: 13 }}>
                 <Loader2 size={14} className="spin" /> Writing your resume...
               </div>
-            ) : resume.text ? (
+            ) : resumeData ? (
               <div>
-                <textarea
-                  style={{ ...inputStyle, minHeight: 420, resize: "vertical", background: "#fff", fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, lineHeight: 1.6 }}
-                  value={resume.text}
-                  onChange={(e) => setResume((r) => ({ ...r, text: e.target.value }))}
-                />
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.inkSoft }}>
-                    {resume.text.length.toLocaleString()} characters
-                  </span>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <Button variant="ghost" icon={<RefreshCw size={13} />} onClick={generateResume}>Regenerate</Button>
-                    <Button variant="ghost" icon={copiedKey === "resume" ? <Check size={13} /> : <Copy size={13} />} onClick={() => copyText("resume", resume.text)}>
-                      {copiedKey === "resume" ? "Copied" : "Copy"}
-                    </Button>
-                  </div>
+                <div style={{ background: TOKENS.paper, padding: 20, borderRadius: 4, marginBottom: 12 }}>
+                  <ResumePreview template={resumeTemplate} contact={contactInfo} data={resumeData} color={resumeColor} />
+                </div>
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                  <Button variant="ghost" icon={<RefreshCw size={13} />} onClick={generateResume}>Regenerate content</Button>
+                  <Button variant="ghost" icon={copiedKey === "resume" ? <Check size={13} /> : <Copy size={13} />} onClick={() => copyText("resume", buildResumePlainText())}>
+                    {copiedKey === "resume" ? "Copied" : "Copy as text"}
+                  </Button>
                 </div>
               </div>
             ) : (
               <Button variant="primary" icon={<Sparkles size={14} />} onClick={generateResume}>Generate resume</Button>
             )}
-            {resume.error && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: 10 }}>Something went wrong generating the resume. Try again.</p>}
+            {resumeError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: 10 }}>Something went wrong generating the resume. Try again.</p>}
           </Card>
 
           <div style={{ textAlign: "right" }}>
@@ -1149,14 +1463,8 @@ export default function ECareerDesign() {
 
           <div style={{ borderTop: `1px solid ${TOKENS.line}`, paddingTop: 16 }}>
             {mode === "resume" ? (
-              <div>
-                {contactInfo.name && <p style={{ fontSize: 16, fontWeight: 600, margin: "0 0 2px" }}>{contactInfo.name}</p>}
-                {(contactInfo.email || contactInfo.phone || contactInfo.location) && (
-                  <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "0 0 14px" }}>
-                    {[contactInfo.email, contactInfo.phone, contactInfo.location].filter(Boolean).join(" · ")}
-                  </p>
-                )}
-                <p style={{ fontSize: 14, lineHeight: 1.7, margin: 0, whiteSpace: "pre-wrap", fontFamily: "'IBM Plex Mono', monospace" }}>{resume.text}</p>
+              <div style={{ background: TOKENS.paper, padding: 20, borderRadius: 4 }}>
+                {resumeData && <ResumePreview template={resumeTemplate} contact={contactInfo} data={resumeData} color={resumeColor} />}
               </div>
             ) : (
               <>
@@ -1166,6 +1474,11 @@ export default function ECareerDesign() {
                     {workExperience.map((w) => (
                       <div key={w.id} style={{ marginBottom: 14 }}>
                         <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{w.positionTitle || "(untitled position)"}</p>
+                        {(w.employer || w.location) && (
+                          <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "1px 0 0" }}>
+                            {[w.employer, w.location].filter(Boolean).join(" — ")}
+                          </p>
+                        )}
                         <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "2px 0 6px" }}>
                           {w.postalType} · {w.startDate || "?"} – {w.current ? "Present" : (w.endDate || "?")}
                         </p>
