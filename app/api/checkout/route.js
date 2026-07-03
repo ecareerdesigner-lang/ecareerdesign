@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { PRICE_CENTS } from "../../../lib/pricing";
 
 export async function POST(req) {
   if (!process.env.STRIPE_SECRET_KEY) {
@@ -26,7 +27,7 @@ export async function POST(req) {
               name: `eCareerDesign — ${jobTitle || "job application"}`,
               description: "STAR-format response generation for one eCareer job title.",
             },
-            unit_amount: 2500,
+            unit_amount: PRICE_CENTS,
           },
           quantity: 1,
         },

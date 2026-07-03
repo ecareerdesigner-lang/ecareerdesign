@@ -5,6 +5,7 @@ import {
   ChevronRight, Sparkles, AlertCircle, Save, Plus, Trash2,
   Package, CheckCircle2, Loader2, Briefcase, GraduationCap, Award
 } from "lucide-react";
+import { PRICE_DISPLAY } from "../lib/pricing";
 
 const TOKENS = {
   ink: "#16283D",
@@ -761,17 +762,17 @@ export default function ECareerDesign() {
           <Package size={32} color={TOKENS.accent} style={{ marginBottom: 12 }} />
           <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 22, margin: "0 0 6px" }}>Unlock this application</h2>
           <p style={{ fontSize: 14, color: TOKENS.inkSoft, maxWidth: 420, margin: "0 auto 24px" }}>
-            A flat $25 fee unlocks unlimited generation, editing, and regeneration for
+            A flat {PRICE_DISPLAY} fee unlocks unlimited generation, editing, and regeneration for
             {" "}{jobTitle || selectedLib?.title || "this job title"} — this application only.
           </p>
-          <div style={{ fontFamily: "'Fraunces', serif", fontSize: 40, fontWeight: 600, marginBottom: 24 }}>$25</div>
+          <div style={{ fontFamily: "'Fraunces', serif", fontSize: 40, fontWeight: 600, marginBottom: 24 }}>{PRICE_DISPLAY}</div>
           {verifyingPayment ? (
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, color: TOKENS.inkSoft }}>
               <Loader2 size={16} className="spin" /> Confirming your payment...
             </div>
           ) : !paid ? (
             <Button variant="primary" onClick={startCheckout} disabled={paying} icon={paying ? <Loader2 size={14} className="spin" /> : <Lock size={14} />}>
-              {paying ? "Redirecting to checkout..." : "Pay $25 to continue"}
+              {paying ? "Redirecting to checkout..." : `Pay ${PRICE_DISPLAY} to continue`}
             </Button>
           ) : (
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, color: TOKENS.green, fontWeight: 500 }}>
