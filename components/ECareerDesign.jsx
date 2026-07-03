@@ -982,7 +982,7 @@ export default function ECareerDesign() {
               style={inputStyle}
               value={jobTitle}
               onChange={(e) => { setJobTitle(e.target.value); setSelectedLib(null); setRequirements([]); }}
-              placeholder="e.g., Manager, Post Office Operations"
+              placeholder="e.g., Management and Program Analyst"
             />
           </Field>
 
@@ -1220,7 +1220,7 @@ export default function ECareerDesign() {
             <Field label="Programs, tools, and systems used">
               <textarea
                 style={{ ...inputStyle, minHeight: 60, resize: "vertical" }}
-                placeholder="e.g., AMS, FDB, DSALS, RADAR/PDAT, Kanban Board reviews, Gemba walks"
+                placeholder="e.g., Salesforce, Excel/pivot tables, project tracking software, internal databases"
                 value={additionalContext.toolsSystems}
                 onChange={(e) => setAdditionalContext((a) => ({ ...a, toolsSystems: e.target.value }))}
               />
