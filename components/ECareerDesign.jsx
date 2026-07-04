@@ -192,6 +192,21 @@ function parseJsonObject(text) {
 }
 
 const RESUME_COLORS = ["#1B3A5C", "#C1440E", "#2F6F4E", "#7A3B3B", "#6B7280", "#B98A2E", "#1E293B", "#0F766E"];
+
+// These job boards don't offer a public search API, but their own search
+// pages accept URL parameters directly — so we can deep-link straight into
+// pre-filled results without needing any API key or scraping.
+function buildJobBoardLinks(title, location) {
+  const t = encodeURIComponent(title || "");
+  const l = encodeURIComponent(location || "");
+  return [
+    { name: "Indeed", url: `https://www.indeed.com/jobs?q=${t}&l=${l}` },
+    { name: "LinkedIn", url: `https://www.linkedin.com/jobs/search/?keywords=${t}&location=${l}` },
+    { name: "ZipRecruiter", url: `https://www.ziprecruiter.com/jobs-search?search=${t}&location=${l}` },
+    { name: "Monster", url: `https://www.monster.com/jobs/search?q=${t}&where=${l}` },
+    { name: "Ladders", url: `https://www.theladders.com/jobs/search-jobs?q=${t}&l=${l}` },
+  ];
+}
 const RESUME_TEMPLATES = [
   { id: "sidebar", label: "Sidebar" },
   { id: "classic", label: "Classic" },
@@ -311,8 +326,15 @@ function CharCounter({ count, budget, trimmed }) {
   );
 }
 
+// Matches a US Letter page's proportions (8.5" x 11") at a 700px display width,
+// so the template always fills a full sheet — colored sidebars run edge to
+// edge — instead of shrinking to hug short content.
+const PAGE_WIDTH_PX = 700;
+const PAGE_HEIGHT_PX = Math.round(PAGE_WIDTH_PX * (11 / 8.5));
+
 const resumePageStyle = {
-  maxWidth: 700, margin: "0 auto", background: "#fff",
+  width: PAGE_WIDTH_PX, minHeight: PAGE_HEIGHT_PX, maxWidth: "100%", boxSizing: "border-box",
+  margin: "0 auto", background: "#fff",
   boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)",
   fontFamily: "'Inter', sans-serif", color: "#1a1a1a", overflow: "hidden",
 };
@@ -1700,6 +1722,17 @@ export default function ECareerDesign() {
             <Button variant="primary" icon={jobSearching ? <Loader2 size={14} className="spin" /> : <Search size={14} />} onClick={searchJobs} disabled={jobSearching}>
               {jobSearching ? "Searching..." : "Search jobs"}
             </Button>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ fontSize: 12, fontWeight: 500, color: TOKENS.ink, margin: "0 0 8px" }}>Or search directly on:</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {buildJobBoardLinks(jobSearchTitle, jobSearchLocation).map((board) => (
+                <a key={board.name} href={board.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+                  <Button variant="secondary" icon={<ExternalLink size={13} />}>{board.name}</Button>
+                </a>
+              ))}
+            </div>
           </div>
 
           {jobSearchWarnings.length > 0 && (
