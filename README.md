@@ -47,7 +47,7 @@ Whatever you choose, note that this app now collects real background/work-histor
 
 After a resume is generated, a "Find matching jobs" panel searches real, live postings and links out to the original listing for the person to apply directly — the app never submits an application on their behalf, only links to it.
 
-Two sources are wired up, both optional (each is skipped with a warning shown in the UI if not configured):
+Three sources return real inline results, all optional (each is skipped with a warning shown in the UI if not configured):
 
 - **USAJOBS** (federal positions) — free, but requires a quick approval step:
   1. Register at https://developer.usajobs.gov/apirequest/
@@ -59,7 +59,14 @@ Two sources are wired up, both optional (each is skipped with a warning shown in
   2. You'll get an `app_id` and `app_key` immediately.
   3. Set `ADZUNA_APP_ID` and `ADZUNA_APP_KEY`.
 
-Add whichever keys you get to `.env.local` locally and to Vercel's Environment Variables for production, then redeploy. The search endpoint (`app/api/job-search/route.js`) merges and normalizes results from whichever sources are configured — add more sources there following the same pattern if you want broader coverage (Indeed and LinkedIn's job APIs are both effectively closed to new developers as of this writing, so they aren't included).
+- **Jooble** (broad general-purpose aggregator, good coverage for local/non-tech roles) — free:
+  1. Fill out the form at https://jooble.org/api/about
+  2. You'll receive an API key by email.
+  3. Set `JOOBLE_API_KEY`.
+
+Add whichever keys you get to `.env.local` locally and to Vercel's Environment Variables for production, then redeploy. The search endpoint (`app/api/job-search/route.js`) merges and normalizes results from whichever sources are configured.
+
+Separately, a row of "search directly on" buttons (Indeed, LinkedIn, ZipRecruiter, Monster, SimplyHired, Glassdoor, Ladders) link out to those sites' own search pages, pre-filled with the same title/location. These are plain links, not inline results — none of those seven currently offer a public search API (Indeed's was deprecated years ago; the others never had one), so pulling structured listings from them would require scraping, which isn't implemented here since it violates those sites' terms of service and breaks easily. Two other no-key job APIs exist (The Muse, Arbeitnow) but were left out deliberately — The Muse only filters by a fixed list of tech/corporate categories with no free-text search, and Arbeitnow's listings skew almost entirely Europe/remote-tech, so neither returns good results for a typical general or local search.
 
 ## PDF export (resume mode)
 

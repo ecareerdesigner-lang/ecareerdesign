@@ -4,9 +4,10 @@
 // Requires free API keys, set as environment variables:
 //   USAJOBS_API_KEY, USAJOBS_EMAIL   — https://developer.usajobs.gov/apirequest/
 //   ADZUNA_APP_ID, ADZUNA_APP_KEY    — https://developer.adzuna.com/
+//   JOOBLE_API_KEY                   — https://jooble.org/api/about
 //
-// Either source can be left unconfigured — it's skipped with a warning
-// rather than failing the whole request.
+// Any source can be left unconfigured — it's skipped with a warning rather
+// than failing the whole request.
 
 export async function POST(req) {
   const { title, location } = await req.json();
@@ -85,6 +86,40 @@ export async function POST(req) {
     }
   } else {
     warnings.push("Adzuna is not configured yet.");
+  }
+
+  // ---------- Jooble (broad general-purpose aggregator) ----------
+  if (process.env.JOOBLE_API_KEY) {
+    try {
+      const res = await fetch(`https://jooble.org/api/${process.env.JOOBLE_API_KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          keywords: title || "",
+          location: location || "",
+          ResultOnPage: "10",
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        (data?.jobs || []).forEach((item) => {
+          results.push({
+            source: "Jooble",
+            title: item.title || "",
+            employer: item.company || "",
+            location: item.location || "",
+            url: item.link || "",
+            snippet: (item.snippet || "").slice(0, 220),
+          });
+        });
+      } else {
+        warnings.push("Jooble search failed (check JOOBLE_API_KEY).");
+      }
+    } catch (e) {
+      warnings.push("Jooble search failed.");
+    }
+  } else {
+    warnings.push("Jooble is not configured yet.");
   }
 
   return Response.json({ results, warnings });
