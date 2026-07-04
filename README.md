@@ -43,6 +43,28 @@ There's no paywall in this version — generation is free and unlimited. A few w
 
 Whatever you choose, note that this app now collects real background/work-history data through a normal web form — if you add any third-party script (ad network, analytics), you should also add a basic privacy notice describing what's collected and shared, since that's both good practice and often a legal requirement (CCPA/GDPR) once third-party trackers are involved.
 
+## Job search (resume mode)
+
+After a resume is generated, a "Find matching jobs" panel searches real, live postings and links out to the original listing for the person to apply directly — the app never submits an application on their behalf, only links to it.
+
+Two sources are wired up, both optional (each is skipped with a warning shown in the UI if not configured):
+
+- **USAJOBS** (federal positions) — free, but requires a quick approval step:
+  1. Register at https://developer.usajobs.gov/apirequest/
+  2. You'll get an API key tied to the email you registered with.
+  3. Set `USAJOBS_API_KEY` and `USAJOBS_EMAIL` (the same email you registered with — their API requires it as the `User-Agent` header).
+
+- **Adzuna** (broader private-sector postings) — free tier, faster signup:
+  1. Register at https://developer.adzuna.com/
+  2. You'll get an `app_id` and `app_key` immediately.
+  3. Set `ADZUNA_APP_ID` and `ADZUNA_APP_KEY`.
+
+Add whichever keys you get to `.env.local` locally and to Vercel's Environment Variables for production, then redeploy. The search endpoint (`app/api/job-search/route.js`) merges and normalizes results from whichever sources are configured — add more sources there following the same pattern if you want broader coverage (Indeed and LinkedIn's job APIs are both effectively closed to new developers as of this writing, so they aren't included).
+
+## PDF export (resume mode)
+
+The "Download PDF" button captures the actual rendered template (whichever one and color you picked) using `html2canvas`, then assembles it into a real PDF with `jspdf` — so the download matches on-screen exactly, including multi-page splitting if the resume runs long. No server round-trip; this happens entirely in the browser.
+
 ## Adding a database and accounts
 
 The build spec calls for Postgres via Supabase. Rough path:

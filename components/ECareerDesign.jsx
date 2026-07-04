@@ -1,9 +1,9 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search, FileText, Check, RefreshCw, Copy, Download,
   ChevronRight, Sparkles, AlertCircle, Save, Plus, Trash2,
-  Loader2, Briefcase, GraduationCap, Award
+  Loader2, Briefcase, GraduationCap, Award, ExternalLink
 } from "lucide-react";
 
 const TOKENS = {
@@ -518,6 +518,15 @@ export default function ECareerDesign() {
   const [resumeError, setResumeError] = useState(false);
   const [resumeTemplate, setResumeTemplate] = useState("sidebar");
   const [resumeColor, setResumeColor] = useState(RESUME_COLORS[0]);
+  const resumeExportRef = useRef(null);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [pdfError, setPdfError] = useState("");
+
+  const [jobSearchTitle, setJobSearchTitle] = useState("");
+  const [jobSearchLocation, setJobSearchLocation] = useState("");
+  const [jobResults, setJobResults] = useState(null);
+  const [jobSearching, setJobSearching] = useState(false);
+  const [jobSearchWarnings, setJobSearchWarnings] = useState([]);
 
   const [workExperience, setWorkExperience] = useState([]);
   const [education, setEducation] = useState([]);
@@ -848,6 +857,97 @@ export default function ECareerDesign() {
       });
     }
     return lines.join("\n").trim();
+  }
+
+  async function downloadResumePDF() {
+    if (!resumeExportRef.current) return;
+    setPdfGenerating(true);
+    setPdfError("");
+    try {
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+
+      // Wait for web fonts to finish loading so the capture doesn't fall back
+      // to a system font while Fraunces/Inter/IBM Plex Mono are still loading.
+      if (document.fonts?.ready) {
+        await document.fonts.ready;
+      }
+
+      const canvas = await html2canvas(resumeExportRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+      });
+
+      const pdf = new jsPDF({ unit: "pt", format: "letter" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const scaledHeight = (canvas.width > 0 ? (canvas.height * pageWidth) / canvas.width : 0);
+
+      if (scaledHeight <= pageHeight) {
+        // Fits on one page.
+        pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pageWidth, scaledHeight);
+      } else {
+        // Slice the full-resolution canvas into page-sized chunks and add
+        // each as its own PDF page, so multi-page resumes still print cleanly.
+        const pageHeightPx = Math.floor((canvas.width * pageHeight) / pageWidth);
+        let renderedPx = 0;
+        let pageIndex = 0;
+        while (renderedPx < canvas.height) {
+          const sliceHeightPx = Math.min(pageHeightPx, canvas.height - renderedPx);
+          const pageCanvas = document.createElement("canvas");
+          pageCanvas.width = canvas.width;
+          pageCanvas.height = sliceHeightPx;
+          const ctx = pageCanvas.getContext("2d");
+          ctx.drawImage(canvas, 0, renderedPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
+
+          if (pageIndex > 0) pdf.addPage();
+          const sliceHeightPt = (sliceHeightPx * pageWidth) / canvas.width;
+          pdf.addImage(pageCanvas.toDataURL("image/png"), "PNG", 0, 0, pageWidth, sliceHeightPt);
+
+          renderedPx += sliceHeightPx;
+          pageIndex += 1;
+        }
+      }
+
+      pdf.save(`${(contactInfo.name || "resume").replace(/\s+/g, "_")}.pdf`);
+    } catch (e) {
+      setPdfError("Could not generate the PDF. Try again, or use Copy as text instead.");
+    } finally {
+      setPdfGenerating(false);
+    }
+  }
+
+  useEffect(() => {
+    if (resumeData && !jobSearchTitle && resumeData.workHistory?.[0]?.title) {
+      setJobSearchTitle(resumeData.workHistory[0].title);
+    }
+    if (resumeData && !jobSearchLocation && contactInfo.location) {
+      setJobSearchLocation(contactInfo.location);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeData]);
+
+  async function searchJobs() {
+    setJobSearching(true);
+    setJobSearchWarnings([]);
+    try {
+      const res = await fetch("/api/job-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: jobSearchTitle, location: jobSearchLocation }),
+      });
+      const data = await res.json();
+      setJobResults(data.results || []);
+      setJobSearchWarnings(data.warnings || []);
+    } catch (e) {
+      setJobResults([]);
+      setJobSearchWarnings(["Could not reach the job search service."]);
+    } finally {
+      setJobSearching(false);
+    }
   }
 
   function assembleExportText() {
@@ -1457,22 +1557,42 @@ export default function ECareerDesign() {
         <Card>
           <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Export</h2>
           <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: "0 0 20px" }}>
-            Copy sections directly into your agency's application portal, or download everything as text to paste into Word.
+            {mode === "resume"
+              ? "Download a PDF that looks exactly like the template and color you picked, or copy the content as plain text."
+              : "Copy sections directly into your agency's application portal, or download everything as text to paste into Word."}
           </p>
 
-          <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-            <Button variant="primary" icon={copiedKey === "all" ? <Check size={14} /> : <Copy size={14} />} onClick={copyAll}>
-              {copiedKey === "all" ? "Copied all" : "Copy all"}
-            </Button>
-            <Button variant="secondary" icon={<Download size={14} />} onClick={downloadText}>
-              Download as text
-            </Button>
+          <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+            {mode === "resume" ? (
+              <>
+                <Button variant="primary" icon={pdfGenerating ? <Loader2 size={14} className="spin" /> : <Download size={14} />} onClick={downloadResumePDF} disabled={pdfGenerating || !resumeData}>
+                  {pdfGenerating ? "Preparing PDF..." : "Download PDF"}
+                </Button>
+                <Button variant="secondary" icon={copiedKey === "all" ? <Check size={14} /> : <Copy size={14} />} onClick={copyAll}>
+                  {copiedKey === "all" ? "Copied" : "Copy as text"}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="primary" icon={copiedKey === "all" ? <Check size={14} /> : <Copy size={14} />} onClick={copyAll}>
+                  {copiedKey === "all" ? "Copied all" : "Copy all"}
+                </Button>
+                <Button variant="secondary" icon={<Download size={14} />} onClick={downloadText}>
+                  Download as text
+                </Button>
+              </>
+            )}
           </div>
+          {pdfError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: -10, marginBottom: 16 }}>{pdfError}</p>}
 
           <div style={{ borderTop: `1px solid ${TOKENS.line}`, paddingTop: 16 }}>
             {mode === "resume" ? (
               <div style={{ background: TOKENS.paper, padding: 20, borderRadius: 4 }}>
-                {resumeData && <ResumePreview template={resumeTemplate} contact={contactInfo} data={resumeData} color={resumeColor} />}
+                {resumeData && (
+                  <div ref={resumeExportRef} style={{ display: "inline-block" }}>
+                    <ResumePreview template={resumeTemplate} contact={contactInfo} data={resumeData} color={resumeColor} />
+                  </div>
+                )}
               </div>
             ) : (
               <>
@@ -1549,9 +1669,64 @@ export default function ECareerDesign() {
             )}
           </div>
 
-          <p style={{ fontSize: 12, color: TOKENS.inkSoft, marginTop: 20, borderTop: `1px solid ${TOKENS.line}`, paddingTop: 16 }}>
-            This demo exports plain text. A production build would generate a formatted .docx matching this same structure, using the docx library server-side.
-          </p>
+          {mode === "application" && (
+            <p style={{ fontSize: 12, color: TOKENS.inkSoft, marginTop: 20, borderTop: `1px solid ${TOKENS.line}`, paddingTop: 16 }}>
+              This demo exports plain text. A production build would generate a formatted .docx matching this same structure, using the docx library server-side.
+            </p>
+          )}
+        </Card>
+      )}
+
+      {step === 3 && mode === "resume" && resumeData && (
+        <Card style={{ marginTop: 16 }}>
+          <SectionHeading icon={<Search size={18} color={TOKENS.accent} />} title="Find matching jobs" subtitle="Searches real, live postings and links you straight to the original listing to apply." />
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr auto", gap: 10, marginBottom: 16, alignItems: "center" }}>
+            <input style={inputStyle} placeholder="Job title" value={jobSearchTitle} onChange={(e) => setJobSearchTitle(e.target.value)} />
+            <input style={inputStyle} placeholder="Location (city, state)" value={jobSearchLocation} onChange={(e) => setJobSearchLocation(e.target.value)} />
+            <Button variant="primary" icon={jobSearching ? <Loader2 size={14} className="spin" /> : <Search size={14} />} onClick={searchJobs} disabled={jobSearching}>
+              {jobSearching ? "Searching..." : "Search jobs"}
+            </Button>
+          </div>
+
+          {jobSearchWarnings.length > 0 && (
+            <div style={{ background: TOKENS.goldSoft, border: `1px solid ${TOKENS.gold}`, borderRadius: 4, padding: "8px 12px", marginBottom: 16 }}>
+              {jobSearchWarnings.map((w, i) => (
+                <p key={i} style={{ fontSize: 12, color: "#5C4210", margin: i === 0 ? 0 : "4px 0 0" }}>{w}</p>
+              ))}
+            </div>
+          )}
+
+          {jobResults && jobResults.length === 0 && jobSearchWarnings.length === 0 && (
+            <p style={{ fontSize: 13, color: TOKENS.inkSoft }}>No matching postings found. Try a broader title or location.</p>
+          )}
+
+          {jobResults && jobResults.length > 0 && (
+            <div>
+              {jobResults.map((job, i) => (
+                <div key={i} style={{ border: `1px solid ${TOKENS.line}`, borderRadius: 3, padding: 14, marginBottom: 10, background: TOKENS.paper }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                    <div>
+                      <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{job.title || "(untitled position)"}</p>
+                      <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "2px 0 0" }}>
+                        {[job.employer, job.location].filter(Boolean).join(" · ")}
+                      </p>
+                    </div>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: TOKENS.inkSoft, border: `1px solid ${TOKENS.line}`, padding: "2px 6px", borderRadius: 2, whiteSpace: "nowrap" }}>
+                      {job.source}
+                    </span>
+                  </div>
+                  {job.snippet && <p style={{ fontSize: 12.5, color: "#444", margin: "8px 0 0", lineHeight: 1.5 }}>{job.snippet}…</p>}
+                  {job.url && (
+                    <a href={job.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+                      <Button variant="secondary" icon={<ExternalLink size={13} />} style={{ marginTop: 10 }}>
+                        Apply on {job.source}
+                      </Button>
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
       )}
     </div>
