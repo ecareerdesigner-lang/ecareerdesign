@@ -195,7 +195,11 @@ const RESUME_COLORS = ["#1B3A5C", "#C1440E", "#2F6F4E", "#7A3B3B", "#6B7280", "#
 
 // These job boards don't offer a public search API, but their own search
 // pages accept URL parameters directly — so we can deep-link straight into
-// pre-filled results without needing any API key or scraping.
+// pre-filled results without needing any API key or scraping. Indeed,
+// LinkedIn, ZipRecruiter, Monster, and SimplyHired use plain text query
+// params and are reliable. Glassdoor and Ladders prefer internal location
+// IDs we don't have, so those two are best-effort — they'll pre-fill the
+// keyword but may not narrow by location as precisely.
 function buildJobBoardLinks(title, location) {
   const t = encodeURIComponent(title || "");
   const l = encodeURIComponent(location || "");
@@ -204,6 +208,8 @@ function buildJobBoardLinks(title, location) {
     { name: "LinkedIn", url: `https://www.linkedin.com/jobs/search/?keywords=${t}&location=${l}` },
     { name: "ZipRecruiter", url: `https://www.ziprecruiter.com/jobs-search?search=${t}&location=${l}` },
     { name: "Monster", url: `https://www.monster.com/jobs/search?q=${t}&where=${l}` },
+    { name: "SimplyHired", url: `https://www.simplyhired.com/search?q=${t}&l=${l}` },
+    { name: "Glassdoor", url: `https://www.glassdoor.com/Job/jobs.htm?sc.keyword=${t}&locKeyword=${l}` },
     { name: "Ladders", url: `https://www.theladders.com/jobs/search-jobs?q=${t}&l=${l}` },
   ];
 }
@@ -677,7 +683,7 @@ export default function ECareerDesign() {
   // ---------- Work Experience ----------
   function addWorkExperience() {
     setWorkExperience((w) => [...w, {
-      id: newId("we"), positionTitle: "", employer: "", location: "", postalType: "Federal",
+      id: newId("we"), positionTitle: "", employer: "", location: "", postalType: "Civilian",
       startDate: "", endDate: "", current: false,
       basicDescription: "", expandedDescription: "", generating: false, trimmed: false,
     }]);
@@ -1239,9 +1245,9 @@ export default function ECareerDesign() {
                 <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10, marginBottom: 10 }}>
                   <input style={smallInputStyle} placeholder="Position title" value={w.positionTitle} onChange={(e) => updateWorkExperience(w.id, { positionTitle: e.target.value })} />
                   <select style={smallInputStyle} value={w.postalType} onChange={(e) => updateWorkExperience(w.id, { postalType: e.target.value })}>
+                    <option>Civilian</option>
                     <option>Federal</option>
                     <option>Postal</option>
-                    <option>Non-Postal</option>
                   </select>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
