@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search, FileText, Check, RefreshCw, Copy, Download,
-  ChevronRight, Sparkles, AlertCircle, Save, Plus, Trash2,
+  ChevronRight, ChevronLeft, Sparkles, AlertCircle, Save, Plus, Trash2,
   Loader2, Briefcase, GraduationCap, Award, ExternalLink
 } from "lucide-react";
 
@@ -291,6 +291,14 @@ function SectionHeading({ icon, title, subtitle }) {
         {subtitle && <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "2px 0 0" }}>{subtitle}</p>}
       </div>
     </div>
+  );
+}
+
+function BackButton({ onClick }) {
+  return (
+    <Button variant="ghost" icon={<ChevronLeft size={14} />} onClick={onClick} style={{ padding: "4px 8px", marginBottom: 14 }}>
+      Back
+    </Button>
   );
 }
 
@@ -1183,6 +1191,7 @@ export default function ECareerDesign() {
 
       {step === 1 && (
         <div>
+          <BackButton onClick={() => setStep(0)} />
           {mode === "resume" && (
             <Card style={{ marginBottom: 16 }}>
               <SectionHeading icon={<FileText size={18} color={TOKENS.accent} />} title="Contact info" subtitle="Goes at the top of your resume." />
@@ -1365,6 +1374,7 @@ export default function ECareerDesign() {
 
       {step === 2 && mode === "resume" && (
         <div>
+          <BackButton onClick={() => setStep(1)} />
           <Card style={{ marginBottom: 16 }}>
             <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Your resume</h2>
             <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: "0 0 16px" }}>
@@ -1434,6 +1444,7 @@ export default function ECareerDesign() {
 
       {step === 2 && mode === "application" && (
         <div>
+          <BackButton onClick={() => setStep(1)} />
           <Card style={{ marginBottom: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
               <div>
@@ -1554,7 +1565,9 @@ export default function ECareerDesign() {
       )}
 
       {step === 3 && (
-        <Card>
+        <>
+          <BackButton onClick={() => setStep(2)} />
+          <Card>
           <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Export</h2>
           <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: "0 0 20px" }}>
             {mode === "resume"
@@ -1674,7 +1687,8 @@ export default function ECareerDesign() {
               This demo exports plain text. A production build would generate a formatted .docx matching this same structure, using the docx library server-side.
             </p>
           )}
-        </Card>
+          </Card>
+        </>
       )}
 
       {step === 3 && mode === "resume" && resumeData && (
