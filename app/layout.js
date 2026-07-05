@@ -2,8 +2,21 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata = {
+  metadataBase: new URL("https://ecareerdesign.net"),
   title: "eCareer Design",
   description: "STAR-format response and resume builder for your next job application.",
+  openGraph: {
+    title: "eCareer Design",
+    description: "Tailored resumes, cover letters, and mock interviews — built from the exact job you're applying for.",
+    siteName: "eCareer Design",
+    type: "website",
+    url: "https://ecareerdesign.net",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "eCareer Design",
+    description: "Tailored resumes, cover letters, and mock interviews — built from the exact job you're applying for.",
+  },
 };
 
 export default function RootLayout({ children }) {
