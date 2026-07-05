@@ -3,23 +3,29 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search, FileText, Check, RefreshCw, Copy, Download,
   ChevronRight, ChevronLeft, Sparkles, AlertCircle, Save, Plus, Trash2,
-  Loader2, Briefcase, GraduationCap, Award, ExternalLink
+  Loader2, Briefcase, GraduationCap, Award, ExternalLink,
+  Mail, MessageSquare, Clock, Star
 } from "lucide-react";
 
 const TOKENS = {
   ink: "#16283D",
   inkSoft: "#3C5069",
+  iconDark: "#0F1D2E",
   paper: "#EEF0EC",
   surface: "#FFFFFF",
   line: "#D7DBD6",
-  accent: "#C1440E",
-  accentSoft: "#F5DFCF",
+  accent: "#F2660A",
+  accentSoft: "#FDE3CC",
   gold: "#B98A2E",
   goldSoft: "#F3E7D1",
   green: "#2F6F4E",
   red: "#B23A2E",
   redSoft: "#F6DEDA",
+  shadow: "0 1px 2px rgba(16,24,40,0.04), 0 4px 14px rgba(16,24,40,0.07)",
+  shadowHover: "0 2px 4px rgba(16,24,40,0.06), 0 10px 24px rgba(16,24,40,0.12)",
 };
+
+const APP_VERSION = "v2.0";
 
 const FONTS_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');`;
 
@@ -220,45 +226,56 @@ const RESUME_TEMPLATES = [
 ];
 
 function Stepper({ step, labels }) {
+  const totalSegments = 16;
+  const filledSegments = Math.max(1, Math.round(((step + 1) / labels.length) * totalSegments));
   return (
-    <div style={{ display: "flex", alignItems: "center", marginBottom: "2rem", flexWrap: "wrap", gap: "4px" }}>
-      {labels.map((label, i) => {
-        const isDone = i < step;
-        const isActive = i === step;
-        return (
+    <div style={{ marginBottom: "2rem" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginBottom: 10 }}>
+        {labels.map((label, i) => (
           <React.Fragment key={label}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div
-                style={{
-                  width: 26, height: 26, borderRadius: "50%",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, fontWeight: 500, flexShrink: 0,
-                  background: isActive ? TOKENS.accent : isDone ? TOKENS.ink : TOKENS.surface,
-                  color: isActive || isDone ? "#fff" : TOKENS.inkSoft,
-                  border: `1px solid ${isActive ? TOKENS.accent : isDone ? TOKENS.ink : TOKENS.line}`,
-                }}
-              >
-                {isDone ? <Check size={13} /> : i + 1}
-              </div>
-              <span style={{
-                fontFamily: "'Inter', sans-serif", fontSize: 13,
-                color: isActive ? TOKENS.ink : TOKENS.inkSoft,
-                fontWeight: isActive ? 600 : 400, whiteSpace: "nowrap",
-              }}>
-                {label}
-              </span>
-            </div>
-            {i < labels.length - 1 && <div style={{ width: 20, height: 1, background: TOKENS.line, margin: "0 4px" }} />}
+            <span style={{
+              fontFamily: "'Inter', sans-serif", fontSize: 14,
+              color: i === step ? TOKENS.ink : i < step ? TOKENS.accent : "#9AA3A0",
+              fontWeight: i === step ? 600 : 500, whiteSpace: "nowrap",
+            }}>
+              {label}
+            </span>
+            {i < labels.length - 1 && <span style={{ color: "#B7BEBB", fontSize: 14 }}>→</span>}
           </React.Fragment>
-        );
-      })}
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+        {Array.from({ length: totalSegments }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              flex: 1, height: 8, borderRadius: 4,
+              background: i < filledSegments ? TOKENS.ink : "repeating-linear-gradient(45deg, #E4E7E3, #E4E7E3 3px, #F4F5F2 3px, #F4F5F2 6px)",
+            }}
+          />
+        ))}
+      </div>
+      <p style={{ fontSize: 13, color: "#9AA3A0", margin: 0 }}>Step {step + 1} of {labels.length}</p>
     </div>
   );
 }
 
-function Card({ children, style }) {
+function Card({ children, style, interactive, selected, onClick }) {
   return (
-    <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.line}`, borderRadius: 4, padding: "1.5rem", ...style }}>
+    <div
+      className={interactive ? "cf-card-interactive" : ""}
+      onClick={onClick}
+      style={{
+        background: TOKENS.surface,
+        border: `1px solid ${selected ? TOKENS.accent : TOKENS.line}`,
+        borderRadius: 18,
+        padding: "1.75rem",
+        boxShadow: selected ? TOKENS.shadowHover : TOKENS.shadow,
+        cursor: interactive ? "pointer" : "default",
+        transition: "box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease",
+        ...style,
+      }}
+    >
       {children}
     </div>
   );
@@ -267,7 +284,7 @@ function Card({ children, style }) {
 function Button({ children, onClick, variant = "secondary", disabled, icon, style }) {
   const base = {
     fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500, padding: "10px 18px",
-    borderRadius: 3, display: "inline-flex", alignItems: "center", gap: 8,
+    borderRadius: 10, display: "inline-flex", alignItems: "center", gap: 8,
     cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1,
     border: "1px solid transparent", transition: "background 0.15s, border-color 0.15s",
   };
@@ -308,8 +325,8 @@ function SectionHeading({ icon, title, subtitle }) {
     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
       {icon}
       <div>
-        <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 17, margin: 0 }}>{title}</h3>
-        {subtitle && <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "2px 0 0" }}>{subtitle}</p>}
+        <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: 0 }}>{title}</h3>
+        {subtitle && <p style={{ fontSize: 14, color: TOKENS.inkSoft, margin: "2px 0 0" }}>{subtitle}</p>}
       </div>
     </div>
   );
@@ -349,7 +366,7 @@ function ResumeSidebarTemplate({ contact, data, color }) {
   return (
     <div style={{ ...resumePageStyle, display: "flex", borderRadius: 4 }}>
       <div style={{ width: "34%", background: color, color: "#fff", padding: "28px 20px" }}>
-        <p style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 600, margin: "0 0 4px", lineHeight: 1.2 }}>{contact.name || "Your Name"}</p>
+        <p style={{ fontFamily: "'Fraunces', serif", fontSize: 28, fontWeight: 600, margin: "0 0 4px", lineHeight: 1.2 }}>{contact.name || "Your Name"}</p>
         <div style={{ fontSize: 11, opacity: 0.9, lineHeight: 1.7, marginBottom: 22 }}>
           {contact.email && <p style={{ margin: 0 }}>{contact.email}</p>}
           {contact.phone && <p style={{ margin: 0 }}>{contact.phone}</p>}
@@ -537,7 +554,105 @@ function ResumePreview({ template, contact, data, color }) {
   return <ResumeSidebarTemplate contact={contact} data={data} color={color} />;
 }
 
+function timeGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+function relativeDate(iso) {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function Dashboard({ contactInfo, recentProjects, onResumeBuilder, onJobTailoring }) {
+  return (
+    <div>
+      <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "0 0 6px" }}>
+        {timeGreeting()}{contactInfo?.name ? `, ${contactInfo.name.split(" ")[0]}` : ""}
+      </p>
+      <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 40, margin: "0 0 10px", letterSpacing: "-0.01em", color: TOKENS.ink }}>
+        CareerForge
+      </h1>
+      <p style={{ fontSize: 18, color: TOKENS.inkSoft, margin: "0 0 20px", maxWidth: 560, lineHeight: 1.5 }}>
+        Land more interviews with AI-powered resumes and STAR responses.
+      </p>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 28 }}>
+        <span className="cf-badge"><Check size={13} color={TOKENS.green} /> ATS Optimized</span>
+        <span className="cf-badge"><Check size={13} color={TOKENS.green} /> STAR Responses</span>
+        <span className="cf-badge"><Check size={13} color={TOKENS.green} /> Resume Builder</span>
+        <span className="cf-badge"><Check size={13} color={TOKENS.green} /> Federal &amp; Private Jobs</span>
+      </div>
+
+      <Card style={{ marginBottom: 28, background: TOKENS.paper, border: "none", boxShadow: "none" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <p style={{ fontSize: 15, fontWeight: 600, margin: 0, display: "flex", alignItems: "center", gap: 8, color: TOKENS.ink }}>
+            <Star size={16} color={TOKENS.gold} fill={TOKENS.gold} /> Build ATS-friendly resumes in minutes
+          </p>
+          <p style={{ fontSize: 14, color: TOKENS.inkSoft, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+            <Check size={14} color={TOKENS.green} /> Tailored to any job posting
+          </p>
+          <p style={{ fontSize: 14, color: TOKENS.inkSoft, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+            <Check size={14} color={TOKENS.green} /> STAR interview responses
+          </p>
+          <p style={{ fontSize: 14, color: TOKENS.inkSoft, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+            <Check size={14} color={TOKENS.green} /> Export to PDF &amp; text
+          </p>
+        </div>
+      </Card>
+
+      <p style={{ fontSize: 14, fontWeight: 500, color: TOKENS.inkSoft, margin: "0 0 12px" }}>What would you like to do today?</p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14, marginBottom: 40 }}>
+        <Card interactive onClick={onResumeBuilder} style={{ textAlign: "center" }}>
+          <Award size={22} color={TOKENS.iconDark} style={{ marginBottom: 10 }} />
+          <p style={{ fontSize: 15, fontWeight: 600, margin: 0, color: TOKENS.ink }}>Resume Builder</p>
+        </Card>
+        <Card interactive onClick={onJobTailoring} style={{ textAlign: "center" }}>
+          <Briefcase size={22} color={TOKENS.iconDark} style={{ marginBottom: 10 }} />
+          <p style={{ fontSize: 15, fontWeight: 600, margin: 0, color: TOKENS.ink }}>Job Tailoring</p>
+        </Card>
+        <Card style={{ textAlign: "center", opacity: 0.6 }}>
+          <Mail size={22} color={TOKENS.iconDark} style={{ marginBottom: 10 }} />
+          <p style={{ fontSize: 15, fontWeight: 600, margin: "0 0 8px", color: TOKENS.ink }}>Cover Letter</p>
+          <span className="cf-badge" style={{ fontSize: 11 }}>Coming soon</span>
+        </Card>
+        <Card style={{ textAlign: "center", opacity: 0.6 }}>
+          <MessageSquare size={22} color={TOKENS.iconDark} style={{ marginBottom: 10 }} />
+          <p style={{ fontSize: 15, fontWeight: 600, margin: "0 0 8px", color: TOKENS.ink }}>Interview Prep</p>
+          <span className="cf-badge" style={{ fontSize: 11 }}>Coming soon</span>
+        </Card>
+      </div>
+
+      <div>
+        <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, margin: "0 0 14px", color: TOKENS.ink }}>Recent Projects</h2>
+        {recentProjects.length === 0 ? (
+          <p style={{ fontSize: 14, color: TOKENS.inkSoft }}>Nothing yet — your finished resumes and applications will show up here.</p>
+        ) : (
+          <div>
+            {recentProjects.map((p) => (
+              <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", border: `1px solid ${TOKENS.line}`, borderRadius: 12, marginBottom: 8, background: TOKENS.surface }}>
+                <Clock size={14} color={TOKENS.inkSoft} />
+                <span style={{ fontSize: 14, fontWeight: 500, flex: 1, color: TOKENS.ink }}>{p.title}</span>
+                <span style={{ fontSize: 12, color: TOKENS.inkSoft }}>{p.type}</span>
+                <span style={{ fontSize: 12, color: "#9AA3A0" }}>{relativeDate(p.date)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ECareerDesign() {
+  const [view, setView] = useState("dashboard"); // 'dashboard' | 'wizard'
   const [step, setStep] = useState(0);
   const [mode, setMode] = useState(null); // 'application' | 'resume'
   const [jobTitle, setJobTitle] = useState("");
@@ -576,6 +691,7 @@ export default function ECareerDesign() {
   });
 
   const [profileSaved, setProfileSaved] = useState(false);
+  const [recentProjects, setRecentProjects] = useState([]);
 
   const [budgets, setBudgets] = useState({});
   const [responses, setResponses] = useState({});
@@ -597,6 +713,12 @@ export default function ECareerDesign() {
       }
     } catch (e) {
       // no saved profile yet
+    }
+    try {
+      const rawRecent = localStorage.getItem("ecareerdesign-recent-projects");
+      if (rawRecent) setRecentProjects(JSON.parse(rawRecent));
+    } catch (e) {
+      // no recent projects logged yet
     }
   }, []);
 
@@ -628,6 +750,24 @@ export default function ECareerDesign() {
       console.error("Storage error", e);
     }
   }, [workExperience, education, trainingEntries, trainingPasteText, additionalContext, contactInfo]);
+
+  function logRecentProject() {
+    const entry = {
+      id: newId("proj"),
+      type: mode === "resume" ? "Resume" : "Job Tailoring",
+      title: mode === "resume" ? (contactInfo.name || "Untitled resume") : (jobTitle || selectedLib?.title || "Untitled application"),
+      date: new Date().toISOString(),
+    };
+    setRecentProjects((prev) => {
+      const next = [entry, ...prev].slice(0, 8);
+      try {
+        localStorage.setItem("ecareerdesign-recent-projects", JSON.stringify(next));
+      } catch (e) {
+        // non-fatal
+      }
+      return next;
+    });
+  }
 
   const filteredLibrary = LIBRARY.filter((l) =>
     jobTitle.trim() === "" ? true : l.title.toLowerCase().includes(jobTitle.toLowerCase())
@@ -1057,35 +1197,47 @@ export default function ECareerDesign() {
         textarea, select { font-family: 'Inter', sans-serif; }
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        @media (hover: hover) {
+          .cf-card-interactive:hover { box-shadow: ${TOKENS.shadowHover}; transform: translateY(-3px); border-color: ${TOKENS.accent}; }
+        }
+        .cf-badge {
+          display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500;
+          color: ${TOKENS.inkSoft}; background: ${TOKENS.paper}; border: 1px solid ${TOKENS.line};
+          border-radius: 999px; padding: 6px 12px;
+        }
+        .cf-brand:hover { opacity: 0.75; cursor: pointer; }
       `}</style>
 
-      <div style={{ marginBottom: "1.75rem" }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-          <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 34, margin: 0, letterSpacing: "-0.01em" }}>
-            eCareer Designs
-          </h1>
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.inkSoft, border: `1px solid ${TOKENS.line}`, padding: "2px 8px", borderRadius: 2 }}>
-            v1.3
-          </span>
-        </div>
-        <p style={{ fontSize: 14, color: TOKENS.inkSoft, margin: "6px 0 0", maxWidth: 620 }}>
-          STAR-format response and resume builder for your next job application.
-        </p>
-      </div>
+      {view === "wizard" && (
+        <>
+          <div style={{ marginBottom: "1.75rem" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+              <h1
+                className="cf-brand"
+                onClick={() => setView("dashboard")}
+                style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 40, margin: 0, letterSpacing: "-0.01em" }}
+              >
+                CareerForge
+              </h1>
+            </div>
+            <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "6px 0 0", maxWidth: 620 }}>
+              STAR-format response and resume builder for your next job application.
+            </p>
+          </div>
 
-      <div style={{ background: TOKENS.goldSoft, border: `1px solid ${TOKENS.gold}`, borderRadius: 4, padding: "10px 14px", display: "flex", gap: 10, alignItems: "flex-start", marginBottom: "1.75rem" }}>
-        <AlertCircle size={16} color={TOKENS.gold} style={{ flexShrink: 0, marginTop: 2 }} />
-        <p style={{ fontSize: 13, margin: 0, color: "#5C4210", lineHeight: 1.5 }}>
-          eCareer Designs is an independent drafting tool, not an official product of any employer, agency, or job platform. Review every generated response for accuracy before submitting — you attest to what you enter into your application profile.
-        </p>
-      </div>
+          <div style={{ background: TOKENS.goldSoft, border: `1px solid ${TOKENS.gold}`, borderRadius: 10, padding: "10px 14px", display: "flex", gap: 10, alignItems: "flex-start", marginBottom: "1.75rem" }}>
+            <AlertCircle size={16} color={TOKENS.gold} style={{ flexShrink: 0, marginTop: 2 }} />
+            <p style={{ fontSize: 14, margin: 0, color: "#5C4210", lineHeight: 1.5 }}>
+              <strong>Disclaimer</strong> — AI-generated content should always be reviewed before submission.
+            </p>
+          </div>
 
-      <Stepper step={step} labels={mode === "resume" ? STEPS_RESUME : STEPS_APPLICATION} />
+          <Stepper step={step} labels={mode === "resume" ? STEPS_RESUME : STEPS_APPLICATION} />
 
       {step === 0 && mode === null && (
         <Card>
-          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>What do you want to build?</h2>
-          <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: "0 0 20px" }}>
+          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, margin: "0 0 4px" }}>What do you want to build?</h2>
+          <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "0 0 24px" }}>
             You can always come back and try the other option later.
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
@@ -1115,9 +1267,9 @@ export default function ECareerDesign() {
 
       {step === 0 && mode === "application" && (
         <Card>
-          <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => { setMode(null); }}>← Change</Button>
-          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Job title and requirements</h2>
-          <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: "0 0 20px" }}>
+          <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => { setMode(null); setView("dashboard"); }}>← Home</Button>
+          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, margin: "0 0 4px" }}>Job title and requirements</h2>
+          <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "0 0 24px" }}>
             Search the sample requirement library first. If your title isn't listed, paste the qualifications straight from the posting.
           </p>
 
@@ -1205,10 +1357,10 @@ export default function ECareerDesign() {
 
       {step === 0 && mode === "resume" && (
         <Card>
-          <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => setMode(null)}>← Change</Button>
-          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Build a general resume</h2>
-          <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: "0 0 20px", lineHeight: 1.6 }}>
-            No job posting needed for this path. Head straight to your background — work experience, education, and training — and eCareer Designs will turn it into a polished, general-purpose resume.
+          <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => { setMode(null); setView("dashboard"); }}>← Home</Button>
+          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, margin: "0 0 4px" }}>Build a general resume</h2>
+          <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "0 0 24px", lineHeight: 1.6 }}>
+            No job posting needed for this path. Head straight to your background — work experience, education, and training — and CareerForge will turn it into a polished, general-purpose resume.
           </p>
           <Button variant="primary" onClick={goToBackground} icon={<ChevronRight size={14} />}>
             Continue to background
@@ -1404,8 +1556,8 @@ export default function ECareerDesign() {
         <div>
           <BackButton onClick={() => setStep(1)} />
           <Card style={{ marginBottom: 16 }}>
-            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Your resume</h2>
-            <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: "0 0 16px" }}>
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, margin: "0 0 4px" }}>Your resume</h2>
+            <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "0 0 20px" }}>
               Built from your work experience, education, training, and additional context — no job posting involved.
             </p>
 
@@ -1463,7 +1615,7 @@ export default function ECareerDesign() {
           </Card>
 
           <div style={{ textAlign: "right" }}>
-            <Button variant="primary" icon={<ChevronRight size={14} />} onClick={() => setStep(3)} disabled={!allGenerated}>
+            <Button variant="primary" icon={<ChevronRight size={14} />} onClick={() => { logRecentProject(); setStep(3); }} disabled={!allGenerated}>
               Continue to export
             </Button>
           </div>
@@ -1476,7 +1628,7 @@ export default function ECareerDesign() {
           <Card style={{ marginBottom: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
               <div>
-                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Summary of Accomplishments</h2>
+                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, margin: "0 0 4px" }}>Summary of Accomplishments</h2>
                 <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: 0 }}>
                   Adjust per-requirement targets. Combined hard cap is 6,000 characters.
                 </p>
@@ -1585,7 +1737,7 @@ export default function ECareerDesign() {
           </Card>
 
           <div style={{ textAlign: "right" }}>
-            <Button variant="primary" icon={<ChevronRight size={14} />} onClick={() => setStep(3)} disabled={!allGenerated}>
+            <Button variant="primary" icon={<ChevronRight size={14} />} onClick={() => { logRecentProject(); setStep(3); }} disabled={!allGenerated}>
               Continue to export
             </Button>
           </div>
@@ -1596,8 +1748,8 @@ export default function ECareerDesign() {
         <>
           <BackButton onClick={() => setStep(2)} />
           <Card>
-          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 4px" }}>Export</h2>
-          <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: "0 0 20px" }}>
+          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, margin: "0 0 4px" }}>Export</h2>
+          <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "0 0 24px" }}>
             {mode === "resume"
               ? "Download a PDF that looks exactly like the template and color you picked, or copy the content as plain text."
               : "Copy sections directly into your agency's application portal, or download everything as text to paste into Word."}
@@ -1782,6 +1934,21 @@ export default function ECareerDesign() {
           )}
         </Card>
       )}
+        </>
+      )}
+
+      {view === "dashboard" && (
+        <Dashboard
+          contactInfo={contactInfo}
+          recentProjects={recentProjects}
+          onResumeBuilder={() => { setMode("resume"); setStep(1); setView("wizard"); }}
+          onJobTailoring={() => { setMode("application"); setStep(0); setView("wizard"); }}
+        />
+      )}
+
+      <p style={{ textAlign: "center", fontSize: 12, color: "#9AA3A0", marginTop: 40 }}>
+        CareerForge AI Resume Studio · {APP_VERSION}
+      </p>
     </div>
   );
 }

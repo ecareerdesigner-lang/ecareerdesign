@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "eCareer Designs",
+  title: "CareerForge",
   description: "STAR-format response and resume builder for your next job application.",
 };
 
