@@ -8,7 +8,7 @@
 //   RESEND_AUDIENCE_ID  — optional; only needed if you want the opt-in list feature
 
 export async function POST(req) {
-  const { email, optIn, content, contentType } = await req.json();
+  const { email, optIn, content, contentType, pdfBase64, pdfFilename } = await req.json();
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return Response.json({ success: false, error: "Please enter a valid email address." }, { status: 400 });
@@ -26,11 +26,18 @@ export async function POST(req) {
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     const label = contentType || "content";
+    const bodyText = pdfBase64
+      ? `Here's the ${label} you just built with eCareer Design — attached as a PDF, matching the exact template and color you picked.\n\nA plain-text copy is included below too, in case you want to paste it somewhere directly.\n\n${"=".repeat(40)}\n\n${content || ""}\n\n${"=".repeat(40)}\n\nThis is an independent tool, not an official product of any employer, agency, or job platform. Review this content for accuracy before submitting it anywhere.\n\n— eCareer Design`
+      : `Here's the ${label} you just built with eCareer Design.\n\n${"=".repeat(40)}\n\n${content || ""}\n\n${"=".repeat(40)}\n\nThis is an independent tool, not an official product of any employer, agency, or job platform. Review this content for accuracy before submitting it anywhere.\n\n— eCareer Design`;
+
     const sendResult = await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL,
       to: email,
       subject: `Your ${label} from eCareer Design`,
-      text: `Here's the ${label} you just built with eCareer Design.\n\n${"=".repeat(40)}\n\n${content || ""}\n\n${"=".repeat(40)}\n\nThis is an independent tool, not an official product of any employer, agency, or job platform. Review this content for accuracy before submitting it anywhere.\n\n— eCareer Design`,
+      text: bodyText,
+      attachments: pdfBase64
+        ? [{ filename: pdfFilename || `${label.replace(/\s+/g, "_")}.pdf`, content: pdfBase64 }]
+        : undefined,
     });
 
     if (sendResult.error) {

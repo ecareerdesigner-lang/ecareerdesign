@@ -1358,7 +1358,7 @@ export default function ECareerDesign() {
     }
   }
 
-  async function exportElementToPdf(element, filename) {
+  async function buildPdfFromElement(element) {
     const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
       import("html2canvas"),
       import("jspdf"),
@@ -1407,7 +1407,22 @@ export default function ECareerDesign() {
       }
     }
 
+    return pdf;
+  }
+
+  async function exportElementToPdf(element, filename) {
+    const pdf = await buildPdfFromElement(element);
     pdf.save(filename);
+  }
+
+  function arrayBufferToBase64(buffer) {
+    let binary = "";
+    const bytes = new Uint8Array(buffer);
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+    }
+    return btoa(binary);
   }
 
   async function downloadResumePDF() {
@@ -1533,6 +1548,34 @@ export default function ECareerDesign() {
     try {
       const contentType = mode === "resume" ? "resume" : mode === "coverletter" ? "cover letter" : mode === "interview" ? "interview report" : "application responses";
       const content = mode === "interview" ? buildInterviewReportPlainText() : assembleExportText();
+
+      // Build a PDF matching the exact template/color the person picked, the
+      // same way "Download PDF" does, so the emailed copy looks identical.
+      let pdfBase64 = null;
+      let pdfFilename = null;
+      try {
+        if (mode === "resume" && resumeExportRef.current) {
+          const pdf = await buildPdfFromElement(resumeExportRef.current);
+          pdfBase64 = arrayBufferToBase64(pdf.output("arraybuffer"));
+          pdfFilename = `${(contactInfo.name || "resume").replace(/\s+/g, "_")}.pdf`;
+        } else if (mode === "coverletter" && coverLetterExportRef.current) {
+          const pdf = await buildPdfFromElement(coverLetterExportRef.current);
+          pdfBase64 = arrayBufferToBase64(pdf.output("arraybuffer"));
+          const name = contactInfo.name || "cover_letter";
+          const company = clCompanyName ? `_${clCompanyName}` : "";
+          pdfFilename = `${(name + company).replace(/\s+/g, "_")}.pdf`;
+        } else if (mode === "interview" && ivReportRef.current) {
+          const pdf = await buildPdfFromElement(ivReportRef.current);
+          pdfBase64 = arrayBufferToBase64(pdf.output("arraybuffer"));
+          pdfFilename = "interview_readiness_report.pdf";
+        }
+      } catch (e) {
+        // If PDF generation fails for any reason, fall back to a text-only
+        // email rather than blocking the whole request.
+        pdfBase64 = null;
+        pdfFilename = null;
+      }
+
       const res = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1541,6 +1584,8 @@ export default function ECareerDesign() {
           optIn: emailCaptureOptIn,
           content,
           contentType,
+          pdfBase64,
+          pdfFilename,
         }),
       });
       const data = await res.json();
@@ -1576,9 +1621,14 @@ export default function ECareerDesign() {
     : requirements.length > 0 && requirements.every((r) => responses[r.id]?.text);
 
   function renderEmailCapture(label) {
+    const hasPdf = mode === "resume" || mode === "coverletter" || mode === "interview";
     return (
       <Card style={{ marginTop: 16, borderColor: TOKENS.accent }}>
-        <SectionHeading icon={<Mail size={18} color={TOKENS.accent} />} title="Email me a copy" subtitle={`We'll send your ${label} straight to your inbox.`} />
+        <SectionHeading
+          icon={<Mail size={18} color={TOKENS.accent} />}
+          title="Email me a copy"
+          subtitle={hasPdf ? `We'll send your ${label} straight to your inbox, as a PDF matching the design you picked.` : `We'll send your ${label} straight to your inbox.`}
+        />
         {emailCaptureSent ? (
           <p style={{ fontSize: 14, color: TOKENS.green, display: "flex", alignItems: "center", gap: 6, margin: 0 }}>
             <Check size={15} /> Sent — check your inbox.
