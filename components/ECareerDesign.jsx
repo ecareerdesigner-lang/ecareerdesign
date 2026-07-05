@@ -827,6 +827,7 @@ export default function ECareerDesign() {
   const [emailCaptureSending, setEmailCaptureSending] = useState(false);
   const [emailCaptureSent, setEmailCaptureSent] = useState(false);
   const [emailCaptureError, setEmailCaptureError] = useState("");
+  const [emailCapturePdfWarning, setEmailCapturePdfWarning] = useState("");
 
   const [jobSearchTitle, setJobSearchTitle] = useState("");
   const [jobSearchLocation, setJobSearchLocation] = useState("");
@@ -1563,6 +1564,7 @@ export default function ECareerDesign() {
     if (!emailCaptureAddress.trim()) return;
     setEmailCaptureSending(true);
     setEmailCaptureError("");
+    setEmailCapturePdfWarning("");
     try {
       const contentType = mode === "resume" ? "resume" : mode === "coverletter" ? "cover letter" : mode === "interview" ? "interview report" : "application responses";
       const content = mode === "interview" ? buildInterviewReportPlainText() : assembleExportText();
@@ -1571,6 +1573,8 @@ export default function ECareerDesign() {
       // same way "Download PDF" does, so the emailed copy looks identical.
       let pdfBase64 = null;
       let pdfFilename = null;
+      let pdfFailReason = "";
+      const wantsPdf = mode === "resume" || mode === "coverletter" || mode === "interview";
       try {
         if (mode === "resume" && resumeExportRef.current) {
           const pdf = await buildPdfFromElement(resumeExportRef.current);
@@ -1586,11 +1590,15 @@ export default function ECareerDesign() {
           const pdf = await buildPdfFromElement(ivReportRef.current);
           pdfBase64 = arrayBufferToBase64(pdf.output("arraybuffer"));
           pdfFilename = "interview_readiness_report.pdf";
+        } else if (wantsPdf) {
+          pdfFailReason = "The preview element wasn't found on the page (ref was empty).";
         }
       } catch (e) {
         // If PDF generation fails for any reason, fall back to a text-only
-        // email rather than blocking the whole request.
+        // email rather than blocking the whole request — but remember why,
+        // so we can actually show it instead of failing silently.
         console.error("PDF generation for email failed:", e);
+        pdfFailReason = e?.message || String(e);
         pdfBase64 = null;
         pdfFilename = null;
       }
@@ -1602,6 +1610,7 @@ export default function ECareerDesign() {
       const MAX_PDF_BASE64_CHARS = 3_000_000;
       if (pdfBase64 && pdfBase64.length > MAX_PDF_BASE64_CHARS) {
         console.error("Generated PDF too large to email, sending text-only instead:", pdfBase64.length);
+        pdfFailReason = `The generated PDF was too large to email (${Math.round(pdfBase64.length / 1024)}KB encoded).`;
         pdfBase64 = null;
         pdfFilename = null;
       }
@@ -1628,6 +1637,9 @@ export default function ECareerDesign() {
 
       if (data.success) {
         setEmailCaptureSent(true);
+        if (wantsPdf && !pdfBase64) {
+          setEmailCapturePdfWarning(`Sent as text only — the PDF wasn't included. Reason: ${pdfFailReason || "unknown error"}`);
+        }
       } else {
         setEmailCaptureError(data.error || "Could not send. Try again.");
       }
@@ -1668,9 +1680,14 @@ export default function ECareerDesign() {
           subtitle={hasPdf ? `We'll send your ${label} straight to your inbox, as a PDF matching the design you picked.` : `We'll send your ${label} straight to your inbox.`}
         />
         {emailCaptureSent ? (
-          <p style={{ fontSize: 14, color: TOKENS.green, display: "flex", alignItems: "center", gap: 6, margin: 0 }}>
-            <Check size={15} /> Sent — check your inbox.
-          </p>
+          <div>
+            <p style={{ fontSize: 14, color: TOKENS.green, display: "flex", alignItems: "center", gap: 6, margin: 0 }}>
+              <Check size={15} /> Sent — check your inbox.
+            </p>
+            {emailCapturePdfWarning && (
+              <p style={{ fontSize: 13, color: TOKENS.gold, marginTop: 8 }}>{emailCapturePdfWarning}</p>
+            )}
+          </div>
         ) : (
           <div>
             <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
