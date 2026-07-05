@@ -841,7 +841,7 @@ export default function ECareerDesign() {
   const [ivInterviewType, setIvInterviewType] = useState(INTERVIEW_TYPES[0]);
   const [interviewQuestions, setInterviewQuestions] = useState(null);
   const [ivGenerating, setIvGenerating] = useState(false);
-  const [ivGenError, setIvGenError] = useState(false);
+  const [ivGenError, setIvGenError] = useState("");
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [currentAnswerText, setCurrentAnswerText] = useState("");
   const [answerEvaluating, setAnswerEvaluating] = useState(false);
@@ -1187,12 +1187,12 @@ export default function ECareerDesign() {
 
   async function generateInterviewQuestions() {
     setIvGenerating(true);
-    setIvGenError(false);
+    setIvGenError("");
     try {
       const bg = buildBackground();
       const text = await callClaude(
         interviewQuestionsPrompt(bg, requirements, jobTitle || selectedLib?.title, ivInterviewType),
-        tokensForBudget(2400)
+        3200
       );
       const parsed = parseJsonObject(text);
       const questions = (parsed.questions || []).map((q) => ({
@@ -1203,7 +1203,8 @@ export default function ECareerDesign() {
       setCurrentAnswerText("");
       setAnswerResults({});
     } catch (e) {
-      setIvGenError(true);
+      console.error("generateInterviewQuestions failed:", e);
+      setIvGenError(e?.message || "Unknown error");
     } finally {
       setIvGenerating(false);
     }
@@ -2219,7 +2220,7 @@ export default function ECareerDesign() {
               ) : (
                 <Button variant="primary" icon={<Sparkles size={14} />} onClick={generateInterviewQuestions}>Generate interview questions</Button>
               )}
-              {ivGenError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: 10 }}>Something went wrong generating questions. Try again.</p>}
+              {ivGenError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: 10 }}>Something went wrong generating questions: {ivGenError}</p>}
             </Card>
           ) : (
             <>
