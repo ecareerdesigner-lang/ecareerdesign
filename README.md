@@ -43,6 +43,20 @@ There's no paywall in this version — generation is free and unlimited. A few w
 
 Whatever you choose, note that this app now collects real background/work-history data through a normal web form — if you add any third-party script (ad network, analytics), you should also add a basic privacy notice describing what's collected and shared, since that's both good practice and often a legal requirement (CCPA/GDPR) once third-party trackers are involved.
 
+## Email capture
+
+On every Export/Report screen, a "Email me a copy" card lets the person get their resume, cover letter, application responses, or interview report sent to their inbox — real, immediate value in exchange for an email address, rather than a cold newsletter signup. There's also an optional checkbox to opt into occasional product updates, which adds them to a Resend Audience (a simple mailing list) if configured.
+
+Setup, via [Resend](https://resend.com) (free tier: 100 emails/day, 1,000 contacts):
+
+1. Create a free account at https://resend.com
+2. **Verify a sending domain** (or use their default `onboarding@resend.dev` for testing — real production sending needs your own verified domain, e.g. `ecareerdesign.net`, added under **Domains** in the Resend dashboard, with the DNS records they give you added at your registrar, same pattern as the Vercel domain setup)
+3. Go to **API Keys** and create one. Set `RESEND_API_KEY`.
+4. Set `RESEND_FROM_EMAIL` to an address at your verified domain, e.g. `"eCareer Design <hello@ecareerdesign.net>"`
+5. **Optional** — for the mailing-list opt-in: go to **Audiences**, create one, copy its ID, and set `RESEND_AUDIENCE_ID`. Without this, the checkbox still shows but silently does nothing beyond sending the requested copy — no error, just no list growth.
+
+Without any of these configured, the whole feature shows a clear "email delivery isn't configured yet" message rather than failing silently.
+
 ## Job search (resume mode)
 
 After a resume is generated, a "Find matching jobs" panel searches real, live postings and links out to the original listing for the person to apply directly — the app never submits an application on their behalf, only links to it.

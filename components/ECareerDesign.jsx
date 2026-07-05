@@ -822,6 +822,12 @@ export default function ECareerDesign() {
 
 
 
+  const [emailCaptureAddress, setEmailCaptureAddress] = useState("");
+  const [emailCaptureOptIn, setEmailCaptureOptIn] = useState(false);
+  const [emailCaptureSending, setEmailCaptureSending] = useState(false);
+  const [emailCaptureSent, setEmailCaptureSent] = useState(false);
+  const [emailCaptureError, setEmailCaptureError] = useState("");
+
   const [jobSearchTitle, setJobSearchTitle] = useState("");
   const [jobSearchLocation, setJobSearchLocation] = useState("");
   const [jobResults, setJobResults] = useState(null);
@@ -1520,6 +1526,36 @@ export default function ECareerDesign() {
     URL.revokeObjectURL(url);
   }
 
+  async function submitEmailCapture() {
+    if (!emailCaptureAddress.trim()) return;
+    setEmailCaptureSending(true);
+    setEmailCaptureError("");
+    try {
+      const contentType = mode === "resume" ? "resume" : mode === "coverletter" ? "cover letter" : mode === "interview" ? "interview report" : "application responses";
+      const content = mode === "interview" ? buildInterviewReportPlainText() : assembleExportText();
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: emailCaptureAddress.trim(),
+          optIn: emailCaptureOptIn,
+          content,
+          contentType,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEmailCaptureSent(true);
+      } else {
+        setEmailCaptureError(data.error || "Could not send. Try again.");
+      }
+    } catch (e) {
+      setEmailCaptureError("Could not reach the email service.");
+    } finally {
+      setEmailCaptureSending(false);
+    }
+  }
+
   const answeredQuestions = interviewQuestions
     ? interviewQuestions.questions.filter((q) => answerResults[q.id]).map((q) => ({ ...q, ...answerResults[q.id] }))
     : [];
@@ -1538,6 +1574,44 @@ export default function ECareerDesign() {
     : mode === "interview"
     ? (interviewQuestions && totalQuestionsCount > 0 && answeredCount === totalQuestionsCount)
     : requirements.length > 0 && requirements.every((r) => responses[r.id]?.text);
+
+  function renderEmailCapture(label) {
+    return (
+      <Card style={{ marginTop: 16, borderColor: TOKENS.accent }}>
+        <SectionHeading icon={<Mail size={18} color={TOKENS.accent} />} title="Email me a copy" subtitle={`We'll send your ${label} straight to your inbox.`} />
+        {emailCaptureSent ? (
+          <p style={{ fontSize: 14, color: TOKENS.green, display: "flex", alignItems: "center", gap: 6, margin: 0 }}>
+            <Check size={15} /> Sent — check your inbox.
+          </p>
+        ) : (
+          <div>
+            <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
+              <input
+                style={{ ...inputStyle, flex: 1, minWidth: 220 }}
+                type="email"
+                placeholder="you@example.com"
+                value={emailCaptureAddress}
+                onChange={(e) => setEmailCaptureAddress(e.target.value)}
+              />
+              <Button
+                variant="primary"
+                icon={emailCaptureSending ? <Loader2 size={14} className="spin" /> : <Mail size={14} />}
+                onClick={submitEmailCapture}
+                disabled={emailCaptureSending || !emailCaptureAddress.trim()}
+              >
+                {emailCaptureSending ? "Sending..." : "Email it to me"}
+              </Button>
+            </div>
+            <label style={{ fontSize: 13, color: TOKENS.inkSoft, display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+              <input type="checkbox" checked={emailCaptureOptIn} onChange={(e) => setEmailCaptureOptIn(e.target.checked)} />
+              Also send me occasional updates about new eCareer Design features
+            </label>
+            {emailCaptureError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: 8 }}>{emailCaptureError}</p>}
+          </div>
+        )}
+      </Card>
+    );
+  }
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", color: TOKENS.ink, maxWidth: 880, margin: "0 auto", padding: "2rem 1.5rem" }}>
@@ -2367,6 +2441,8 @@ export default function ECareerDesign() {
           {mode === "resume" && pdfError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: -10, marginBottom: 16 }}>{pdfError}</p>}
           {mode === "coverletter" && clPdfError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: -10, marginBottom: 16 }}>{clPdfError}</p>}
 
+          {renderEmailCapture(mode === "resume" ? "resume" : mode === "coverletter" ? "cover letter" : "application responses")}
+
           <div style={{ borderTop: `1px solid ${TOKENS.line}`, paddingTop: 16 }}>
             {mode === "resume" ? (
               <div style={{ background: TOKENS.paper, padding: 20, borderRadius: 4 }}>
@@ -2486,6 +2562,8 @@ export default function ECareerDesign() {
               </Button>
             </div>
             {ivPdfError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: -10, marginBottom: 16 }}>{ivPdfError}</p>}
+
+            {renderEmailCapture("interview report")}
 
             <div ref={ivReportRef} style={{ background: "#fff" }}>
               <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 24 }}>
