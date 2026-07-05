@@ -64,6 +64,7 @@ const SKILLS_BUDGET = 2000;  // Special Skills & Associations, independent cap
 const WORK_EXP_BUDGET = 1500; // Each work experience description, independent cap per entry
 const STEPS_APPLICATION = ["Job & requirements", "Background", "Generate", "Export"];
 const STEPS_RESUME = ["Get started", "Background", "Generate", "Export"];
+const STEPS_COVERLETTER = ["Job Details", "Background", "Generate", "Export"];
 
 let idCounter = 0;
 function newId(prefix) {
@@ -148,6 +149,24 @@ Candidate name: ${contact.name || "(not provided)"}
 Candidate background: ${JSON.stringify(background)}`;
 }
 
+function coverLetterPrompt(background, jobTitle, companyName) {
+  return `Write the body paragraphs of a professional cover letter for a job application, based on the candidate's background below. Do not include a greeting/salutation or closing signature — only the body paragraphs.
+
+Target job title: ${jobTitle || "the position"}
+Target company: ${companyName || "the company"}
+
+Structure: an opening paragraph expressing interest and a hook connecting to the role, one or two middle paragraphs connecting specific background and experience to what the role likely needs, and a closing paragraph reiterating interest and inviting next steps.
+
+Draw only on details actually present in the candidate's background below — do not invent employers, numbers, or credentials that aren't provided.
+
+Candidate background: ${JSON.stringify(background)}
+
+Output STRICT JSON in exactly this shape, nothing else:
+{ "bodyParagraphs": ["paragraph 1", "paragraph 2", "paragraph 3"] }
+
+Return ONLY the JSON object. No markdown fences, no commentary.`;
+}
+
 function skillsPrompt(jobTitle, background, budget) {
   const target = Math.max(150, Math.floor(budget * 0.85));
   return `Based on the job title "${jobTitle}" and the candidate's background below, write a "Special Skills & Associations" summary for a federal job application — special skills, professional associations, certifications, or affiliations relevant to this role. Only include items grounded in the candidate's actual background — do not fabricate credentials or memberships.
@@ -223,6 +242,12 @@ const RESUME_TEMPLATES = [
   { id: "sidebar", label: "Sidebar" },
   { id: "classic", label: "Classic" },
   { id: "minimal", label: "Minimal" },
+];
+
+const COVER_LETTER_TEMPLATES = [
+  { id: "pacific", label: "Pacific" },
+  { id: "refined", label: "Refined" },
+  { id: "contempo", label: "Contempo" },
 ];
 
 function Stepper({ step, labels }) {
@@ -554,6 +579,86 @@ function ResumePreview({ template, contact, data, color }) {
   return <ResumeSidebarTemplate contact={contact} data={data} color={color} />;
 }
 
+function LetterBody({ contact, data }) {
+  return (
+    <div>
+      <p style={{ fontSize: 13, color: "#333", margin: "0 0 18px" }}>{data.date}</p>
+      {(data.hiringManager || data.companyName || data.companyAddress) && (
+        <div style={{ fontSize: 13, color: "#333", margin: "0 0 18px", lineHeight: 1.5 }}>
+          {data.hiringManager && <p style={{ margin: 0 }}>{data.hiringManager}</p>}
+          {data.companyName && <p style={{ margin: 0 }}>{data.companyName}</p>}
+          {data.companyAddress && <p style={{ margin: 0 }}>{data.companyAddress}</p>}
+        </div>
+      )}
+      {data.jobTitle && (
+        <p style={{ fontSize: 13, fontWeight: 600, margin: "0 0 18px" }}>
+          RE: Application for {data.jobTitle}{data.companyName ? ` at ${data.companyName}` : ""}
+        </p>
+      )}
+      <p style={{ fontSize: 14, margin: "0 0 14px" }}>{data.salutation}</p>
+      {(data.bodyParagraphs || []).map((p, i) => (
+        <p key={i} style={{ fontSize: 14, lineHeight: 1.7, margin: "0 0 14px" }}>{p}</p>
+      ))}
+      <p style={{ fontSize: 14, margin: "24px 0 4px" }}>{data.closing}</p>
+      <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: 18, margin: 0 }}>{contact.name}</p>
+    </div>
+  );
+}
+
+function CoverLetterPacificTemplate({ contact, data, color }) {
+  return (
+    <div style={{ ...resumePageStyle, padding: 0 }}>
+      <div style={{ background: color, padding: "26px 40px" }}>
+        <p style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 22, margin: 0, letterSpacing: "0.03em", textTransform: "uppercase", color: "#fff" }}>
+          {contact.name || "Your Name"}
+        </p>
+        <p style={{ fontSize: 12, margin: "6px 0 0", color: "#fff", opacity: 0.9 }}>
+          {[contact.location, contact.phone, contact.email].filter(Boolean).join(" · ")}
+        </p>
+      </div>
+      <div style={{ padding: "28px 40px" }}>
+        <LetterBody contact={contact} data={data} />
+      </div>
+    </div>
+  );
+}
+
+function CoverLetterRefinedTemplate({ contact, data, color }) {
+  return (
+    <div style={{ ...resumePageStyle, padding: "32px 40px" }}>
+      <div style={{ textAlign: "center", borderBottom: `3px double ${color}`, paddingBottom: 12, marginBottom: 22 }}>
+        <p style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 20, margin: 0, letterSpacing: "0.05em" }}>
+          {(contact.name || "Your Name").toUpperCase()}
+        </p>
+        <p style={{ fontSize: 12, color: "#555", margin: "6px 0 0" }}>
+          {[contact.location, contact.phone, contact.email].filter(Boolean).join("  |  ")}
+        </p>
+      </div>
+      <LetterBody contact={contact} data={data} />
+    </div>
+  );
+}
+
+function CoverLetterContempoTemplate({ contact, data, color }) {
+  return (
+    <div style={{ ...resumePageStyle, padding: "32px 40px" }}>
+      <div style={{ borderTop: `4px solid ${color}`, paddingTop: 14, marginBottom: 22 }}>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 22, margin: 0 }}>{contact.name || "Your Name"}</p>
+        <p style={{ fontSize: 12, color: "#555", margin: "4px 0 0" }}>
+          {[contact.location, contact.phone, contact.email].filter(Boolean).join("  |  ")}
+        </p>
+      </div>
+      <LetterBody contact={contact} data={data} />
+    </div>
+  );
+}
+
+function CoverLetterPreview({ template, contact, data, color }) {
+  if (template === "refined") return <CoverLetterRefinedTemplate contact={contact} data={data} color={color} />;
+  if (template === "contempo") return <CoverLetterContempoTemplate contact={contact} data={data} color={color} />;
+  return <CoverLetterPacificTemplate contact={contact} data={data} color={color} />;
+}
+
 function timeGreeting() {
   const h = new Date().getHours();
   if (h < 12) return "Good morning";
@@ -571,7 +676,7 @@ function relativeDate(iso) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function Dashboard({ contactInfo, recentProjects, onResumeBuilder, onJobTailoring }) {
+function Dashboard({ contactInfo, recentProjects, onResumeBuilder, onJobTailoring, onCoverLetter }) {
   return (
     <div>
       <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "0 0 6px" }}>
@@ -618,10 +723,9 @@ function Dashboard({ contactInfo, recentProjects, onResumeBuilder, onJobTailorin
           <Briefcase size={22} color={TOKENS.iconDark} style={{ marginBottom: 10 }} />
           <p style={{ fontSize: 15, fontWeight: 600, margin: 0, color: TOKENS.ink }}>Job Tailoring</p>
         </Card>
-        <Card style={{ textAlign: "center", opacity: 0.6 }}>
+        <Card interactive onClick={onCoverLetter} style={{ textAlign: "center" }}>
           <Mail size={22} color={TOKENS.iconDark} style={{ marginBottom: 10 }} />
-          <p style={{ fontSize: 15, fontWeight: 600, margin: "0 0 8px", color: TOKENS.ink }}>Cover Letter</p>
-          <span className="cf-badge" style={{ fontSize: 11 }}>Coming soon</span>
+          <p style={{ fontSize: 15, fontWeight: 600, margin: 0, color: TOKENS.ink }}>Cover Letter</p>
         </Card>
         <Card style={{ textAlign: "center", opacity: 0.6 }}>
           <MessageSquare size={22} color={TOKENS.iconDark} style={{ marginBottom: 10 }} />
@@ -672,6 +776,20 @@ export default function ECareerDesign() {
   const resumeExportRef = useRef(null);
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [pdfError, setPdfError] = useState("");
+
+  const [clCompanyName, setClCompanyName] = useState("");
+  const [clCompanyAddress, setClCompanyAddress] = useState("");
+  const [clJobTitle, setClJobTitle] = useState("");
+  const [clHiringManager, setClHiringManager] = useState("");
+  const [coverLetterData, setCoverLetterData] = useState(null);
+  const [coverLetterGenerating, setCoverLetterGenerating] = useState(false);
+  const [coverLetterError, setCoverLetterError] = useState(false);
+  const [coverLetterTemplate, setCoverLetterTemplate] = useState("pacific");
+  const [coverLetterColor, setCoverLetterColor] = useState(RESUME_COLORS[0]);
+  const coverLetterExportRef = useRef(null);
+  const [clPdfGenerating, setClPdfGenerating] = useState(false);
+  const [clPdfError, setClPdfError] = useState("");
+
 
   const [jobSearchTitle, setJobSearchTitle] = useState("");
   const [jobSearchLocation, setJobSearchLocation] = useState("");
@@ -752,10 +870,16 @@ export default function ECareerDesign() {
   }, [workExperience, education, trainingEntries, trainingPasteText, additionalContext, contactInfo]);
 
   function logRecentProject() {
+    const typeLabel = mode === "resume" ? "Resume" : mode === "coverletter" ? "Cover Letter" : "Job Tailoring";
+    const titleLabel = mode === "resume"
+      ? (contactInfo.name || "Untitled resume")
+      : mode === "coverletter"
+      ? (clCompanyName ? `${clJobTitle || "Cover letter"} — ${clCompanyName}` : "Untitled cover letter")
+      : (jobTitle || selectedLib?.title || "Untitled application");
     const entry = {
       id: newId("proj"),
-      type: mode === "resume" ? "Resume" : "Job Tailoring",
-      title: mode === "resume" ? (contactInfo.name || "Untitled resume") : (jobTitle || selectedLib?.title || "Untitled application"),
+      type: typeLabel,
+      title: titleLabel,
       date: new Date().toISOString(),
     };
     setRecentProjects((prev) => {
@@ -974,6 +1098,30 @@ export default function ECareerDesign() {
     }
   }
 
+  async function generateCoverLetter() {
+    setCoverLetterGenerating(true);
+    setCoverLetterError(false);
+    try {
+      const bg = buildBackground();
+      const text = await callClaude(coverLetterPrompt(bg, clJobTitle, clCompanyName), tokensForBudget(1800));
+      const parsed = parseJsonObject(text);
+      setCoverLetterData({
+        date: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+        companyName: clCompanyName,
+        companyAddress: clCompanyAddress,
+        jobTitle: clJobTitle,
+        hiringManager: clHiringManager.trim() || "Hiring Manager",
+        salutation: clHiringManager.trim() ? `Dear ${clHiringManager.trim()},` : "Dear Hiring Manager,",
+        bodyParagraphs: parsed.bodyParagraphs || [],
+        closing: "Sincerely,",
+      });
+    } catch (e) {
+      setCoverLetterError(true);
+    } finally {
+      setCoverLetterGenerating(false);
+    }
+  }
+
   async function generateEverything() {
     setGenAll(true);
     for (const req of requirements) {
@@ -1035,64 +1183,111 @@ export default function ECareerDesign() {
     return lines.join("\n").trim();
   }
 
+  function buildCoverLetterPlainText() {
+    if (!coverLetterData) return "";
+    const lines = [];
+    if (contactInfo.name) lines.push(contactInfo.name);
+    const contactLine = [contactInfo.email, contactInfo.phone, contactInfo.location].filter(Boolean).join(" | ");
+    if (contactLine) lines.push(contactLine);
+    lines.push("");
+    lines.push(coverLetterData.date);
+    lines.push("");
+    if (coverLetterData.hiringManager) lines.push(coverLetterData.hiringManager);
+    if (coverLetterData.companyName) lines.push(coverLetterData.companyName);
+    if (coverLetterData.companyAddress) lines.push(coverLetterData.companyAddress);
+    lines.push("");
+    if (coverLetterData.jobTitle) {
+      lines.push(`RE: Application for ${coverLetterData.jobTitle}${coverLetterData.companyName ? " at " + coverLetterData.companyName : ""}`);
+      lines.push("");
+    }
+    lines.push(coverLetterData.salutation);
+    lines.push("");
+    (coverLetterData.bodyParagraphs || []).forEach((p) => {
+      lines.push(p);
+      lines.push("");
+    });
+    lines.push(coverLetterData.closing);
+    lines.push(contactInfo.name || "");
+    return lines.join("\n").trim();
+  }
+
+  async function exportElementToPdf(element, filename) {
+    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+      import("html2canvas"),
+      import("jspdf"),
+    ]);
+
+    // Wait for web fonts to finish loading so the capture doesn't fall back
+    // to a system font while Fraunces/Inter/IBM Plex Mono are still loading.
+    if (document.fonts?.ready) {
+      await document.fonts.ready;
+    }
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+    });
+
+    const pdf = new jsPDF({ unit: "pt", format: "letter" });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const scaledHeight = (canvas.width > 0 ? (canvas.height * pageWidth) / canvas.width : 0);
+
+    if (scaledHeight <= pageHeight) {
+      // Fits on one page.
+      pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pageWidth, scaledHeight);
+    } else {
+      // Slice the full-resolution canvas into page-sized chunks and add
+      // each as its own PDF page, so multi-page documents still print cleanly.
+      const pageHeightPx = Math.floor((canvas.width * pageHeight) / pageWidth);
+      let renderedPx = 0;
+      let pageIndex = 0;
+      while (renderedPx < canvas.height) {
+        const sliceHeightPx = Math.min(pageHeightPx, canvas.height - renderedPx);
+        const pageCanvas = document.createElement("canvas");
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHeightPx;
+        const ctx = pageCanvas.getContext("2d");
+        ctx.drawImage(canvas, 0, renderedPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
+
+        if (pageIndex > 0) pdf.addPage();
+        const sliceHeightPt = (sliceHeightPx * pageWidth) / canvas.width;
+        pdf.addImage(pageCanvas.toDataURL("image/png"), "PNG", 0, 0, pageWidth, sliceHeightPt);
+
+        renderedPx += sliceHeightPx;
+        pageIndex += 1;
+      }
+    }
+
+    pdf.save(filename);
+  }
+
   async function downloadResumePDF() {
     if (!resumeExportRef.current) return;
     setPdfGenerating(true);
     setPdfError("");
     try {
-      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-        import("html2canvas"),
-        import("jspdf"),
-      ]);
-
-      // Wait for web fonts to finish loading so the capture doesn't fall back
-      // to a system font while Fraunces/Inter/IBM Plex Mono are still loading.
-      if (document.fonts?.ready) {
-        await document.fonts.ready;
-      }
-
-      const canvas = await html2canvas(resumeExportRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-      });
-
-      const pdf = new jsPDF({ unit: "pt", format: "letter" });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const scaledHeight = (canvas.width > 0 ? (canvas.height * pageWidth) / canvas.width : 0);
-
-      if (scaledHeight <= pageHeight) {
-        // Fits on one page.
-        pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pageWidth, scaledHeight);
-      } else {
-        // Slice the full-resolution canvas into page-sized chunks and add
-        // each as its own PDF page, so multi-page resumes still print cleanly.
-        const pageHeightPx = Math.floor((canvas.width * pageHeight) / pageWidth);
-        let renderedPx = 0;
-        let pageIndex = 0;
-        while (renderedPx < canvas.height) {
-          const sliceHeightPx = Math.min(pageHeightPx, canvas.height - renderedPx);
-          const pageCanvas = document.createElement("canvas");
-          pageCanvas.width = canvas.width;
-          pageCanvas.height = sliceHeightPx;
-          const ctx = pageCanvas.getContext("2d");
-          ctx.drawImage(canvas, 0, renderedPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
-
-          if (pageIndex > 0) pdf.addPage();
-          const sliceHeightPt = (sliceHeightPx * pageWidth) / canvas.width;
-          pdf.addImage(pageCanvas.toDataURL("image/png"), "PNG", 0, 0, pageWidth, sliceHeightPt);
-
-          renderedPx += sliceHeightPx;
-          pageIndex += 1;
-        }
-      }
-
-      pdf.save(`${(contactInfo.name || "resume").replace(/\s+/g, "_")}.pdf`);
+      await exportElementToPdf(resumeExportRef.current, `${(contactInfo.name || "resume").replace(/\s+/g, "_")}.pdf`);
     } catch (e) {
       setPdfError("Could not generate the PDF. Try again, or use Copy as text instead.");
     } finally {
       setPdfGenerating(false);
+    }
+  }
+
+  async function downloadCoverLetterPDF() {
+    if (!coverLetterExportRef.current) return;
+    setClPdfGenerating(true);
+    setClPdfError("");
+    try {
+      const name = contactInfo.name || "cover_letter";
+      const company = clCompanyName ? `_${clCompanyName}` : "";
+      await exportElementToPdf(coverLetterExportRef.current, `${(name + company).replace(/\s+/g, "_")}.pdf`);
+    } catch (e) {
+      setClPdfError("Could not generate the PDF. Try again, or use Copy as text instead.");
+    } finally {
+      setClPdfGenerating(false);
     }
   }
 
@@ -1186,6 +1381,8 @@ export default function ECareerDesign() {
 
   const allGenerated = mode === "resume"
     ? !!resumeData
+    : mode === "coverletter"
+    ? !!coverLetterData
     : requirements.length > 0 && requirements.every((r) => responses[r.id]?.text);
 
   return (
@@ -1232,7 +1429,7 @@ export default function ECareerDesign() {
             </p>
           </div>
 
-          <Stepper step={step} labels={mode === "resume" ? STEPS_RESUME : STEPS_APPLICATION} />
+          <Stepper step={step} labels={mode === "resume" ? STEPS_RESUME : mode === "coverletter" ? STEPS_COVERLETTER : STEPS_APPLICATION} />
 
       {step === 0 && mode === null && (
         <Card>
@@ -1368,13 +1565,38 @@ export default function ECareerDesign() {
         </Card>
       )}
 
+      {step === 0 && mode === "coverletter" && (
+        <Card>
+          <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => { setMode(null); setView("dashboard"); }}>← Home</Button>
+          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, margin: "0 0 4px" }}>Job details</h2>
+          <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "0 0 24px", lineHeight: 1.6 }}>
+            Tell us who you're writing to. Your background comes next, and CareerForge will draft the letter itself.
+          </p>
+          <Field label="Company name">
+            <input style={inputStyle} placeholder="e.g., Acme Corporation" value={clCompanyName} onChange={(e) => setClCompanyName(e.target.value)} />
+          </Field>
+          <Field label="Job title you're applying for">
+            <input style={inputStyle} placeholder="e.g., Management and Program Analyst" value={clJobTitle} onChange={(e) => setClJobTitle(e.target.value)} />
+          </Field>
+          <Field label="Hiring manager's name (optional)">
+            <input style={inputStyle} placeholder="Leave blank to use 'Hiring Manager'" value={clHiringManager} onChange={(e) => setClHiringManager(e.target.value)} />
+          </Field>
+          <Field label="Company address (optional)">
+            <input style={inputStyle} placeholder="City, State" value={clCompanyAddress} onChange={(e) => setClCompanyAddress(e.target.value)} />
+          </Field>
+          <Button variant="primary" onClick={goToBackground} icon={<ChevronRight size={14} />}>
+            Continue to background
+          </Button>
+        </Card>
+      )}
+
 
       {step === 1 && (
         <div>
           <BackButton onClick={() => setStep(0)} />
-          {mode === "resume" && (
+          {(mode === "resume" || mode === "coverletter") && (
             <Card style={{ marginBottom: 16 }}>
-              <SectionHeading icon={<FileText size={18} color={TOKENS.accent} />} title="Contact info" subtitle="Goes at the top of your resume." />
+              <SectionHeading icon={<FileText size={18} color={TOKENS.accent} />} title="Contact info" subtitle={mode === "resume" ? "Goes at the top of your resume." : "Goes at the top of your cover letter."} />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                 <input style={smallInputStyle} placeholder="Full name" value={contactInfo.name} onChange={(e) => setContactInfo((c) => ({ ...c, name: e.target.value }))} />
                 <input style={smallInputStyle} placeholder="Location (city, state)" value={contactInfo.location} onChange={(e) => setContactInfo((c) => ({ ...c, location: e.target.value }))} />
@@ -1622,6 +1844,76 @@ export default function ECareerDesign() {
         </div>
       )}
 
+      {step === 2 && mode === "coverletter" && (
+        <div>
+          <BackButton onClick={() => setStep(1)} />
+          <Card style={{ marginBottom: 16 }}>
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, margin: "0 0 4px" }}>Your cover letter</h2>
+            <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "0 0 20px" }}>
+              Built from your background, tailored to {clJobTitle || "the role"}{clCompanyName ? ` at ${clCompanyName}` : ""}.
+            </p>
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 24, marginBottom: 18 }}>
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 500, color: TOKENS.ink, margin: "0 0 8px" }}>Template</p>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {COVER_LETTER_TEMPLATES.map((t) => (
+                    <Button key={t.id} variant={coverLetterTemplate === t.id ? "ink" : "secondary"} onClick={() => setCoverLetterTemplate(t.id)}>
+                      {t.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 500, color: TOKENS.ink, margin: "0 0 8px" }}>Color</p>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {RESUME_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setCoverLetterColor(c)}
+                      style={{
+                        width: 26, height: 26, borderRadius: "50%", background: c, cursor: "pointer",
+                        border: coverLetterColor === c ? `2px solid ${TOKENS.ink}` : "2px solid transparent",
+                        outline: coverLetterColor === c ? `2px solid ${c}` : "none",
+                        outlineOffset: 2,
+                      }}
+                      aria-label={c}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {coverLetterGenerating ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px 0", color: TOKENS.inkSoft, fontSize: 13 }}>
+                <Loader2 size={14} className="spin" /> Writing your cover letter...
+              </div>
+            ) : coverLetterData ? (
+              <div>
+                <div style={{ background: TOKENS.paper, padding: 20, borderRadius: 4, marginBottom: 12 }}>
+                  <CoverLetterPreview template={coverLetterTemplate} contact={contactInfo} data={coverLetterData} color={coverLetterColor} />
+                </div>
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                  <Button variant="ghost" icon={<RefreshCw size={13} />} onClick={generateCoverLetter}>Regenerate content</Button>
+                  <Button variant="ghost" icon={copiedKey === "coverletter" ? <Check size={13} /> : <Copy size={13} />} onClick={() => copyText("coverletter", buildCoverLetterPlainText())}>
+                    {copiedKey === "coverletter" ? "Copied" : "Copy as text"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button variant="primary" icon={<Sparkles size={14} />} onClick={generateCoverLetter}>Generate cover letter</Button>
+            )}
+            {coverLetterError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: 10 }}>Something went wrong generating the cover letter. Try again.</p>}
+          </Card>
+
+          <div style={{ textAlign: "right" }}>
+            <Button variant="primary" icon={<ChevronRight size={14} />} onClick={() => { logRecentProject(); setStep(3); }} disabled={!allGenerated}>
+              Continue to export
+            </Button>
+          </div>
+        </div>
+      )}
+
       {step === 2 && mode === "application" && (
         <div>
           <BackButton onClick={() => setStep(1)} />
@@ -1752,6 +2044,8 @@ export default function ECareerDesign() {
           <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "0 0 24px" }}>
             {mode === "resume"
               ? "Download a PDF that looks exactly like the template and color you picked, or copy the content as plain text."
+              : mode === "coverletter"
+              ? "Download a PDF that matches the template and color you picked, or copy the letter as plain text."
               : "Copy sections directly into your agency's application portal, or download everything as text to paste into Word."}
           </p>
 
@@ -1765,6 +2059,15 @@ export default function ECareerDesign() {
                   {copiedKey === "all" ? "Copied" : "Copy as text"}
                 </Button>
               </>
+            ) : mode === "coverletter" ? (
+              <>
+                <Button variant="primary" icon={clPdfGenerating ? <Loader2 size={14} className="spin" /> : <Download size={14} />} onClick={downloadCoverLetterPDF} disabled={clPdfGenerating || !coverLetterData}>
+                  {clPdfGenerating ? "Preparing PDF..." : "Download PDF"}
+                </Button>
+                <Button variant="secondary" icon={copiedKey === "cl-all" ? <Check size={14} /> : <Copy size={14} />} onClick={() => copyText("cl-all", buildCoverLetterPlainText())}>
+                  {copiedKey === "cl-all" ? "Copied" : "Copy as text"}
+                </Button>
+              </>
             ) : (
               <>
                 <Button variant="primary" icon={copiedKey === "all" ? <Check size={14} /> : <Copy size={14} />} onClick={copyAll}>
@@ -1776,7 +2079,8 @@ export default function ECareerDesign() {
               </>
             )}
           </div>
-          {pdfError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: -10, marginBottom: 16 }}>{pdfError}</p>}
+          {mode === "resume" && pdfError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: -10, marginBottom: 16 }}>{pdfError}</p>}
+          {mode === "coverletter" && clPdfError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: -10, marginBottom: 16 }}>{clPdfError}</p>}
 
           <div style={{ borderTop: `1px solid ${TOKENS.line}`, paddingTop: 16 }}>
             {mode === "resume" ? (
@@ -1784,6 +2088,14 @@ export default function ECareerDesign() {
                 {resumeData && (
                   <div ref={resumeExportRef} style={{ display: "inline-block" }}>
                     <ResumePreview template={resumeTemplate} contact={contactInfo} data={resumeData} color={resumeColor} />
+                  </div>
+                )}
+              </div>
+            ) : mode === "coverletter" ? (
+              <div style={{ background: TOKENS.paper, padding: 20, borderRadius: 4 }}>
+                {coverLetterData && (
+                  <div ref={coverLetterExportRef} style={{ display: "inline-block" }}>
+                    <CoverLetterPreview template={coverLetterTemplate} contact={contactInfo} data={coverLetterData} color={coverLetterColor} />
                   </div>
                 )}
               </div>
@@ -1943,6 +2255,7 @@ export default function ECareerDesign() {
           recentProjects={recentProjects}
           onResumeBuilder={() => { setMode("resume"); setStep(1); setView("wizard"); }}
           onJobTailoring={() => { setMode("application"); setStep(0); setView("wizard"); }}
+          onCoverLetter={() => { setMode("coverletter"); setStep(0); setView("wizard"); }}
         />
       )}
 
