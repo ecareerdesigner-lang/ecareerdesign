@@ -8,7 +8,12 @@
 //   RESEND_AUDIENCE_ID  — optional; only needed if you want the opt-in list feature
 
 export async function POST(req) {
-  const { email, optIn, content, contentType, pdfBase64, pdfFilename } = await req.json();
+  let email, optIn, content, contentType, pdfBase64, pdfFilename;
+  try {
+    ({ email, optIn, content, contentType, pdfBase64, pdfFilename } = await req.json());
+  } catch (e) {
+    return Response.json({ success: false, error: "Could not read the request." }, { status: 400 });
+  }
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return Response.json({ success: false, error: "Please enter a valid email address." }, { status: 400 });
@@ -41,6 +46,7 @@ export async function POST(req) {
     });
 
     if (sendResult.error) {
+      console.error("Resend send error:", sendResult.error);
       return Response.json({ success: false, error: sendResult.error.message || "Could not send the email." }, { status: 500 });
     }
 
@@ -57,12 +63,13 @@ export async function POST(req) {
           unsubscribed: false,
         });
       } catch (e) {
-        // non-fatal — contact may already exist, or audience not configured
+        console.error("Resend contact create failed (non-fatal):", e);
       }
     }
 
     return Response.json({ success: true });
   } catch (e) {
+    console.error("subscribe route failed:", e);
     return Response.json({ success: false, error: e.message || "Something went wrong." }, { status: 500 });
   }
 }

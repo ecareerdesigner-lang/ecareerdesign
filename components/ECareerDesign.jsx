@@ -1590,6 +1590,18 @@ export default function ECareerDesign() {
       } catch (e) {
         // If PDF generation fails for any reason, fall back to a text-only
         // email rather than blocking the whole request.
+        console.error("PDF generation for email failed:", e);
+        pdfBase64 = null;
+        pdfFilename = null;
+      }
+
+      // Vercel serverless functions cap the total request body at 4.5MB.
+      // Base64 inflates binary size by ~33%, so cap well under that limit —
+      // if the PDF somehow came back oversized, drop it and send text-only
+      // rather than risk the whole request failing with an opaque error.
+      const MAX_PDF_BASE64_CHARS = 3_000_000;
+      if (pdfBase64 && pdfBase64.length > MAX_PDF_BASE64_CHARS) {
+        console.error("Generated PDF too large to email, sending text-only instead:", pdfBase64.length);
         pdfBase64 = null;
         pdfFilename = null;
       }
@@ -1606,14 +1618,22 @@ export default function ECareerDesign() {
           pdfFilename,
         }),
       });
-      const data = await res.json();
+
+      let data;
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        throw new Error(`Server returned an unexpected response (status ${res.status}).`);
+      }
+
       if (data.success) {
         setEmailCaptureSent(true);
       } else {
         setEmailCaptureError(data.error || "Could not send. Try again.");
       }
     } catch (e) {
-      setEmailCaptureError("Could not reach the email service.");
+      console.error("submitEmailCapture failed:", e);
+      setEmailCaptureError(e?.message || "Could not reach the email service.");
     } finally {
       setEmailCaptureSending(false);
     }
