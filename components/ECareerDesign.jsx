@@ -65,6 +65,12 @@ const WORK_EXP_BUDGET = 1500; // Each work experience description, independent c
 const STEPS_APPLICATION = ["Job & requirements", "Background", "Generate", "Export"];
 const STEPS_RESUME = ["Get started", "Background", "Generate", "Export"];
 const STEPS_COVERLETTER = ["Job Details", "Background", "Generate", "Export"];
+const STEPS_INTERVIEW = ["Setup", "Background", "Mock Interview", "Report"];
+
+const INTERVIEW_TYPES = [
+  "General HR Interview", "Behavioral Interview", "STAR Interview", "Technical Interview",
+  "Federal Interview", "USPS Interview", "Management Interview", "Executive Interview",
+];
 
 let idCounter = 0;
 function newId(prefix) {
@@ -165,6 +171,49 @@ Output STRICT JSON in exactly this shape, nothing else:
 { "bodyParagraphs": ["paragraph 1", "paragraph 2", "paragraph 3"] }
 
 Return ONLY the JSON object. No markdown fences, no commentary.`;
+}
+
+function interviewQuestionsPrompt(background, requirements, jobTitle, interviewType) {
+  const reqList = (requirements || []).map((r) => r.text).join(" | ");
+  return `You are an experienced hiring manager preparing mock interview questions for a candidate applying to "${jobTitle || "this position"}". Interview style: ${interviewType}.
+
+${reqList ? `The job posting's key requirements are: ${reqList}` : "No specific job posting was provided for this session — write general but realistic questions for this type of role and interview style."}
+
+Based on the candidate's background below, generate a realistic interview question set that a hiring manager would actually ask for this exact role and interview style.
+
+Candidate background: ${JSON.stringify(background)}
+
+Output STRICT JSON in exactly this shape:
+{
+  "openingAnswer": "A customized 'Tell me about yourself' answer draft, grounded in the candidate's actual background, 3-5 sentences",
+  "questions": [
+    { "category": "Behavioral", "text": "..." },
+    { "category": "STAR", "text": "..." },
+    { "category": "Resume", "text": "..." },
+    { "category": "Job-Specific", "text": "..." },
+    { "category": "Tough", "text": "..." }
+  ]
+}
+
+Include 2-3 questions in each of those five categories (10-12 total, in that order). STAR and Job-Specific questions should directly reference the job requirements listed above when available. Resume questions should reference specifics actually present in the candidate's background (a real gap, transition, achievement, or certification) — never invent a gap or issue that isn't there. Return ONLY the JSON object, no markdown fences, no commentary.`;
+}
+
+function answerEvaluationPrompt(question, answerText, background) {
+  return `You are an experienced hiring manager evaluating a candidate's mock interview answer, holistically considering structure (STAR where applicable), specificity, confidence, and professionalism.
+
+Question (${question.category}): ${question.text}
+Candidate's answer: ${answerText}
+
+Candidate's background, for context only — don't penalize for reasonable details left out: ${JSON.stringify(background)}
+
+Output STRICT JSON in exactly this shape:
+{
+  "score": <integer 1-10>,
+  "feedback": "2-4 sentences of direct, constructive coaching — what worked, what to improve",
+  "starRewrite": "If the score is 7 or below, rewrite the answer as a stronger STAR-format response grounded ONLY in facts the candidate actually mentioned — do not invent new facts. If the score is 8 or above, use an empty string here instead.",
+  "followUp": "One realistic follow-up question a hiring manager might ask next, based on this specific answer"
+}
+Return ONLY the JSON object, no markdown fences, no commentary.`;
 }
 
 function skillsPrompt(jobTitle, background, budget) {
@@ -676,7 +725,7 @@ function relativeDate(iso) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function Dashboard({ contactInfo, recentProjects, onResumeBuilder, onJobTailoring, onCoverLetter }) {
+function Dashboard({ contactInfo, recentProjects, onResumeBuilder, onJobTailoring, onCoverLetter, onInterviewPrep }) {
   return (
     <div>
       <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "0 0 6px" }}>
@@ -727,10 +776,9 @@ function Dashboard({ contactInfo, recentProjects, onResumeBuilder, onJobTailorin
           <Mail size={22} color={TOKENS.iconDark} style={{ marginBottom: 10 }} />
           <p style={{ fontSize: 15, fontWeight: 600, margin: 0, color: TOKENS.ink }}>Cover Letter</p>
         </Card>
-        <Card style={{ textAlign: "center", opacity: 0.6 }}>
+        <Card interactive onClick={onInterviewPrep} style={{ textAlign: "center" }}>
           <MessageSquare size={22} color={TOKENS.iconDark} style={{ marginBottom: 10 }} />
-          <p style={{ fontSize: 15, fontWeight: 600, margin: "0 0 8px", color: TOKENS.ink }}>Interview Prep</p>
-          <span className="cf-badge" style={{ fontSize: 11 }}>Coming soon</span>
+          <p style={{ fontSize: 15, fontWeight: 600, margin: 0, color: TOKENS.ink }}>Interview Prep</p>
         </Card>
       </div>
 
@@ -789,6 +837,19 @@ export default function ECareerDesign() {
   const coverLetterExportRef = useRef(null);
   const [clPdfGenerating, setClPdfGenerating] = useState(false);
   const [clPdfError, setClPdfError] = useState("");
+
+  const [ivInterviewType, setIvInterviewType] = useState(INTERVIEW_TYPES[0]);
+  const [interviewQuestions, setInterviewQuestions] = useState(null);
+  const [ivGenerating, setIvGenerating] = useState(false);
+  const [ivGenError, setIvGenError] = useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentAnswerText, setCurrentAnswerText] = useState("");
+  const [answerEvaluating, setAnswerEvaluating] = useState(false);
+  const [answerResults, setAnswerResults] = useState({});
+  const ivReportRef = useRef(null);
+  const [ivPdfGenerating, setIvPdfGenerating] = useState(false);
+  const [ivPdfError, setIvPdfError] = useState("");
+
 
 
   const [jobSearchTitle, setJobSearchTitle] = useState("");
@@ -870,11 +931,13 @@ export default function ECareerDesign() {
   }, [workExperience, education, trainingEntries, trainingPasteText, additionalContext, contactInfo]);
 
   function logRecentProject() {
-    const typeLabel = mode === "resume" ? "Resume" : mode === "coverletter" ? "Cover Letter" : "Job Tailoring";
+    const typeLabel = mode === "resume" ? "Resume" : mode === "coverletter" ? "Cover Letter" : mode === "interview" ? "Interview Prep" : "Job Tailoring";
     const titleLabel = mode === "resume"
       ? (contactInfo.name || "Untitled resume")
       : mode === "coverletter"
       ? (clCompanyName ? `${clJobTitle || "Cover letter"} — ${clCompanyName}` : "Untitled cover letter")
+      : mode === "interview"
+      ? `${jobTitle || selectedLib?.title || "Practice interview"} (${readinessScore}/100)`
       : (jobTitle || selectedLib?.title || "Untitled application");
     const entry = {
       id: newId("proj"),
@@ -1122,6 +1185,74 @@ export default function ECareerDesign() {
     }
   }
 
+  async function generateInterviewQuestions() {
+    setIvGenerating(true);
+    setIvGenError(false);
+    try {
+      const bg = buildBackground();
+      const text = await callClaude(
+        interviewQuestionsPrompt(bg, requirements, jobTitle || selectedLib?.title, ivInterviewType),
+        tokensForBudget(2400)
+      );
+      const parsed = parseJsonObject(text);
+      const questions = (parsed.questions || []).map((q) => ({
+        id: newId("q"), category: q.category || "General", text: q.text || "",
+      }));
+      setInterviewQuestions({ openingAnswer: parsed.openingAnswer || "", questions });
+      setCurrentQuestionIndex(0);
+      setCurrentAnswerText("");
+      setAnswerResults({});
+    } catch (e) {
+      setIvGenError(true);
+    } finally {
+      setIvGenerating(false);
+    }
+  }
+
+  async function submitAnswer() {
+    if (!interviewQuestions) return;
+    const q = interviewQuestions.questions[currentQuestionIndex];
+    if (!q || !currentAnswerText.trim()) return;
+    setAnswerEvaluating(true);
+    try {
+      const bg = buildBackground();
+      const text = await callClaude(answerEvaluationPrompt(q, currentAnswerText, bg), tokensForBudget(1200));
+      const parsed = parseJsonObject(text);
+      setAnswerResults((prev) => ({
+        ...prev,
+        [q.id]: {
+          answerText: currentAnswerText,
+          score: Math.max(1, Math.min(10, Math.round(Number(parsed.score) || 5))),
+          feedback: parsed.feedback || "",
+          starRewrite: parsed.starRewrite || "",
+          followUp: parsed.followUp || "",
+        },
+      }));
+    } catch (e) {
+      // leave unanswered on failure; the person can just try submitting again
+    } finally {
+      setAnswerEvaluating(false);
+    }
+  }
+
+  function retryCurrentAnswer() {
+    const q = interviewQuestions?.questions[currentQuestionIndex];
+    if (!q) return;
+    setAnswerResults((prev) => {
+      const next = { ...prev };
+      delete next[q.id];
+      return next;
+    });
+    setCurrentAnswerText("");
+  }
+
+  function goToQuestion(i) {
+    if (!interviewQuestions) return;
+    const clamped = Math.max(0, Math.min(i, interviewQuestions.questions.length - 1));
+    setCurrentQuestionIndex(clamped);
+    setCurrentAnswerText(answerResults[interviewQuestions.questions[clamped].id]?.answerText || "");
+  }
+
   async function generateEverything() {
     setGenAll(true);
     for (const req of requirements) {
@@ -1209,6 +1340,55 @@ export default function ECareerDesign() {
     lines.push(coverLetterData.closing);
     lines.push(contactInfo.name || "");
     return lines.join("\n").trim();
+  }
+
+  function buildInterviewReportPlainText() {
+    if (!interviewQuestions) return "";
+    const lines = [];
+    lines.push(`INTERVIEW READINESS REPORT`);
+    lines.push(`${jobTitle || selectedLib?.title || "General practice"} — ${ivInterviewType}`);
+    lines.push("");
+    lines.push(`Readiness score: ${readinessScore}/100`);
+    lines.push(`Questions completed: ${answeredCount} of ${totalQuestionsCount}`);
+    lines.push("");
+    if (ivStrengths.length) {
+      lines.push("STRENGTHS");
+      ivStrengths.forEach((q) => lines.push(`- [${q.score}/10] ${q.text}`));
+      lines.push("");
+    }
+    if (ivImprovements.length) {
+      lines.push("AREAS NEEDING IMPROVEMENT");
+      ivImprovements.forEach((q) => lines.push(`- [${q.score}/10] ${q.text}`));
+      lines.push("");
+    }
+    lines.push("FULL TRANSCRIPT");
+    interviewQuestions.questions.forEach((q, i) => {
+      const r = answerResults[q.id];
+      lines.push(`${i + 1}. (${q.category}) ${q.text}`);
+      if (r) {
+        lines.push(`Your answer: ${r.answerText}`);
+        lines.push(`Score: ${r.score}/10`);
+        lines.push(`Feedback: ${r.feedback}`);
+        if (r.starRewrite) lines.push(`Stronger version: ${r.starRewrite}`);
+      } else {
+        lines.push("(not answered)");
+      }
+      lines.push("");
+    });
+    return lines.join("\n").trim();
+  }
+
+  async function downloadInterviewReportPDF() {
+    if (!ivReportRef.current) return;
+    setIvPdfGenerating(true);
+    setIvPdfError("");
+    try {
+      await exportElementToPdf(ivReportRef.current, `${(jobTitle || "interview_report").replace(/\s+/g, "_")}_readiness_report.pdf`);
+    } catch (e) {
+      setIvPdfError("Could not generate the PDF. Try again, or use Copy as text instead.");
+    } finally {
+      setIvPdfGenerating(false);
+    }
   }
 
   async function exportElementToPdf(element, filename) {
@@ -1379,10 +1559,23 @@ export default function ECareerDesign() {
     URL.revokeObjectURL(url);
   }
 
+  const answeredQuestions = interviewQuestions
+    ? interviewQuestions.questions.filter((q) => answerResults[q.id]).map((q) => ({ ...q, ...answerResults[q.id] }))
+    : [];
+  const answeredCount = answeredQuestions.length;
+  const totalQuestionsCount = interviewQuestions?.questions.length || 0;
+  const avgScore = answeredCount ? answeredQuestions.reduce((s, a) => s + a.score, 0) / answeredCount : 0;
+  const readinessScore = Math.round(avgScore * 10);
+  const sortedAnswered = [...answeredQuestions].sort((a, b) => b.score - a.score);
+  const ivStrengths = sortedAnswered.slice(0, 3);
+  const ivImprovements = sortedAnswered.slice(-3).reverse().filter((q) => !ivStrengths.includes(q));
+
   const allGenerated = mode === "resume"
     ? !!resumeData
     : mode === "coverletter"
     ? !!coverLetterData
+    : mode === "interview"
+    ? (interviewQuestions && totalQuestionsCount > 0 && answeredCount === totalQuestionsCount)
     : requirements.length > 0 && requirements.every((r) => responses[r.id]?.text);
 
   return (
@@ -1429,7 +1622,7 @@ export default function ECareerDesign() {
             </p>
           </div>
 
-          <Stepper step={step} labels={mode === "resume" ? STEPS_RESUME : mode === "coverletter" ? STEPS_COVERLETTER : STEPS_APPLICATION} />
+          <Stepper step={step} labels={mode === "resume" ? STEPS_RESUME : mode === "coverletter" ? STEPS_COVERLETTER : mode === "interview" ? STEPS_INTERVIEW : STEPS_APPLICATION} />
 
       {step === 0 && mode === null && (
         <Card>
@@ -1549,6 +1742,100 @@ export default function ECareerDesign() {
               </Button>
             </div>
           )}
+        </Card>
+      )}
+
+      {step === 0 && mode === "interview" && (
+        <Card>
+          <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => { setMode(null); setView("dashboard"); }}>← Home</Button>
+          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, margin: "0 0 4px" }}>Set up your mock interview</h2>
+          <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "0 0 24px" }}>
+            If you already pulled in a job's requirements under Job Tailoring, they're still here — this interview will be built around them.
+          </p>
+
+          <Field label="Interview type">
+            <select style={inputStyle} value={ivInterviewType} onChange={(e) => setIvInterviewType(e.target.value)}>
+              {INTERVIEW_TYPES.map((t) => <option key={t}>{t}</option>)}
+            </select>
+          </Field>
+
+          <Field label="Job title">
+            <input
+              style={inputStyle}
+              value={jobTitle}
+              onChange={(e) => { setJobTitle(e.target.value); setSelectedLib(null); setRequirements([]); }}
+              placeholder="e.g., Management and Program Analyst"
+            />
+          </Field>
+
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            <Button variant={sourceMode === "library" ? "ink" : "secondary"} icon={<Search size={14} />} onClick={() => setSourceMode("library")}>
+              Search library
+            </Button>
+            <Button variant={sourceMode === "paste" ? "ink" : "secondary"} icon={<FileText size={14} />} onClick={() => setSourceMode("paste")}>
+              Paste posting
+            </Button>
+          </div>
+
+          {sourceMode === "library" && (
+            <div>
+              {filteredLibrary.length === 0 && (
+                <p style={{ fontSize: 13, color: TOKENS.inkSoft }}>No library match. Try "Paste posting" instead, or skip straight to background for general questions.</p>
+              )}
+              {filteredLibrary.map((entry) => (
+                <div
+                  key={entry.title}
+                  onClick={() => chooseLibraryEntry(entry)}
+                  style={{
+                    padding: "12px 14px",
+                    border: `1px solid ${selectedLib?.title === entry.title ? TOKENS.accent : TOKENS.line}`,
+                    background: selectedLib?.title === entry.title ? TOKENS.accentSoft : TOKENS.paper,
+                    borderRadius: 3, marginBottom: 8, cursor: "pointer",
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                  }}
+                >
+                  <div>
+                    <p style={{ fontSize: 14, fontWeight: 500, margin: 0 }}>{entry.title}</p>
+                    <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "2px 0 0" }}>{entry.requirements.length} qualifications on file</p>
+                  </div>
+                  <ChevronRight size={16} color={TOKENS.inkSoft} />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {sourceMode === "paste" && (
+            <div>
+              <Field label="Paste the Qualifications / Requirements section from the job posting (optional)">
+                <textarea
+                  style={{ ...inputStyle, minHeight: 140, resize: "vertical" }}
+                  value={rawPosting}
+                  onChange={(e) => setRawPosting(e.target.value)}
+                  placeholder="Paste the qualifications text here..."
+                />
+              </Field>
+              <Button variant="ink" icon={extracting ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />} onClick={extractFromPosting} disabled={extracting || !rawPosting.trim()}>
+                {extracting ? "Extracting..." : "Extract requirements"}
+              </Button>
+              {extractError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: 10 }}>{extractError}</p>}
+            </div>
+          )}
+
+          {requirements.length > 0 && (
+            <div style={{ marginTop: 24, borderTop: `1px solid ${TOKENS.line}`, paddingTop: 18 }}>
+              <p style={{ fontSize: 13, fontWeight: 500, margin: "0 0 10px" }}>{requirements.length} requirements loaded — this interview will target them</p>
+              {requirements.map((r, i) => (
+                <div key={r.id} style={{ display: "flex", gap: 10, marginBottom: 8, fontSize: 13, color: TOKENS.inkSoft }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", flexShrink: 0 }}>{String(i + 1).padStart(2, "0")}</span>
+                  <span>{r.text}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <Button variant="primary" style={{ marginTop: 18 }} onClick={goToBackground} icon={<ChevronRight size={14} />}>
+            Continue to background
+          </Button>
         </Card>
       )}
 
@@ -1914,6 +2201,122 @@ export default function ECareerDesign() {
         </div>
       )}
 
+      {step === 2 && mode === "interview" && (
+        <div>
+          <BackButton onClick={() => setStep(1)} />
+
+          {!interviewQuestions ? (
+            <Card style={{ marginBottom: 16 }}>
+              <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, margin: "0 0 4px" }}>Ready to start</h2>
+              <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "0 0 20px" }}>
+                CareerForge will generate a realistic question set for {ivInterviewType.toLowerCase()}
+                {jobTitle || selectedLib?.title ? ` targeting ${jobTitle || selectedLib?.title}` : ""}, based on your background{requirements.length ? " and the job requirements you loaded" : ""}.
+              </p>
+              {ivGenerating ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px 0", color: TOKENS.inkSoft, fontSize: 13 }}>
+                  <Loader2 size={14} className="spin" /> Building your question set...
+                </div>
+              ) : (
+                <Button variant="primary" icon={<Sparkles size={14} />} onClick={generateInterviewQuestions}>Generate interview questions</Button>
+              )}
+              {ivGenError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: 10 }}>Something went wrong generating questions. Try again.</p>}
+            </Card>
+          ) : (
+            <>
+              <Card style={{ marginBottom: 16, background: TOKENS.paper, border: "none", boxShadow: "none" }}>
+                <SectionHeading icon={<MessageSquare size={18} color={TOKENS.accent} />} title="Tell me about yourself — a starting draft" />
+                <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0, color: TOKENS.ink }}>{interviewQuestions.openingAnswer}</p>
+              </Card>
+
+              <Card style={{ marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.inkSoft }}>
+                    Question {currentQuestionIndex + 1} of {interviewQuestions.questions.length}
+                  </span>
+                  <span className="cf-badge">{interviewQuestions.questions[currentQuestionIndex].category}</span>
+                </div>
+
+                <p style={{ fontSize: 18, fontWeight: 600, margin: "0 0 16px", color: TOKENS.ink }}>
+                  {interviewQuestions.questions[currentQuestionIndex].text}
+                </p>
+
+                <textarea
+                  style={{ ...inputStyle, minHeight: 120, resize: "vertical", background: "#fff", marginBottom: 12 }}
+                  placeholder="Type your answer here..."
+                  value={currentAnswerText}
+                  onChange={(e) => setCurrentAnswerText(e.target.value)}
+                />
+
+                {answerEvaluating ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", color: TOKENS.inkSoft, fontSize: 13 }}>
+                    <Loader2 size={14} className="spin" /> Evaluating your answer...
+                  </div>
+                ) : answerResults[interviewQuestions.questions[currentQuestionIndex].id] ? (
+                  (() => {
+                    const result = answerResults[interviewQuestions.questions[currentQuestionIndex].id];
+                    return (
+                      <div style={{ background: TOKENS.paper, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                          <span style={{
+                            fontFamily: "'IBM Plex Mono', monospace", fontSize: 16, fontWeight: 700,
+                            color: result.score >= 8 ? TOKENS.green : result.score >= 5 ? TOKENS.gold : TOKENS.red,
+                          }}>
+                            {result.score}/10
+                          </span>
+                          <span style={{ fontSize: 13, fontWeight: 500, color: TOKENS.ink }}>Coaching feedback</span>
+                        </div>
+                        <p style={{ fontSize: 14, lineHeight: 1.6, margin: "0 0 10px", color: TOKENS.ink }}>{result.feedback}</p>
+                        {result.starRewrite && (
+                          <div style={{ background: "#fff", borderRadius: 8, padding: 12, marginBottom: 10, border: `1px solid ${TOKENS.line}` }}>
+                            <p style={{ fontSize: 12, fontWeight: 600, color: TOKENS.accent, margin: "0 0 6px", textTransform: "uppercase" }}>Stronger STAR version</p>
+                            <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0 }}>{result.starRewrite}</p>
+                          </div>
+                        )}
+                        {result.followUp && (
+                          <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: 0, fontStyle: "italic" }}>
+                            A hiring manager might follow up with: "{result.followUp}"
+                          </p>
+                        )}
+                        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                          <Button variant="ghost" icon={<RefreshCw size={13} />} onClick={retryCurrentAnswer}>Try again</Button>
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <Button variant="primary" icon={<Sparkles size={14} />} onClick={submitAnswer} disabled={!currentAnswerText.trim()}>
+                    Submit answer
+                  </Button>
+                )}
+
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16, paddingTop: 16, borderTop: `1px solid ${TOKENS.line}` }}>
+                  <Button variant="secondary" icon={<ChevronLeft size={14} />} onClick={() => goToQuestion(currentQuestionIndex - 1)} disabled={currentQuestionIndex === 0}>
+                    Previous
+                  </Button>
+                  <Button variant="secondary" onClick={() => goToQuestion(currentQuestionIndex + 1)} disabled={currentQuestionIndex === interviewQuestions.questions.length - 1}>
+                    Next <ChevronRight size={14} />
+                  </Button>
+                </div>
+              </Card>
+
+              <Card style={{ marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: TOKENS.ink }}>Readiness score</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 18, fontWeight: 700, color: TOKENS.accent }}>{readinessScore}/100</span>
+                </div>
+                <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: 0 }}>{answeredCount} of {totalQuestionsCount} questions answered</p>
+              </Card>
+            </>
+          )}
+
+          <div style={{ textAlign: "right" }}>
+            <Button variant="primary" icon={<ChevronRight size={14} />} onClick={() => { logRecentProject(); setStep(3); }} disabled={!allGenerated}>
+              Continue to report
+            </Button>
+          </div>
+        </div>
+      )}
+
       {step === 2 && mode === "application" && (
         <div>
           <BackButton onClick={() => setStep(1)} />
@@ -2036,7 +2439,7 @@ export default function ECareerDesign() {
         </div>
       )}
 
-      {step === 3 && (
+      {step === 3 && mode !== "interview" && (
         <>
           <BackButton onClick={() => setStep(2)} />
           <Card>
@@ -2183,6 +2586,84 @@ export default function ECareerDesign() {
         </>
       )}
 
+      {step === 3 && mode === "interview" && (
+        <>
+          <BackButton onClick={() => setStep(2)} />
+          <Card style={{ marginBottom: 16 }}>
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, margin: "0 0 4px" }}>Interview Readiness Report</h2>
+            <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "0 0 20px" }}>
+              {jobTitle || selectedLib?.title || "General practice"} · {ivInterviewType}
+            </p>
+
+            <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+              <Button variant="primary" icon={ivPdfGenerating ? <Loader2 size={14} className="spin" /> : <Download size={14} />} onClick={downloadInterviewReportPDF} disabled={ivPdfGenerating}>
+                {ivPdfGenerating ? "Preparing PDF..." : "Download PDF report"}
+              </Button>
+              <Button variant="secondary" icon={copiedKey === "iv-report" ? <Check size={14} /> : <Copy size={14} />} onClick={() => copyText("iv-report", buildInterviewReportPlainText())}>
+                {copiedKey === "iv-report" ? "Copied" : "Copy as text"}
+              </Button>
+            </div>
+            {ivPdfError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: -10, marginBottom: 16 }}>{ivPdfError}</p>}
+
+            <div ref={ivReportRef} style={{ background: "#fff" }}>
+              <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 24 }}>
+                <div style={{ textAlign: "center", background: TOKENS.paper, borderRadius: 12, padding: "18px 26px" }}>
+                  <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 32, fontWeight: 700, margin: 0, color: TOKENS.accent }}>{readinessScore}</p>
+                  <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "4px 0 0" }}>Readiness Score</p>
+                </div>
+                <div style={{ textAlign: "center", background: TOKENS.paper, borderRadius: 12, padding: "18px 26px" }}>
+                  <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 32, fontWeight: 700, margin: 0, color: TOKENS.ink }}>{answeredCount}/{totalQuestionsCount}</p>
+                  <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "4px 0 0" }}>Questions Completed</p>
+                </div>
+              </div>
+
+              {ivStrengths.length > 0 && (
+                <div style={{ marginBottom: 22 }}>
+                  <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.green, margin: "0 0 8px", textTransform: "uppercase" }}>Strengths</p>
+                  {ivStrengths.map((q) => (
+                    <p key={q.id} style={{ fontSize: 14, margin: "0 0 6px" }}>
+                      <strong>[{q.score}/10]</strong> {q.text}
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              {ivImprovements.length > 0 && (
+                <div style={{ marginBottom: 22 }}>
+                  <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.red, margin: "0 0 8px", textTransform: "uppercase" }}>Areas Needing Improvement</p>
+                  {ivImprovements.map((q) => (
+                    <p key={q.id} style={{ fontSize: 14, margin: "0 0 6px" }}>
+                      <strong>[{q.score}/10]</strong> {q.text}
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              <div>
+                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.accent, margin: "0 0 10px", textTransform: "uppercase" }}>Full Transcript</p>
+                {interviewQuestions?.questions.map((q, i) => {
+                  const r = answerResults[q.id];
+                  return (
+                    <div key={q.id} style={{ marginBottom: 18, paddingBottom: 18, borderBottom: i < interviewQuestions.questions.length - 1 ? `1px solid ${TOKENS.line}` : "none" }}>
+                      <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "0 0 4px" }}>{i + 1}. {q.category}</p>
+                      <p style={{ fontSize: 14, fontWeight: 600, margin: "0 0 8px" }}>{q.text}</p>
+                      {r ? (
+                        <>
+                          <p style={{ fontSize: 13, margin: "0 0 6px", color: "#444" }}>{r.answerText}</p>
+                          <p style={{ fontSize: 13, margin: 0, color: TOKENS.inkSoft }}>Score: {r.score}/10 — {r.feedback}</p>
+                        </>
+                      ) : (
+                        <p style={{ fontSize: 13, color: TOKENS.inkSoft, fontStyle: "italic", margin: 0 }}>Not answered</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </Card>
+        </>
+      )}
+
       {step === 3 && mode === "resume" && resumeData && (
         <Card style={{ marginTop: 16 }}>
           <SectionHeading icon={<Search size={18} color={TOKENS.accent} />} title="Find matching jobs" subtitle="Searches real, live postings and links you straight to the original listing to apply." />
@@ -2256,6 +2737,7 @@ export default function ECareerDesign() {
           onResumeBuilder={() => { setMode("resume"); setStep(1); setView("wizard"); }}
           onJobTailoring={() => { setMode("application"); setStep(0); setView("wizard"); }}
           onCoverLetter={() => { setMode("coverletter"); setStep(0); setView("wizard"); }}
+          onInterviewPrep={() => { setMode("interview"); setStep(0); setView("wizard"); }}
         />
       )}
 
