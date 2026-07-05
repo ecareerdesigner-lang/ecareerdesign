@@ -702,7 +702,7 @@ function Dashboard({ contactInfo, recentProjects, onResumeBuilder, onJobTailorin
         {timeGreeting()}{contactInfo?.name ? `, ${contactInfo.name.split(" ")[0]}` : ""}
       </p>
       <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 40, margin: "0 0 10px", letterSpacing: "-0.01em", color: TOKENS.ink }}>
-        CareerForge
+        eCareer Design
       </h1>
       <p style={{ fontSize: 18, color: TOKENS.inkSoft, margin: "0 0 20px", maxWidth: 560, lineHeight: 1.5 }}>
         Land more interviews with AI-powered resumes and STAR responses.
@@ -1567,7 +1567,7 @@ export default function ECareerDesign() {
                 onClick={() => setView("dashboard")}
                 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 40, margin: 0, letterSpacing: "-0.01em" }}
               >
-                CareerForge
+                eCareer Design
               </h1>
             </div>
             <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "6px 0 0", maxWidth: 620 }}>
@@ -1725,7 +1725,7 @@ export default function ECareerDesign() {
           <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => { setMode(null); setView("dashboard"); }}>← Home</Button>
           <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, margin: "0 0 4px" }}>Build a general resume</h2>
           <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "0 0 24px", lineHeight: 1.6 }}>
-            No job posting needed for this path. Head straight to your background — work experience, education, and training — and CareerForge will turn it into a polished, general-purpose resume.
+            No job posting needed for this path. Head straight to your background — work experience, education, and training — and eCareer Design will turn it into a polished, general-purpose resume.
           </p>
           <Button variant="primary" onClick={goToBackground} icon={<ChevronRight size={14} />}>
             Continue to background
@@ -1738,7 +1738,7 @@ export default function ECareerDesign() {
           <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => { setMode(null); setView("dashboard"); }}>← Home</Button>
           <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, margin: "0 0 4px" }}>Job details</h2>
           <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "0 0 24px", lineHeight: 1.6 }}>
-            Tell us who you're writing to. Your background comes next, and CareerForge will draft the letter itself.
+            Tell us who you're writing to. Your background comes next, and eCareer Design will draft the letter itself.
           </p>
           <Field label="Company name">
             <input style={inputStyle} placeholder="e.g., Acme Corporation" value={clCompanyName} onChange={(e) => setClCompanyName(e.target.value)} />
@@ -2090,7 +2090,7 @@ export default function ECareerDesign() {
             <Card style={{ marginBottom: 16 }}>
               <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, margin: "0 0 4px" }}>Ready to start</h2>
               <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "0 0 20px" }}>
-                CareerForge will generate a realistic question set for {ivInterviewType.toLowerCase()}
+                eCareer Design will generate a realistic question set for {ivInterviewType.toLowerCase()}
                 {jobTitle || selectedLib?.title ? ` targeting ${jobTitle || selectedLib?.title}` : ""}, based on your background{requirements.length ? " and the job requirements you loaded" : ""}.
               </p>
               {ivGenerating ? (
@@ -2623,7 +2623,7 @@ export default function ECareerDesign() {
       )}
 
       <p style={{ textAlign: "center", fontSize: 12, color: "#9AA3A0", marginTop: 40 }}>
-        CareerForge AI Resume Studio · {APP_VERSION}
+        eCareer Design AI Resume Studio · {APP_VERSION}
       </p>
     </div>
   );

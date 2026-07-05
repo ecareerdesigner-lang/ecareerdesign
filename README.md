@@ -1,4 +1,4 @@
-# CareerForge
+# eCareer Design
 
 STAR-format response and resume builder for your next job application.
 
