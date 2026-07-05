@@ -1377,23 +1377,30 @@ export default function ECareerDesign() {
       backgroundColor: "#ffffff",
     });
 
+    // Diagnostic: log exactly what was captured. A single Letter page at
+    // scale 1.5 should be roughly 1050x1360px — if this comes back far
+    // taller than that, the captured element itself is laid out wrong
+    // (e.g. rendering far more content height than a single visual page).
+    console.log(`[PDF capture] element=${element.className || element.tagName} canvas=${canvas.width}x${canvas.height}px`);
+
     // Sanity check: a real one-to-few-page document should never come back
     // this large. If it does, something is wrong with the captured layout —
     // fail with a clear error instead of trying to process a runaway canvas,
     // which is what was crashing the browser tab with an out-of-memory error.
     const MAX_CANVAS_DIMENSION = 20000;
     if (!canvas.width || !canvas.height || canvas.height > MAX_CANVAS_DIMENSION || canvas.width > MAX_CANVAS_DIMENSION) {
-      throw new Error("The content captured for PDF export looks invalid (unexpected size). Please try again.");
+      throw new Error(`Captured content looks invalid: ${canvas.width}x${canvas.height}px. Please try again.`);
     }
 
     const pdf = new jsPDF({ unit: "pt", format: "letter" });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const scaledHeight = (canvas.height * pageWidth) / canvas.width;
+    let pageCount = 1;
 
     if (scaledHeight <= pageHeight) {
       // Fits on one page.
-      pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pageWidth, scaledHeight);
+      pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, pageWidth, scaledHeight);
     } else {
       // Slice the full-resolution canvas into page-sized chunks and add
       // each as its own PDF page, so multi-page documents still print cleanly.
@@ -1414,7 +1421,7 @@ export default function ECareerDesign() {
 
         if (pageIndex > 0) pdf.addPage();
         const sliceHeightPt = (sliceHeightPx * pageWidth) / canvas.width;
-        pdf.addImage(pageCanvas.toDataURL("image/png"), "PNG", 0, 0, pageWidth, sliceHeightPt);
+        pdf.addImage(pageCanvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, pageWidth, sliceHeightPt);
 
         // Explicitly release this page's canvas memory before the next
         // iteration rather than waiting on garbage collection.
@@ -1424,7 +1431,11 @@ export default function ECareerDesign() {
         renderedPx += sliceHeightPx;
         pageIndex += 1;
       }
+      pageCount = pageIndex;
     }
+
+    console.log(`[PDF capture] produced ${pageCount} page(s)`);
+    pdf.__captureMeta = { canvasWidth: canvas.width, canvasHeight: canvas.height, pageCount };
 
     return pdf;
   }
@@ -1576,18 +1587,22 @@ export default function ECareerDesign() {
       let pdfFailReason = "";
       const wantsPdf = mode === "resume" || mode === "coverletter" || mode === "interview";
       try {
+        let pdfMeta = null;
         if (mode === "resume" && resumeExportRef.current) {
           const pdf = await buildPdfFromElement(resumeExportRef.current);
+          pdfMeta = pdf.__captureMeta;
           pdfBase64 = arrayBufferToBase64(pdf.output("arraybuffer"));
           pdfFilename = `${(contactInfo.name || "resume").replace(/\s+/g, "_")}.pdf`;
         } else if (mode === "coverletter" && coverLetterExportRef.current) {
           const pdf = await buildPdfFromElement(coverLetterExportRef.current);
+          pdfMeta = pdf.__captureMeta;
           pdfBase64 = arrayBufferToBase64(pdf.output("arraybuffer"));
           const name = contactInfo.name || "cover_letter";
           const company = clCompanyName ? `_${clCompanyName}` : "";
           pdfFilename = `${(name + company).replace(/\s+/g, "_")}.pdf`;
         } else if (mode === "interview" && ivReportRef.current) {
           const pdf = await buildPdfFromElement(ivReportRef.current);
+          pdfMeta = pdf.__captureMeta;
           pdfBase64 = arrayBufferToBase64(pdf.output("arraybuffer"));
           pdfFilename = "interview_readiness_report.pdf";
         } else if (wantsPdf) {
@@ -1610,7 +1625,8 @@ export default function ECareerDesign() {
       const MAX_PDF_BASE64_CHARS = 3_000_000;
       if (pdfBase64 && pdfBase64.length > MAX_PDF_BASE64_CHARS) {
         console.error("Generated PDF too large to email, sending text-only instead:", pdfBase64.length);
-        pdfFailReason = `The generated PDF was too large to email (${Math.round(pdfBase64.length / 1024)}KB encoded).`;
+        const dims = pdfMeta ? ` — captured at ${pdfMeta.canvasWidth}x${pdfMeta.canvasHeight}px across ${pdfMeta.pageCount} page(s)` : "";
+        pdfFailReason = `The generated PDF was too large to email (${Math.round(pdfBase64.length / 1024)}KB encoded)${dims}.`;
         pdfBase64 = null;
         pdfFilename = null;
       }
