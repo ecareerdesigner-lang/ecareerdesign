@@ -5,7 +5,7 @@ import {
   Search, FileText, Check, RefreshCw, Copy, Download,
   ChevronRight, ChevronLeft, Sparkles, AlertCircle, Save, Plus, Trash2,
   Loader2, Briefcase, GraduationCap, Award, ExternalLink,
-  Mail, MessageSquare, Clock, Star
+  Mail, MessageSquare, Clock, Star, X
 } from "lucide-react";
 
 const TOKENS = {
@@ -696,7 +696,7 @@ function relativeDate(iso) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function Dashboard({ contactInfo, recentProjects, onResumeBuilder, onJobTailoring, onCoverLetter, onInterviewPrep }) {
+function Dashboard({ contactInfo, recentProjects, onResumeBuilder, onJobTailoring, onCoverLetter, onInterviewPrep, onRemoveProject }) {
   return (
     <div>
       <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "0 0 6px" }}>
@@ -765,6 +765,20 @@ function Dashboard({ contactInfo, recentProjects, onResumeBuilder, onJobTailorin
                 <span style={{ fontSize: 14, fontWeight: 500, flex: 1, color: TOKENS.ink }}>{p.title}</span>
                 <span style={{ fontSize: 12, color: TOKENS.inkSoft }}>{p.type}</span>
                 <span style={{ fontSize: 12, color: "#9AA3A0" }}>{relativeDate(p.date)}</span>
+                <button
+                  onClick={() => onRemoveProject(p.id)}
+                  aria-label="Remove this project"
+                  title="Remove"
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    width: 24, height: 24, borderRadius: "50%", border: "none",
+                    background: "transparent", color: "#9AA3A0", cursor: "pointer", flexShrink: 0,
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = TOKENS.redSoft; e.currentTarget.style.color = TOKENS.red; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#9AA3A0"; }}
+                >
+                  <X size={14} />
+                </button>
               </div>
             ))}
           </div>
@@ -924,6 +938,18 @@ export default function ECareerDesign() {
     };
     setRecentProjects((prev) => {
       const next = [entry, ...prev].slice(0, 8);
+      try {
+        localStorage.setItem("ecareerdesign-recent-projects", JSON.stringify(next));
+      } catch (e) {
+        // non-fatal
+      }
+      return next;
+    });
+  }
+
+  function removeRecentProject(id) {
+    setRecentProjects((prev) => {
+      const next = prev.filter((p) => p.id !== id);
       try {
         localStorage.setItem("ecareerdesign-recent-projects", JSON.stringify(next));
       } catch (e) {
@@ -2819,6 +2845,7 @@ export default function ECareerDesign() {
           onJobTailoring={() => { setMode("application"); setStep(0); setView("wizard"); }}
           onCoverLetter={() => { setMode("coverletter"); setStep(0); setView("wizard"); }}
           onInterviewPrep={() => { setMode("interview"); setStep(0); setView("wizard"); }}
+          onRemoveProject={removeRecentProject}
         />
       )}
 
