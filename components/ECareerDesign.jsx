@@ -1371,15 +1371,24 @@ export default function ECareerDesign() {
     }
 
     const canvas = await html2canvas(element, {
-      scale: 2,
+      scale: 1.5,
       useCORS: true,
       backgroundColor: "#ffffff",
     });
 
+    // Sanity check: a real one-to-few-page document should never come back
+    // this large. If it does, something is wrong with the captured layout —
+    // fail with a clear error instead of trying to process a runaway canvas,
+    // which is what was crashing the browser tab with an out-of-memory error.
+    const MAX_CANVAS_DIMENSION = 20000;
+    if (!canvas.width || !canvas.height || canvas.height > MAX_CANVAS_DIMENSION || canvas.width > MAX_CANVAS_DIMENSION) {
+      throw new Error("The content captured for PDF export looks invalid (unexpected size). Please try again.");
+    }
+
     const pdf = new jsPDF({ unit: "pt", format: "letter" });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    const scaledHeight = (canvas.width > 0 ? (canvas.height * pageWidth) / canvas.width : 0);
+    const scaledHeight = (canvas.height * pageWidth) / canvas.width;
 
     if (scaledHeight <= pageHeight) {
       // Fits on one page.
@@ -1387,10 +1396,14 @@ export default function ECareerDesign() {
     } else {
       // Slice the full-resolution canvas into page-sized chunks and add
       // each as its own PDF page, so multi-page documents still print cleanly.
-      const pageHeightPx = Math.floor((canvas.width * pageHeight) / pageWidth);
+      // pageHeightPx is guaranteed >= 1 here since canvas.width/pageWidth/pageHeight
+      // are all positive at this point, but MAX_PAGES is a hard backstop against
+      // any future change (or edge case) accidentally reintroducing a runaway loop.
+      const pageHeightPx = Math.max(1, Math.floor((canvas.width * pageHeight) / pageWidth));
+      const MAX_PAGES = 30;
       let renderedPx = 0;
       let pageIndex = 0;
-      while (renderedPx < canvas.height) {
+      while (renderedPx < canvas.height && pageIndex < MAX_PAGES) {
         const sliceHeightPx = Math.min(pageHeightPx, canvas.height - renderedPx);
         const pageCanvas = document.createElement("canvas");
         pageCanvas.width = canvas.width;
@@ -1401,6 +1414,11 @@ export default function ECareerDesign() {
         if (pageIndex > 0) pdf.addPage();
         const sliceHeightPt = (sliceHeightPx * pageWidth) / canvas.width;
         pdf.addImage(pageCanvas.toDataURL("image/png"), "PNG", 0, 0, pageWidth, sliceHeightPt);
+
+        // Explicitly release this page's canvas memory before the next
+        // iteration rather than waiting on garbage collection.
+        pageCanvas.width = 0;
+        pageCanvas.height = 0;
 
         renderedPx += sliceHeightPx;
         pageIndex += 1;
