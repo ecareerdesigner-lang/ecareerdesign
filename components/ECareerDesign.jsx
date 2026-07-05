@@ -29,36 +29,6 @@ const APP_VERSION = "v2.0";
 
 const FONTS_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');`;
 
-const LIBRARY = [
-  {
-    title: "Management and Program Analyst",
-    requirements: [
-      "Ability to analyze and evaluate program operations, identify deficiencies, and recommend improvements to meet organizational goals.",
-      "Knowledge of federal budget formulation, execution, and performance measurement sufficient to support program planning.",
-      "Ability to communicate findings and recommendations clearly in written reports and oral briefings to senior leadership.",
-      "Skill in coordinating with multiple stakeholders to implement process improvements across a large organization.",
-    ],
-  },
-  {
-    title: "IT Specialist (INFOSEC)",
-    requirements: [
-      "Knowledge of information security principles and practices sufficient to assess and mitigate risks to information systems.",
-      "Ability to develop, implement, and enforce security policies and procedures in accordance with federal guidelines.",
-      "Skill in incident response, including identifying, containing, and reporting security incidents.",
-      "Ability to communicate technical security concepts to non-technical stakeholders and leadership.",
-    ],
-  },
-  {
-    title: "Human Resources Specialist (Recruitment and Placement)",
-    requirements: [
-      "Knowledge of federal hiring authorities, classification standards, and recruitment strategies.",
-      "Ability to advise management on staffing plans and workforce needs.",
-      "Skill in evaluating applicant qualifications against position requirements.",
-      "Ability to communicate effectively with applicants, hiring managers, and HR staff throughout the hiring process.",
-    ],
-  },
-];
-
 const TOTAL_BUDGET = 6000;   // Summary of Accomplishments (requirement responses), combined
 const SKILLS_BUDGET = 2000;  // Special Skills & Associations, independent cap
 const WORK_EXP_BUDGET = 1500; // Each work experience description, independent cap per entry
@@ -808,7 +778,6 @@ export default function ECareerDesign() {
   const [step, setStep] = useState(0);
   const [mode, setMode] = useState(null); // 'application' | 'resume'
   const [jobTitle, setJobTitle] = useState("");
-  const [sourceMode, setSourceMode] = useState("library");
   const [rawPosting, setRawPosting] = useState("");
   const [selectedLib, setSelectedLib] = useState(null);
   const [requirements, setRequirements] = useState([]);
@@ -954,16 +923,6 @@ export default function ECareerDesign() {
       }
       return next;
     });
-  }
-
-  const filteredLibrary = LIBRARY.filter((l) =>
-    jobTitle.trim() === "" ? true : l.title.toLowerCase().includes(jobTitle.toLowerCase())
-  );
-
-  function chooseLibraryEntry(entry) {
-    setSelectedLib(entry);
-    setRequirements(entry.requirements.map((text, i) => ({ id: `r${i}`, text })));
-    setExtractError("");
   }
 
   async function extractFromPosting() {
@@ -1673,61 +1632,20 @@ export default function ECareerDesign() {
             />
           </Field>
 
-          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-            <Button variant={sourceMode === "library" ? "ink" : "secondary"} icon={<Search size={14} />} onClick={() => setSourceMode("library")}>
-              Search library
+          <div>
+            <Field label="Paste the Qualifications / Requirements section from the job posting">
+              <textarea
+                style={{ ...inputStyle, minHeight: 140, resize: "vertical" }}
+                value={rawPosting}
+                onChange={(e) => setRawPosting(e.target.value)}
+                placeholder="Paste the qualifications text here..."
+              />
+            </Field>
+            <Button variant="ink" icon={extracting ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />} onClick={extractFromPosting} disabled={extracting || !rawPosting.trim()}>
+              {extracting ? "Extracting..." : "Extract requirements"}
             </Button>
-            <Button variant={sourceMode === "paste" ? "ink" : "secondary"} icon={<FileText size={14} />} onClick={() => setSourceMode("paste")}>
-              Paste posting
-            </Button>
+            {extractError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: 10 }}>{extractError}</p>}
           </div>
-
-          {sourceMode === "library" && (
-            <div>
-              {filteredLibrary.length === 0 && (
-                <p style={{ fontSize: 13, color: TOKENS.inkSoft }}>No library match. Try "Paste posting" instead.</p>
-              )}
-              {filteredLibrary.map((entry) => (
-                <div
-                  key={entry.title}
-                  onClick={() => chooseLibraryEntry(entry)}
-                  style={{
-                    padding: "12px 14px",
-                    border: `1px solid ${selectedLib?.title === entry.title ? TOKENS.accent : TOKENS.line}`,
-                    background: selectedLib?.title === entry.title ? TOKENS.accentSoft : TOKENS.paper,
-                    borderRadius: 3, marginBottom: 8, cursor: "pointer",
-                    display: "flex", justifyContent: "space-between", alignItems: "center",
-                  }}
-                >
-                  <div>
-                    <p style={{ fontSize: 14, fontWeight: 500, margin: 0 }}>{entry.title}</p>
-                    <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "2px 0 0" }}>{entry.requirements.length} qualifications on file</p>
-                  </div>
-                  <ChevronRight size={16} color={TOKENS.inkSoft} />
-                </div>
-              ))}
-              <p style={{ fontSize: 12, color: TOKENS.inkSoft, marginTop: 10 }}>
-                Sample entries for this demo. In production, this library is populated and kept current by an admin.
-              </p>
-            </div>
-          )}
-
-          {sourceMode === "paste" && (
-            <div>
-              <Field label="Paste the Qualifications / Requirements section from the job posting">
-                <textarea
-                  style={{ ...inputStyle, minHeight: 140, resize: "vertical" }}
-                  value={rawPosting}
-                  onChange={(e) => setRawPosting(e.target.value)}
-                  placeholder="Paste the qualifications text here..."
-                />
-              </Field>
-              <Button variant="ink" icon={extracting ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />} onClick={extractFromPosting} disabled={extracting || !rawPosting.trim()}>
-                {extracting ? "Extracting..." : "Extract requirements"}
-              </Button>
-              {extractError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: 10 }}>{extractError}</p>}
-            </div>
-          )}
 
           {requirements.length > 0 && (
             <div style={{ marginTop: 24, borderTop: `1px solid ${TOKENS.line}`, paddingTop: 18 }}>
@@ -1769,58 +1687,20 @@ export default function ECareerDesign() {
             />
           </Field>
 
-          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-            <Button variant={sourceMode === "library" ? "ink" : "secondary"} icon={<Search size={14} />} onClick={() => setSourceMode("library")}>
-              Search library
+          <div>
+            <Field label="Paste the Qualifications / Requirements section from the job posting (optional)">
+              <textarea
+                style={{ ...inputStyle, minHeight: 140, resize: "vertical" }}
+                value={rawPosting}
+                onChange={(e) => setRawPosting(e.target.value)}
+                placeholder="Paste the qualifications text here..."
+              />
+            </Field>
+            <Button variant="ink" icon={extracting ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />} onClick={extractFromPosting} disabled={extracting || !rawPosting.trim()}>
+              {extracting ? "Extracting..." : "Extract requirements"}
             </Button>
-            <Button variant={sourceMode === "paste" ? "ink" : "secondary"} icon={<FileText size={14} />} onClick={() => setSourceMode("paste")}>
-              Paste posting
-            </Button>
+            {extractError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: 10 }}>{extractError}</p>}
           </div>
-
-          {sourceMode === "library" && (
-            <div>
-              {filteredLibrary.length === 0 && (
-                <p style={{ fontSize: 13, color: TOKENS.inkSoft }}>No library match. Try "Paste posting" instead, or skip straight to background for general questions.</p>
-              )}
-              {filteredLibrary.map((entry) => (
-                <div
-                  key={entry.title}
-                  onClick={() => chooseLibraryEntry(entry)}
-                  style={{
-                    padding: "12px 14px",
-                    border: `1px solid ${selectedLib?.title === entry.title ? TOKENS.accent : TOKENS.line}`,
-                    background: selectedLib?.title === entry.title ? TOKENS.accentSoft : TOKENS.paper,
-                    borderRadius: 3, marginBottom: 8, cursor: "pointer",
-                    display: "flex", justifyContent: "space-between", alignItems: "center",
-                  }}
-                >
-                  <div>
-                    <p style={{ fontSize: 14, fontWeight: 500, margin: 0 }}>{entry.title}</p>
-                    <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: "2px 0 0" }}>{entry.requirements.length} qualifications on file</p>
-                  </div>
-                  <ChevronRight size={16} color={TOKENS.inkSoft} />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {sourceMode === "paste" && (
-            <div>
-              <Field label="Paste the Qualifications / Requirements section from the job posting (optional)">
-                <textarea
-                  style={{ ...inputStyle, minHeight: 140, resize: "vertical" }}
-                  value={rawPosting}
-                  onChange={(e) => setRawPosting(e.target.value)}
-                  placeholder="Paste the qualifications text here..."
-                />
-              </Field>
-              <Button variant="ink" icon={extracting ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />} onClick={extractFromPosting} disabled={extracting || !rawPosting.trim()}>
-                {extracting ? "Extracting..." : "Extract requirements"}
-              </Button>
-              {extractError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: 10 }}>{extractError}</p>}
-            </div>
-          )}
 
           {requirements.length > 0 && (
             <div style={{ marginTop: 24, borderTop: `1px solid ${TOKENS.line}`, paddingTop: 18 }}>
