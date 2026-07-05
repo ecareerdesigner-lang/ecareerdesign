@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import {
   Search, FileText, Check, RefreshCw, Copy, Download,
   ChevronRight, ChevronLeft, Sparkles, AlertCircle, Save, Plus, Trash2,
@@ -2624,6 +2625,9 @@ export default function ECareerDesign() {
 
       <p style={{ textAlign: "center", fontSize: 12, color: "#9AA3A0", marginTop: 40 }}>
         eCareer Design AI Resume Studio · {APP_VERSION}
+        <br />
+        <Link href="/privacy" style={{ color: "#9AA3A0", marginRight: 12 }}>Privacy Notice</Link>
+        <Link href="/terms" style={{ color: "#9AA3A0" }}>Terms of Use</Link>
       </p>
     </div>
   );
