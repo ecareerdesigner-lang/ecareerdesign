@@ -5,7 +5,7 @@ import {
   Search, FileText, Check, RefreshCw, Copy, Download,
   ChevronRight, ChevronLeft, Sparkles, AlertCircle, Save, Plus, Trash2,
   Loader2, Briefcase, GraduationCap, Award, ExternalLink,
-  Mail, MessageSquare, Clock, Star, X
+  Mail, MessageSquare, Clock, Star, X, Send
 } from "lucide-react";
 
 const TOKENS = {
@@ -694,6 +694,161 @@ function relativeDate(iso) {
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function VirtualAssistant() {
+  const GREETING = "Hi! I'm here to help you use eCareer Design — building a resume, tailoring an application, writing a cover letter, or prepping for an interview. What do you need help with?";
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState([{ role: "assistant", content: GREETING }]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isOpen]);
+
+  async function sendMessage() {
+    const text = input.trim();
+    if (!text || sending) return;
+    const nextMessages = [...messages, { role: "user", content: text }];
+    setMessages(nextMessages);
+    setInput("");
+    setSending(true);
+    setError("");
+    try {
+      const res = await fetch("/api/assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: nextMessages }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setError(data.error || "Something went wrong.");
+      } else {
+        setMessages((prev) => [...prev, { role: "assistant", content: data.text || "Sorry, I didn't catch that." }]);
+      }
+    } catch (e) {
+      setError("Could not reach the assistant.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  return (
+    <>
+      {isOpen && (
+        <div
+          style={{
+            position: "fixed", bottom: 96, right: 24, width: 340, maxWidth: "calc(100vw - 32px)",
+            height: 460, maxHeight: "calc(100vh - 140px)", background: "#fff", borderRadius: 16,
+            boxShadow: "0 8px 24px rgba(16,24,40,0.18), 0 2px 6px rgba(16,24,40,0.1)",
+            display: "flex", flexDirection: "column", overflow: "hidden", zIndex: 1000,
+            fontFamily: "'Inter', sans-serif",
+          }}
+        >
+          <div style={{
+            background: `linear-gradient(135deg, ${TOKENS.ink}, ${TOKENS.iconDark})`,
+            color: "#fff", padding: "14px 16px", display: "flex", alignItems: "center", gap: 10,
+          }}>
+            <div style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <MessageSquare size={16} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontFamily: "'Fraunces', serif", fontSize: 15, fontWeight: 600, margin: 0 }}>eCareer Design Assistant</p>
+              <p style={{ fontSize: 11, margin: 0, opacity: 0.8, display: "flex", alignItems: "center", gap: 5 }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ADE80", display: "inline-block" }} /> Here to help
+              </p>
+            </div>
+            <button
+              onClick={() => setIsOpen(false)}
+              aria-label="Close assistant"
+              style={{ background: "transparent", border: "none", color: "#fff", cursor: "pointer", padding: 4, display: "flex" }}
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "14px 16px", background: TOKENS.paper }}>
+            {messages.map((m, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start", marginBottom: 10 }}>
+                <div style={{
+                  maxWidth: "85%", padding: "9px 13px", borderRadius: 14,
+                  background: m.role === "user" ? TOKENS.accent : "#fff",
+                  color: m.role === "user" ? "#fff" : TOKENS.ink,
+                  fontSize: 13.5, lineHeight: 1.5,
+                  boxShadow: m.role === "user" ? "none" : "0 1px 2px rgba(16,24,40,0.06)",
+                  borderBottomRightRadius: m.role === "user" ? 4 : 14,
+                  borderBottomLeftRadius: m.role === "user" ? 14 : 4,
+                }}>
+                  {m.content}
+                </div>
+              </div>
+            ))}
+            {sending && (
+              <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: 10 }}>
+                <div style={{ padding: "9px 13px", borderRadius: 14, background: "#fff", boxShadow: "0 1px 2px rgba(16,24,40,0.06)" }}>
+                  <Loader2 size={14} className="spin" color={TOKENS.inkSoft} />
+                </div>
+              </div>
+            )}
+            {error && <p style={{ color: TOKENS.red, fontSize: 12, textAlign: "center", marginTop: 8 }}>{error}</p>}
+          </div>
+
+          <div style={{ display: "flex", gap: 8, padding: 12, borderTop: `1px solid ${TOKENS.line}`, background: "#fff" }}>
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask how to use eCareer Design..."
+              rows={1}
+              style={{
+                flex: 1, resize: "none", border: `1px solid ${TOKENS.line}`, borderRadius: 10,
+                padding: "9px 12px", fontSize: 13.5, fontFamily: "'Inter', sans-serif", outline: "none",
+                maxHeight: 70,
+              }}
+            />
+            <button
+              onClick={sendMessage}
+              disabled={sending || !input.trim()}
+              aria-label="Send"
+              style={{
+                width: 38, height: 38, borderRadius: 10, border: "none", flexShrink: 0,
+                background: TOKENS.accent, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: sending || !input.trim() ? "default" : "pointer", opacity: sending || !input.trim() ? 0.5 : 1,
+              }}
+            >
+              <Send size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <button
+        onClick={() => setIsOpen((v) => !v)}
+        aria-label={isOpen ? "Close assistant" : "Open assistant"}
+        className="cf-card-interactive"
+        style={{
+          position: "fixed", bottom: 24, right: 24, width: 56, height: 56, borderRadius: "50%",
+          background: `linear-gradient(135deg, ${TOKENS.ink}, ${TOKENS.iconDark})`,
+          border: "none", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 4px 14px rgba(16,24,40,0.25)", cursor: "pointer", zIndex: 1001,
+        }}
+      >
+        {isOpen ? <X size={22} /> : <MessageSquare size={22} />}
+      </button>
+    </>
+  );
 }
 
 function Dashboard({ contactInfo, recentProjects, onResumeBuilder, onJobTailoring, onCoverLetter, onInterviewPrep, onRemoveProject }) {
@@ -2856,6 +3011,8 @@ export default function ECareerDesign() {
         <Link href="/terms" style={{ color: "#9AA3A0", marginRight: 12 }}>Terms of Use</Link>
         <a href="mailto:hello@ecareerdesign.net" style={{ color: "#9AA3A0" }}>Contact Us</a>
       </p>
+
+      <VirtualAssistant />
     </div>
   );
 }
