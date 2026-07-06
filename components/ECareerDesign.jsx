@@ -28,8 +28,6 @@ const TOKENS = {
 
 const APP_VERSION = "v2.0";
 
-const FONTS_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');`;
-
 const TOTAL_BUDGET = 6000;   // Summary of Accomplishments (requirement responses), combined
 const SKILLS_BUDGET = 2000;  // Special Skills & Associations, independent cap
 const WORK_EXP_BUDGET = 1500; // Each work experience description, independent cap per entry
@@ -1918,7 +1916,6 @@ export default function ECareerDesign() {
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", color: TOKENS.ink, maxWidth: 880, margin: "0 auto", padding: "2rem 1.5rem" }}>
       <style>{`
-        ${FONTS_IMPORT}
         input:focus, textarea:focus, select:focus { border-color: ${TOKENS.accent} !important; }
         ::placeholder { color: #9AA39B; }
         textarea, select { font-family: 'Inter', sans-serif; }

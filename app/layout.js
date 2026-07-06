@@ -1,5 +1,27 @@
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Fraunces, Inter, IBM_Plex_Mono } from "next/font/google";
+
+// Self-hosted via Next.js instead of a runtime @import: these get included
+// directly in the initial HTML response, so there's no separate network
+// round-trip and no text reflow once a late-loading stylesheet arrives —
+// that reflow was the main driver of a poor Cumulative Layout Shift score.
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
+  display: "swap",
+});
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  display: "swap",
+});
 
 export const metadata = {
   metadataBase: new URL("https://ecareerdesign.net"),
@@ -22,7 +44,10 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, background: "#EEF0EC" }}>
+      <body
+        className={`${fraunces.className} ${inter.className} ${ibmPlexMono.className}`}
+        style={{ margin: 0, background: "#EEF0EC" }}
+      >
         {children}
         <Analytics />
         <SpeedInsights />
