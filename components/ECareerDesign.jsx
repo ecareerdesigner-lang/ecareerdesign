@@ -405,10 +405,13 @@ const resumePageStyle = {
   fontFamily: "'Inter', sans-serif", color: "#1a1a1a", overflow: "hidden",
 };
 
-function ResumeSidebarTemplate({ contact, data, color }) {
+function ResumeSidebarTemplate({ contact, data, color, photo }) {
   return (
     <div style={{ ...resumePageStyle, display: "flex", borderRadius: 4 }}>
       <div style={{ width: "34%", background: color, color: "#fff", padding: "28px 20px" }}>
+        {photo && (
+          <img src={photo} alt="" style={{ width: 88, height: 88, borderRadius: "50%", objectFit: "cover", border: "3px solid rgba(255,255,255,0.5)", marginBottom: 16, display: "block" }} />
+        )}
         <p style={{ fontFamily: "'Fraunces', serif", fontSize: 28, fontWeight: 600, margin: "0 0 4px", lineHeight: 1.2 }}>{contact.name || "Your Name"}</p>
         <div style={{ fontSize: 11, opacity: 0.9, lineHeight: 1.7, marginBottom: 22 }}>
           {contact.email && <p style={{ margin: 0 }}>{contact.email}</p>}
@@ -464,7 +467,7 @@ function ResumeSidebarTemplate({ contact, data, color }) {
   );
 }
 
-function ResumeClassicTemplate({ contact, data, color }) {
+function ResumeClassicTemplate({ contact, data, color, photo }) {
   const sectionHeading = (label) => (
     <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "22px 0 10px" }}>
       <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color, whiteSpace: "nowrap" }}>{label}</span>
@@ -474,6 +477,9 @@ function ResumeClassicTemplate({ contact, data, color }) {
   return (
     <div style={{ ...resumePageStyle, border: `2px solid ${color}`, borderRadius: 4, padding: "32px 36px" }}>
       <div style={{ textAlign: "center", marginBottom: 6 }}>
+        {photo && (
+          <img src={photo} alt="" style={{ width: 92, height: 92, borderRadius: "50%", objectFit: "cover", border: `3px solid ${color}`, margin: "0 auto 14px", display: "block" }} />
+        )}
         <p style={{ fontFamily: "'Fraunces', serif", fontSize: 24, fontWeight: 600, letterSpacing: "0.03em", margin: 0 }}>{contact.name || "Your Name"}</p>
         <p style={{ fontSize: 12, color: "#555", margin: "6px 0 0" }}>
           {[contact.location, contact.phone, contact.email].filter(Boolean).join("  ·  ")}
@@ -533,16 +539,23 @@ function ResumeClassicTemplate({ contact, data, color }) {
   );
 }
 
-function ResumeMinimalTemplate({ contact, data, color }) {
+function ResumeMinimalTemplate({ contact, data, color, photo }) {
   const sectionHeading = (label) => (
     <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color, margin: "22px 0 8px" }}>{label}</p>
   );
   return (
     <div style={{ ...resumePageStyle, padding: "32px 36px" }}>
-      <p style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 600, color, margin: 0 }}>{contact.name || "Your Name"}</p>
-      <p style={{ fontSize: 12, color: "#666", margin: "4px 0 0" }}>
-        {[contact.email, contact.phone, contact.location].filter(Boolean).join("   ")}
-      </p>
+      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        {photo && (
+          <img src={photo} alt="" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+        )}
+        <div>
+          <p style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 600, color, margin: 0 }}>{contact.name || "Your Name"}</p>
+          <p style={{ fontSize: 12, color: "#666", margin: "4px 0 0" }}>
+            {[contact.email, contact.phone, contact.location].filter(Boolean).join("   ")}
+          </p>
+        </div>
+      </div>
 
       {data.summary && (
         <div>
@@ -591,10 +604,10 @@ function ResumeMinimalTemplate({ contact, data, color }) {
   );
 }
 
-function ResumePreview({ template, contact, data, color }) {
-  if (template === "classic") return <ResumeClassicTemplate contact={contact} data={data} color={color} />;
-  if (template === "minimal") return <ResumeMinimalTemplate contact={contact} data={data} color={color} />;
-  return <ResumeSidebarTemplate contact={contact} data={data} color={color} />;
+function ResumePreview({ template, contact, data, color, photo }) {
+  if (template === "classic") return <ResumeClassicTemplate contact={contact} data={data} color={color} photo={photo} />;
+  if (template === "minimal") return <ResumeMinimalTemplate contact={contact} data={data} color={color} photo={photo} />;
+  return <ResumeSidebarTemplate contact={contact} data={data} color={color} photo={photo} />;
 }
 
 function LetterBody({ contact, data }) {
@@ -953,6 +966,9 @@ export default function ECareerDesign() {
   const [extractError, setExtractError] = useState("");
 
   const [contactInfo, setContactInfo] = useState({ name: "", email: "", phone: "", location: "" });
+  const [resumePhoto, setResumePhoto] = useState(null);
+  const [photoProcessing, setPhotoProcessing] = useState(false);
+  const [photoError, setPhotoError] = useState("");
   const [resumeData, setResumeData] = useState(null);
   const [resumeGenerating, setResumeGenerating] = useState(false);
   const [resumeError, setResumeError] = useState(false);
@@ -1033,6 +1049,7 @@ export default function ECareerDesign() {
         if (saved.trainingPasteText) setTrainingPasteText(saved.trainingPasteText);
         if (saved.additionalContext) setAdditionalContext(saved.additionalContext);
         if (saved.contactInfo) setContactInfo(saved.contactInfo);
+        if (saved.resumePhoto) setResumePhoto(saved.resumePhoto);
       }
     } catch (e) {
       // no saved profile yet
@@ -1065,14 +1082,14 @@ export default function ECareerDesign() {
   const saveProfile = useCallback(() => {
     try {
       localStorage.setItem("ecareerdesign-profile", JSON.stringify({
-        workExperience, education, trainingEntries, trainingPasteText, additionalContext, contactInfo,
+        workExperience, education, trainingEntries, trainingPasteText, additionalContext, contactInfo, resumePhoto,
       }));
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 1800);
     } catch (e) {
       console.error("Storage error", e);
     }
-  }, [workExperience, education, trainingEntries, trainingPasteText, additionalContext, contactInfo]);
+  }, [workExperience, education, trainingEntries, trainingPasteText, additionalContext, contactInfo, resumePhoto]);
 
   function logRecentProject() {
     const typeLabel = mode === "resume" ? "Resume" : mode === "coverletter" ? "Cover Letter" : mode === "interview" ? "Interview Prep" : "Job Tailoring";
@@ -1634,6 +1651,51 @@ export default function ECareerDesign() {
     return btoa(binary);
   }
 
+  function handlePhotoUpload(file) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("Please choose an image file.");
+      return;
+    }
+    setPhotoError("");
+    setPhotoProcessing(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        // Resize down to a reasonable max dimension and re-encode as JPEG —
+        // keeps localStorage usage and PDF export size small regardless of
+        // how large the original photo was.
+        const MAX_DIM = 500;
+        let { width, height } = img;
+        if (width > height && width > MAX_DIM) {
+          height = Math.round((height * MAX_DIM) / width);
+          width = MAX_DIM;
+        } else if (height > MAX_DIM) {
+          width = Math.round((width * MAX_DIM) / height);
+          height = MAX_DIM;
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        setResumePhoto(canvas.toDataURL("image/jpeg", 0.88));
+        setPhotoProcessing(false);
+      };
+      img.onerror = () => {
+        setPhotoError("Could not read that image. Try a different file.");
+        setPhotoProcessing(false);
+      };
+      img.src = reader.result;
+    };
+    reader.onerror = () => {
+      setPhotoError("Could not read that file.");
+      setPhotoProcessing(false);
+    };
+    reader.readAsDataURL(file);
+  }
+
   async function downloadResumePDF() {
     if (!resumeExportRef.current) return;
     setPdfGenerating(true);
@@ -2147,6 +2209,44 @@ export default function ECareerDesign() {
                 <input style={smallInputStyle} placeholder="Email" value={contactInfo.email} onChange={(e) => setContactInfo((c) => ({ ...c, email: e.target.value }))} />
                 <input style={smallInputStyle} placeholder="Phone" value={contactInfo.phone} onChange={(e) => setContactInfo((c) => ({ ...c, phone: e.target.value }))} />
               </div>
+
+              {mode === "resume" && (
+                <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${TOKENS.line}` }}>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: TOKENS.ink, margin: "0 0 8px" }}>Headshot photo (optional)</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    {resumePhoto ? (
+                      <img src={resumePhoto} alt="Headshot preview" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: `1px solid ${TOKENS.line}` }} />
+                    ) : (
+                      <div style={{ width: 64, height: 64, borderRadius: "50%", background: TOKENS.paper, border: `1px dashed ${TOKENS.line}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <FileText size={20} color={TOKENS.inkSoft} />
+                      </div>
+                    )}
+                    <div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id="headshot-upload"
+                        style={{ display: "none" }}
+                        onChange={(e) => handlePhotoUpload(e.target.files?.[0])}
+                      />
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <label htmlFor="headshot-upload">
+                          <Button variant="secondary" icon={photoProcessing ? <Loader2 size={13} className="spin" /> : <Plus size={13} />} style={{ pointerEvents: photoProcessing ? "none" : "auto" }}>
+                            {photoProcessing ? "Processing..." : resumePhoto ? "Change photo" : "Upload photo"}
+                          </Button>
+                        </label>
+                        {resumePhoto && (
+                          <Button variant="dangerGhost" icon={<Trash2 size={13} />} onClick={() => setResumePhoto(null)}>Remove</Button>
+                        )}
+                      </div>
+                      {photoError && <p style={{ fontSize: 12, color: TOKENS.red, margin: "6px 0 0" }}>{photoError}</p>}
+                    </div>
+                  </div>
+                  <p style={{ fontSize: 12, color: TOKENS.gold, margin: "10px 0 0", lineHeight: 1.5 }}>
+                    Heads up: many U.S. employers — and virtually all federal/USAJOBS applications — discourage or prohibit photos on resumes, specifically to avoid any appearance of bias. This is optional; skip it for federal or corporate applications unless you know it's expected.
+                  </p>
+                </div>
+              )}
             </Card>
           )}
           {/* Work Experience */}
@@ -2363,7 +2463,7 @@ export default function ECareerDesign() {
             ) : resumeData ? (
               <div>
                 <div style={{ background: TOKENS.paper, padding: 20, borderRadius: 4, marginBottom: 12 }}>
-                  <ResumePreview template={resumeTemplate} contact={contactInfo} data={resumeData} color={resumeColor} />
+                  <ResumePreview template={resumeTemplate} contact={contactInfo} data={resumeData} color={resumeColor} photo={resumePhoto} />
                 </div>
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                   <Button variant="ghost" icon={<RefreshCw size={13} />} onClick={generateResume}>Regenerate content</Button>
@@ -2747,7 +2847,7 @@ export default function ECareerDesign() {
               <div style={{ background: TOKENS.paper, padding: 20, borderRadius: 4 }}>
                 {resumeData && (
                   <div ref={resumeExportRef} style={{ display: "inline-block" }}>
-                    <ResumePreview template={resumeTemplate} contact={contactInfo} data={resumeData} color={resumeColor} />
+                    <ResumePreview template={resumeTemplate} contact={contactInfo} data={resumeData} color={resumeColor} photo={resumePhoto} />
                   </div>
                 )}
               </div>
