@@ -967,6 +967,7 @@ export default function ECareerDesign() {
 
   const [contactInfo, setContactInfo] = useState({ name: "", email: "", phone: "", location: "" });
   const [resumePhoto, setResumePhoto] = useState(null);
+  const photoInputRef = useRef(null);
   const [photoProcessing, setPhotoProcessing] = useState(false);
   const [photoError, setPhotoError] = useState("");
   const [resumeData, setResumeData] = useState(null);
@@ -2225,16 +2226,19 @@ export default function ECareerDesign() {
                       <input
                         type="file"
                         accept="image/*"
-                        id="headshot-upload"
+                        ref={photoInputRef}
                         style={{ display: "none" }}
                         onChange={(e) => handlePhotoUpload(e.target.files?.[0])}
                       />
                       <div style={{ display: "flex", gap: 8 }}>
-                        <label htmlFor="headshot-upload">
-                          <Button variant="secondary" icon={photoProcessing ? <Loader2 size={13} className="spin" /> : <Plus size={13} />} style={{ pointerEvents: photoProcessing ? "none" : "auto" }}>
-                            {photoProcessing ? "Processing..." : resumePhoto ? "Change photo" : "Upload photo"}
-                          </Button>
-                        </label>
+                        <Button
+                          variant="secondary"
+                          icon={photoProcessing ? <Loader2 size={13} className="spin" /> : <Plus size={13} />}
+                          disabled={photoProcessing}
+                          onClick={() => photoInputRef.current?.click()}
+                        >
+                          {photoProcessing ? "Processing..." : resumePhoto ? "Change photo" : "Upload photo"}
+                        </Button>
                         {resumePhoto && (
                           <Button variant="dangerGhost" icon={<Trash2 size={13} />} onClick={() => setResumePhoto(null)}>Remove</Button>
                         )}
