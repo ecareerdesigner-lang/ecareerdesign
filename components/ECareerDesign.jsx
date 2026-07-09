@@ -234,6 +234,15 @@ function parseJsonObject(text) {
   return JSON.parse(cleaned.slice(start, end + 1));
 }
 
+// Builds a full formatted address ("123 Main St, Charlotte, NC 28202") from
+// separate fields, gracefully collapsing down when some parts are blank
+// (e.g. just "Charlotte, NC" if no street/zip were entered).
+function formatAddress(c) {
+  const stateZip = [c?.state, c?.zip].filter(Boolean).join(" ");
+  const cityStateZip = [c?.city, stateZip].filter(Boolean).join(", ");
+  return [c?.street, cityStateZip].filter(Boolean).join(", ");
+}
+
 const RESUME_COLORS = ["#1B3A5C", "#C1440E", "#2F6F4E", "#7A3B3B", "#6B7280", "#B98A2E", "#1E293B", "#0F766E"];
 
 // These job boards don't offer a public search API, but their own search
@@ -416,7 +425,7 @@ function ResumeSidebarTemplate({ contact, data, color, photo }) {
         <div style={{ fontSize: 11, opacity: 0.9, lineHeight: 1.7, marginBottom: 22 }}>
           {contact.email && <p style={{ margin: 0 }}>{contact.email}</p>}
           {contact.phone && <p style={{ margin: 0 }}>{contact.phone}</p>}
-          {contact.location && <p style={{ margin: 0 }}>{contact.location}</p>}
+          {formatAddress(contact) && <p style={{ margin: 0 }}>{formatAddress(contact)}</p>}
         </div>
         {data.skills?.length > 0 && (
           <div style={{ marginBottom: 22 }}>
@@ -482,7 +491,7 @@ function ResumeClassicTemplate({ contact, data, color, photo }) {
         )}
         <p style={{ fontFamily: "'Fraunces', serif", fontSize: 24, fontWeight: 600, letterSpacing: "0.03em", margin: 0 }}>{contact.name || "Your Name"}</p>
         <p style={{ fontSize: 12, color: "#555", margin: "6px 0 0" }}>
-          {[contact.location, contact.phone, contact.email].filter(Boolean).join("  ·  ")}
+          {[formatAddress(contact), contact.phone, contact.email].filter(Boolean).join("  ·  ")}
         </p>
       </div>
 
@@ -552,7 +561,7 @@ function ResumeMinimalTemplate({ contact, data, color, photo }) {
         <div>
           <p style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 600, color, margin: 0 }}>{contact.name || "Your Name"}</p>
           <p style={{ fontSize: 12, color: "#666", margin: "4px 0 0" }}>
-            {[contact.email, contact.phone, contact.location].filter(Boolean).join("   ")}
+            {[contact.email, contact.phone, formatAddress(contact)].filter(Boolean).join("   ")}
           </p>
         </div>
       </div>
@@ -644,7 +653,7 @@ function CoverLetterPacificTemplate({ contact, data, color }) {
           {contact.name || "Your Name"}
         </p>
         <p style={{ fontSize: 12, margin: "6px 0 0", color: "#fff", opacity: 0.9 }}>
-          {[contact.location, contact.phone, contact.email].filter(Boolean).join(" · ")}
+          {[formatAddress(contact), contact.phone, contact.email].filter(Boolean).join(" · ")}
         </p>
       </div>
       <div style={{ padding: "28px 40px" }}>
@@ -662,7 +671,7 @@ function CoverLetterRefinedTemplate({ contact, data, color }) {
           {(contact.name || "Your Name").toUpperCase()}
         </p>
         <p style={{ fontSize: 12, color: "#555", margin: "6px 0 0" }}>
-          {[contact.location, contact.phone, contact.email].filter(Boolean).join("  |  ")}
+          {[formatAddress(contact), contact.phone, contact.email].filter(Boolean).join("  |  ")}
         </p>
       </div>
       <LetterBody contact={contact} data={data} />
@@ -676,7 +685,7 @@ function CoverLetterContempoTemplate({ contact, data, color }) {
       <div style={{ borderTop: `4px solid ${color}`, paddingTop: 14, marginBottom: 22 }}>
         <p style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 22, margin: 0 }}>{contact.name || "Your Name"}</p>
         <p style={{ fontSize: 12, color: "#555", margin: "4px 0 0" }}>
-          {[contact.location, contact.phone, contact.email].filter(Boolean).join("  |  ")}
+          {[formatAddress(contact), contact.phone, contact.email].filter(Boolean).join("  |  ")}
         </p>
       </div>
       <LetterBody contact={contact} data={data} />
@@ -965,7 +974,7 @@ export default function ECareerDesign() {
   const [extracting, setExtracting] = useState(false);
   const [extractError, setExtractError] = useState("");
 
-  const [contactInfo, setContactInfo] = useState({ name: "", email: "", phone: "", location: "" });
+  const [contactInfo, setContactInfo] = useState({ name: "", email: "", phone: "", street: "", city: "", state: "", zip: "" });
   const [resumePhoto, setResumePhoto] = useState(null);
   const photoInputRef = useRef(null);
   const [photoProcessing, setPhotoProcessing] = useState(false);
@@ -1445,7 +1454,7 @@ export default function ECareerDesign() {
     if (!resumeData) return "";
     const lines = [];
     if (contactInfo.name) lines.push(contactInfo.name);
-    const contactLine = [contactInfo.email, contactInfo.phone, contactInfo.location].filter(Boolean).join(" | ");
+    const contactLine = [contactInfo.email, contactInfo.phone, formatAddress(contactInfo)].filter(Boolean).join(" | ");
     if (contactLine) lines.push(contactLine);
     lines.push("");
     if (resumeData.summary) {
@@ -1483,7 +1492,7 @@ export default function ECareerDesign() {
     if (!coverLetterData) return "";
     const lines = [];
     if (contactInfo.name) lines.push(contactInfo.name);
-    const contactLine = [contactInfo.email, contactInfo.phone, contactInfo.location].filter(Boolean).join(" | ");
+    const contactLine = [contactInfo.email, contactInfo.phone, formatAddress(contactInfo)].filter(Boolean).join(" | ");
     if (contactLine) lines.push(contactLine);
     lines.push("");
     lines.push(coverLetterData.date);
@@ -1729,8 +1738,8 @@ export default function ECareerDesign() {
     if (resumeData && !jobSearchTitle && resumeData.workHistory?.[0]?.title) {
       setJobSearchTitle(resumeData.workHistory[0].title);
     }
-    if (resumeData && !jobSearchLocation && contactInfo.location) {
-      setJobSearchLocation(contactInfo.location);
+    if (resumeData && !jobSearchLocation && (contactInfo.city || contactInfo.state)) {
+      setJobSearchLocation([contactInfo.city, contactInfo.state].filter(Boolean).join(", "));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeData]);
@@ -2204,10 +2213,17 @@ export default function ECareerDesign() {
               <SectionHeading icon={<FileText size={18} color={TOKENS.accent} />} title="Contact info" subtitle={mode === "resume" ? "Goes at the top of your resume." : "Goes at the top of your cover letter."} />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                 <input style={smallInputStyle} placeholder="Full name" value={contactInfo.name} onChange={(e) => setContactInfo((c) => ({ ...c, name: e.target.value }))} />
-                <input style={smallInputStyle} placeholder="Location (city, state)" value={contactInfo.location} onChange={(e) => setContactInfo((c) => ({ ...c, location: e.target.value }))} />
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <input style={smallInputStyle} placeholder="Email" value={contactInfo.email} onChange={(e) => setContactInfo((c) => ({ ...c, email: e.target.value }))} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10, marginBottom: 10 }}>
+                <input style={smallInputStyle} placeholder="Street address (optional)" value={contactInfo.street} onChange={(e) => setContactInfo((c) => ({ ...c, street: e.target.value }))} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
+                <input style={smallInputStyle} placeholder="City" value={contactInfo.city} onChange={(e) => setContactInfo((c) => ({ ...c, city: e.target.value }))} />
+                <input style={smallInputStyle} placeholder="State" value={contactInfo.state} onChange={(e) => setContactInfo((c) => ({ ...c, state: e.target.value }))} />
+                <input style={smallInputStyle} placeholder="ZIP" value={contactInfo.zip} onChange={(e) => setContactInfo((c) => ({ ...c, zip: e.target.value }))} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
                 <input style={smallInputStyle} placeholder="Phone" value={contactInfo.phone} onChange={(e) => setContactInfo((c) => ({ ...c, phone: e.target.value }))} />
               </div>
 
