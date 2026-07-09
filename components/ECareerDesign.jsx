@@ -989,7 +989,10 @@ export default function ECareerDesign() {
   const [pdfError, setPdfError] = useState("");
 
   const [clCompanyName, setClCompanyName] = useState("");
-  const [clCompanyAddress, setClCompanyAddress] = useState("");
+  const [clCompanyStreet, setClCompanyStreet] = useState("");
+  const [clCompanyCity, setClCompanyCity] = useState("");
+  const [clCompanyState, setClCompanyState] = useState("");
+  const [clCompanyZip, setClCompanyZip] = useState("");
   const [clJobTitle, setClJobTitle] = useState("");
   const [clHiringManager, setClHiringManager] = useState("");
   const [coverLetterData, setCoverLetterData] = useState(null);
@@ -1344,7 +1347,7 @@ export default function ECareerDesign() {
       setCoverLetterData({
         date: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
         companyName: clCompanyName,
-        companyAddress: clCompanyAddress,
+        companyAddress: formatAddress({ street: clCompanyStreet, city: clCompanyCity, state: clCompanyState, zip: clCompanyZip }),
         jobTitle: clJobTitle,
         hiringManager: clHiringManager.trim() || "Hiring Manager",
         salutation: clHiringManager.trim() ? `Dear ${clHiringManager.trim()},` : "Dear Hiring Manager,",
@@ -2196,7 +2199,12 @@ export default function ECareerDesign() {
             <input style={inputStyle} placeholder="Leave blank to use 'Hiring Manager'" value={clHiringManager} onChange={(e) => setClHiringManager(e.target.value)} />
           </Field>
           <Field label="Company address (optional)">
-            <input style={inputStyle} placeholder="City, State" value={clCompanyAddress} onChange={(e) => setClCompanyAddress(e.target.value)} />
+            <input style={{ ...inputStyle, marginBottom: 10 }} placeholder="Street address" value={clCompanyStreet} onChange={(e) => setClCompanyStreet(e.target.value)} />
+            <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr 1fr", gap: 10 }}>
+              <input style={inputStyle} placeholder="City" value={clCompanyCity} onChange={(e) => setClCompanyCity(e.target.value)} />
+              <input style={inputStyle} placeholder="State" value={clCompanyState} onChange={(e) => setClCompanyState(e.target.value)} />
+              <input style={inputStyle} placeholder="ZIP" value={clCompanyZip} onChange={(e) => setClCompanyZip(e.target.value)} />
+            </div>
           </Field>
           <Button variant="primary" onClick={goToBackground} icon={<ChevronRight size={14} />}>
             Continue to background
