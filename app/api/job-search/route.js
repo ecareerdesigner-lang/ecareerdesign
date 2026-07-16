@@ -42,6 +42,7 @@ export async function POST(req) {
             location: d.PositionLocationDisplay || "",
             url: d.PositionURI || "",
             snippet: (d.UserArea?.Details?.JobSummary || "").slice(0, 220),
+            description: (d.UserArea?.Details?.JobSummary || "").slice(0, 4000),
           });
         });
       } else {
@@ -76,6 +77,7 @@ export async function POST(req) {
             location: item.location?.display_name || "",
             url: item.redirect_url || "",
             snippet: (item.description || "").slice(0, 220),
+            description: (item.description || "").slice(0, 4000),
           });
         });
       } else {
@@ -110,6 +112,7 @@ export async function POST(req) {
             location: item.location || "",
             url: item.link || "",
             snippet: (item.snippet || "").slice(0, 220),
+            description: item.snippet || "",
           });
         });
       } else {

@@ -28,12 +28,12 @@ export default function PrivacyPage() {
         language, what we collect, why, and where it goes.
       </p>
 
-      <h2 style={styles.h2}>The short version</h2>
+<h2 style={styles.h2}>The short version</h2>
       <ul style={styles.ul}>
-        <li style={styles.li}>We don't have a database. There are no user accounts. Everything you type is stored only in your own browser (using a technology called <code>localStorage</code>) — not on our servers.</li>
+        <li style={styles.li}>You can use eCareer Design without creating an account — in that case, everything you type is stored only in your own browser (using a technology called <code>localStorage</code>) and never reaches our servers. If you create an account, your resume and application information is saved to our database so it's available when you log in from any device.</li>
         <li style={styles.li}>To generate content, what you type is sent to Anthropic's AI API to produce a response, then returned to your browser. We don't separately log or retain that content ourselves.</li>
         <li style={styles.li}>If you use the job search feature, your search terms (job title, location) are sent to the job search services you enable — not your full background.</li>
-        <li style={styles.li}>Clearing your browser's site data for eCareer Design deletes everything we have — because everything we have lives in your browser, not with us.</li>
+        <li style={styles.li}>If you don't create an account, clearing your browser's site data for eCareer Design deletes everything we have, since it only ever lived in your browser. If you do create an account, you can delete your saved data at any time — see "Your control over your information" below.</li>
       </ul>
 
       <h2 style={styles.h2}>What we collect</h2>
@@ -44,6 +44,7 @@ export default function PrivacyPage() {
         <li style={styles.li}>Education, training records, and certifications</li>
         <li style={styles.li}>Job postings you paste in to tailor a response or generate a mock interview</li>
         <li style={styles.li}>Your typed answers during interview practice sessions</li>
+        <li style={styles.li}>If you create an account, your email address and a securely stored (encrypted) password</li>
       </ul>
       <p style={styles.p}>
         We also use Vercel Analytics and Vercel Speed Insights to understand overall traffic and site performance. These tools are
@@ -53,29 +54,35 @@ export default function PrivacyPage() {
 
       <h2 style={styles.h2}>Where your information goes</h2>
       <p style={styles.p}><strong>Anthropic (AI generation).</strong> When you generate a resume section, cover letter, response, or interview question, the relevant text is sent to Anthropic's API to produce the result. This happens through our own server, so Anthropic does not see your identity separately from the content of the request. Anthropic's own handling of API data is governed by their commercial terms and privacy policy — see <a href="https://www.anthropic.com/legal/privacy" style={{color:"#F2660A"}}>anthropic.com/legal/privacy</a> for specifics on retention and use.</p>
+      <p style={styles.p}><strong>Supabase (accounts and database, only if you create an account).</strong> If you sign up for an account, your login credentials and saved resume/application data are stored with Supabase, our database and authentication provider. This lets your information follow you across devices when you log in. If you never create an account, Supabase is not involved at all.</p>
       <p style={styles.p}><strong>Job search services (optional, only if you use that feature).</strong> If configured, your search terms may be sent to USAJOBS, Adzuna, and/or Jooble to return matching postings. Only the title and location you type into that specific search box are sent — not your resume or background.</p>
       <p style={styles.p}><strong>Other job boards.</strong> The "search directly on" buttons (Indeed, LinkedIn, ZipRecruiter, Monster, and others) simply open that site's own search page in a new tab, pre-filled with your search terms. We don't send them anything beyond what's visible in that URL, and once you click through, you're on their site under their own privacy policy.</p>
       <p style={styles.p}><strong>Vercel (hosting).</strong> The app itself is hosted on Vercel, which processes standard web traffic (like any website) to serve the pages you request.</p>
 
       <h2 style={styles.h2}>What we don't do</h2>
       <ul style={styles.ul}>
-        <li style={styles.li}>We don't sell your information. There's nothing to sell — we don't retain it in the first place.</li>
-        <li style={styles.li}>We don't require an account, an email address, or a password to use the app.</li>
-        <li style={styles.li}>We don't share your background information with employers, recruiters, or anyone else — the only place your content goes is into the AI generation request you trigger, and back to your own screen.</li>
+        <li style={styles.li}>We don't sell your information.</li>
+        <li style={styles.li}>Creating an account is optional — the app is fully usable without one.</li>
+        <li style={styles.li}>We don't share your background information with employers, recruiters, or anyone else — the only place your content goes is into the AI generation request you trigger, and back to your own screen (or, if you have an account, into your own saved data).</li>
       </ul>
 
       <h2 style={styles.h2}>Your control over your information</h2>
       <p style={styles.p}>
-        Because your information lives in your browser rather than on our servers, you're always in control of it. You can clear it
-        at any time by clearing your browser's site data/cookies for eCareer Design, or by using a private/incognito browsing
-        window, which won't save anything after you close it.
+        If you don't create an account, your information lives only in your browser, and you're always in control of it — clear it
+        at any time by clearing your browser's site data/cookies for eCareer Design, or use a private/incognito browsing window,
+        which won't save anything after you close it.
+      </p>
+      <p style={styles.p}>
+        If you create an account, your saved resume and application data is stored in our database so it's available when you log
+        in from a different device. You can request deletion of your account and all associated data at any time by contacting us
+        at the email below.
       </p>
 
       <h2 style={styles.h2}>Children's privacy</h2>
       <p style={styles.p}>eCareer Design is intended for job seekers and is not directed at children. We don't knowingly collect information from children under 13.</p>
 
       <h2 style={styles.h2}>Changes to this notice</h2>
-      <p style={styles.p}>If what we collect or how we use it changes in a meaningful way — for example, if we add user accounts in the future — we'll update this page and change the "last updated" date above.</p>
+      <p style={styles.p}>If what we collect or how we use it changes in a meaningful way, we'll update this page and change the "last updated" date above.</p>
 
       <h2 style={styles.h2}>Questions</h2>
       <p style={styles.p}>
