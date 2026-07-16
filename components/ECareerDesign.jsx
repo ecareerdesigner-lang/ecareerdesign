@@ -928,7 +928,6 @@ const [showJobMatches, setShowJobMatches] = useState(false);
     }
   }
   async function runMatchScore() {
-    if (!currentUser || !isPremium) return;
     if (!matchJobDescription.trim()) return;
     setMatchLoading(true);
     setMatchError(null);
@@ -1208,7 +1207,7 @@ useEffect(() => {
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setCurrentUser(session?.user || null);
-      if (!session?.user) {
+      if (_event === "SIGNED_OUT") {
         setIsPremium(false);
         setView("landing");
       }
@@ -1722,7 +1721,7 @@ const saveProfile = useCallback(async () => {
     setResumeError(false);
     try {
       const bg = buildBackground();
-      const text = await callClaude(resumePrompt(bg, contactInfo), 3000);
+      const text = await callClaude(resumePrompt(bg, contactInfo), 6000);
       const parsed = parseJsonObject(text);
       const workHistory = workExperience.map((w, i) => ({
         title: w.positionTitle,
