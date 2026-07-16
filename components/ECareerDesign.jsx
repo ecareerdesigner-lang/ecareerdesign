@@ -154,20 +154,14 @@ Based on the candidate's background below, generate a realistic interview questi
 
 Candidate background: ${JSON.stringify(background)}
 
-Output STRICT JSON in exactly this shape:
+Output STRICT, VALID JSON in exactly this shape:
 {
-  "openingAnswer": "A customized 'Tell me about yourself' answer draft, grounded in the candidate's actual background, 3-5 sentences",
-  "questions": [
-    { "category": "Behavioral", "text": "..." },
-    { "category": "STAR", "text": "..." },
-    { "category": "Resume", "text": "..." },
-    { "category": "Job-Specific", "text": "..." },
-    { "category": "Tough", "text": "..." }
-  ]
+  "score": <integer 0-100, overall match percentage>,
+  "matchedSkills": ["up to 6 specific skills/qualifications from the posting that the candidate's background clearly supports"],
+  "missingSkills": ["up to 6 specific skills/qualifications from the posting that the candidate's background does NOT clearly show"],
+  "summary": "2-3 sentence honest assessment of fit, mentioning the strongest match and the biggest gap"
 }
-
-Include 2-3 questions in each of those five categories (10-12 total, in that order). STAR and Job-Specific questions should directly reference the job requirements listed above when available. Resume questions should reference specifics actually present in the candidate's background (a real gap, transition, achievement, or certification) — never invent a gap or issue that isn't there. Return ONLY the JSON object, no markdown fences, no commentary.`;
-}
+Every string value must be valid JSON: escape any internal double quotes as \\", and do not include literal line breaks inside any string value. Return ONLY the JSON object, no markdown fences, no commentary.`;}
 
 function answerEvaluationPrompt(question, answerText, background) {
   return `You are an experienced hiring manager evaluating a candidate's mock interview answer, holistically considering structure (STAR where applicable), specificity, confidence, and professionalism.
@@ -1721,7 +1715,7 @@ const saveProfile = useCallback(async () => {
     setResumeError(false);
     try {
       const bg = buildBackground();
-      const text = await callClaude(resumePrompt(bg, contactInfo), 6000);
+      const text = await callClaude(resumePrompt(bg, contactInfo), 10000);
       const parsed = parseJsonObject(text);
       const workHistory = workExperience.map((w, i) => ({
         title: w.positionTitle,
