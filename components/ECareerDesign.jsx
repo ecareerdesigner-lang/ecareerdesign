@@ -206,6 +206,24 @@ Target position requirements (context only, do not copy verbatim): ${reqList || 
 
 Do not exceed ${WORK_EXP_BUDGET} characters under any circumstances — this is a hard limit. Return only the description text, no preamble.`;
 }
+function resumeScorePrompt(resumeText) {
+  return `You are an expert resume reviewer and ATS (Applicant Tracking System) specialist. Analyze this resume and score it honestly and specifically — do not inflate scores to be encouraging.
+
+Resume text:
+${resumeText}
+
+Output STRICT, VALID JSON in exactly this shape:
+{
+  "overallScore": <integer 0-100>,
+  "atsScore": <integer 0-100, how well this would parse and rank in an Applicant Tracking System>,
+  "keywordScore": <integer 0-100, presence of strong, relevant, industry-standard keywords and skills>,
+  "formattingScore": <integer 0-100, structure, consistency, scannability>,
+  "weakBulletPoints": ["up to 5 specific bullet points from the resume that are vague, passive, or lack measurable impact, quoted or closely paraphrased"],
+  "missingSkills": ["up to 6 skills or qualifications commonly expected for this type of role that are absent from the resume"],
+  "employerReadiness": "2-3 sentence honest assessment of how ready this resume is to be sent to employers today, and the single biggest thing to fix first"
+}
+Every string value must be valid JSON: escape any internal double quotes as \\", and do not include literal line breaks inside any string value. Return ONLY the JSON object, no markdown fences, no commentary.`;
+}
 function matchScorePrompt(background, jobDescription, jobTitle, companyName) {
   return `You are an experienced recruiter comparing a candidate's background against a specific job posting to estimate fit.
 
@@ -1183,6 +1201,11 @@ const [authMode, setAuthMode] = useState("login"); // 'login' | 'signup'
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+const [resumeScoreFile, setResumeScoreFile] = useState(null);
+  const [resumeScoreLoading, setResumeScoreLoading] = useState(false);
+  const [resumeScoreError, setResumeScoreError] = useState("");
+  const [resumeScoreResult, setResumeScoreResult] = useState(null);
+  const [returnToView, setReturnToView] = useState("landing");
 useEffect(() => {
     async function loadSession() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -1232,14 +1255,15 @@ async function handleAuthSubmit() {
       }
       setAuthEmail("");
       setAuthPassword("");
-      setView("landing");
+      setView(returnToView);
+      setReturnToView("landing");
     } catch (e) {
       setAuthError(e?.message || "Something went wrong. Please try again.");
     } finally {
       setAuthLoading(false);
     }
   }
-async function handleCheckout() {
+  async function handleCheckout() {
     if (!currentUser) return;
     setCheckoutLoading(true);
     try {
@@ -1257,6 +1281,62 @@ async function handleCheckout() {
     } catch (e) {
       console.error("handleCheckout failed:", e);
       setCheckoutLoading(false);
+    }
+  }
+
+  async function runResumeScore() {
+    if (!resumeScoreFile) return;
+    setResumeScoreLoading(true);
+    setResumeScoreError("");
+    setResumeScoreResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", resumeScoreFile);
+      const parseRes = await fetch("/api/parse-resume", { method: "POST", body: formData });
+      const parseData = await parseRes.json();
+      if (!parseRes.ok || parseData.error) {
+        throw new Error(parseData.error || "Could not read this file.");
+      }
+
+      const text = await callClaude(resumeScorePrompt(parseData.text), tokensForBudget(1200));
+      const cleaned = text.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(cleaned);
+      setResumeScoreResult(parsed);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("resume_scores").insert({
+          user_id: user.id,
+          filename: resumeScoreFile.name,
+          overall_score: parsed.overallScore,
+          ats_score: parsed.atsScore,
+          keyword_score: parsed.keywordScore,
+          formatting_score: parsed.formattingScore,
+          weak_bullet_points: parsed.weakBulletPoints,
+          missing_skills: parsed.missingSkills,
+          employer_readiness: parsed.employerReadiness,
+        });
+
+        fetch("/api/send-resume-score-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: user.email,
+            overallScore: parsed.overallScore,
+            atsScore: parsed.atsScore,
+            keywordScore: parsed.keywordScore,
+            formattingScore: parsed.formattingScore,
+            weakBulletPoints: parsed.weakBulletPoints,
+            missingSkills: parsed.missingSkills,
+            employerReadiness: parsed.employerReadiness,
+          }),
+        }).catch((e) => console.error("send-resume-score-email failed:", e));
+      }
+    } catch (e) {
+      console.error("runResumeScore failed:", e);
+      setResumeScoreError(e.message || "Something went wrong scoring your resume. Please try again.");
+    } finally {
+      setResumeScoreLoading(false);
     }
   }
   const [step, setStep] = useState(0);
@@ -2925,9 +3005,32 @@ async function runJobCardMatch(job, key) {
             )}
           </div>
 
-          <p style={{ fontSize: 18, color: TOKENS.inkSoft, margin: "0 0 32px", maxWidth: 560, lineHeight: 1.5 }}>
+         <p style={{ fontSize: 18, color: TOKENS.inkSoft, margin: "0 0 32px", maxWidth: 560, lineHeight: 1.5 }}>
             Land more interviews with AI-powered resumes, STAR responses, and interview coaching.
           </p>
+
+          <Card
+            interactive
+            onClick={() => {
+              if (currentUser) {
+                setView("resumescore");
+              } else {
+                setReturnToView("resumescore");
+                setView("auth");
+              }
+            }}
+            style={{ marginBottom: 24, border: `2px solid ${TOKENS.accent}` }}
+          >
+            <p style={{ fontSize: 12, fontWeight: 600, color: TOKENS.accent, margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              Free · Takes 30 seconds
+            </p>
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, margin: "0 0 8px", color: TOKENS.ink }}>
+              Get Your Free Resume Score
+            </h2>
+            <p style={{ fontSize: 14.5, color: TOKENS.inkSoft, margin: "0 0 4px", lineHeight: 1.5 }}>
+              Upload your resume and get an instant Overall Score, ATS Score, Keyword Score, Formatting Score, weak bullet points, missing skills, and an honest Employer Readiness assessment.
+            </p>
+          </Card>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 28 }}>
             <Card interactive onClick={() => { setMode("resume"); setStep(1); setView("wizard"); }}>
@@ -3238,7 +3341,114 @@ async function runJobCardMatch(job, key) {
           </Card>
         </div>
       )}
-{view === "wizard" && (
+{view === "resumescore" && (
+        <div style={{ maxWidth: 720, margin: "0 auto" }}>
+          <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => setView("landing")}>← Home</Button>
+
+          <div style={{ marginBottom: 28 }}>
+            <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 34, margin: "0 0 8px", letterSpacing: "-0.01em" }}>
+              Free Resume Score
+            </h1>
+            <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: 0 }}>
+              Upload your resume and get an instant, honest breakdown — ATS compatibility, keyword strength, formatting, and what's holding you back.
+            </p>
+          </div>
+
+          <Card>
+            {!resumeScoreResult && (
+              <>
+                <div style={{ border: `2px dashed ${TOKENS.line}`, borderRadius: 8, padding: 32, textAlign: "center", marginBottom: 16 }}>
+                  <input
+                    type="file"
+                    accept=".pdf,.docx"
+                    id="resumeScoreFileInput"
+                    style={{ display: "none" }}
+                    onChange={(e) => setResumeScoreFile(e.target.files?.[0] || null)}
+                  />
+                  <label htmlFor="resumeScoreFileInput" style={{ cursor: "pointer" }}>
+                    <FileText size={28} color={TOKENS.accent} style={{ marginBottom: 10 }} />
+                    <p style={{ fontSize: 15, fontWeight: 600, color: TOKENS.ink, margin: "0 0 4px" }}>
+                      {resumeScoreFile ? resumeScoreFile.name : "Click to upload your resume"}
+                    </p>
+                    <p style={{ fontSize: 13, color: TOKENS.inkSoft, margin: 0 }}>PDF or Word (.docx)</p>
+                  </label>
+                </div>
+
+                <Button
+                  variant="primary"
+                  icon={resumeScoreLoading ? <Loader2 size={14} className="cf-spin" /> : <Sparkles size={14} />}
+                  disabled={!resumeScoreFile || resumeScoreLoading}
+                  onClick={runResumeScore}
+                  style={{ width: "100%", justifyContent: "center" }}
+                >
+                  {resumeScoreLoading ? "Analyzing your resume..." : "Get My Free Score"}
+                </Button>
+
+                {resumeScoreError && (
+                  <p style={{ color: TOKENS.red, fontSize: 13, marginTop: 12 }}>{resumeScoreError}</p>
+                )}
+              </>
+            )}
+
+            {resumeScoreResult && (
+              <div>
+                <div style={{ textAlign: "center", marginBottom: 24 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: TOKENS.inkSoft, textTransform: "uppercase", letterSpacing: "0.04em", margin: "0 0 6px" }}>
+                    Overall Score
+                  </p>
+                  <p style={{ fontSize: 56, fontWeight: 700, color: TOKENS.ink, margin: 0 }}>
+                    {resumeScoreResult.overallScore}<span style={{ fontSize: 24, color: TOKENS.inkSoft }}>/100</span>
+                  </p>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 14, marginBottom: 28 }}>
+                  <div style={{ textAlign: "center", padding: 14, background: TOKENS.paper, borderRadius: 6 }}>
+                    <p style={{ fontSize: 24, fontWeight: 700, color: TOKENS.ink, margin: "0 0 2px" }}>{resumeScoreResult.atsScore}</p>
+                    <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: 0 }}>ATS Score</p>
+                  </div>
+                  <div style={{ textAlign: "center", padding: 14, background: TOKENS.paper, borderRadius: 6 }}>
+                    <p style={{ fontSize: 24, fontWeight: 700, color: TOKENS.ink, margin: "0 0 2px" }}>{resumeScoreResult.keywordScore}</p>
+                    <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: 0 }}>Keyword Score</p>
+                  </div>
+                  <div style={{ textAlign: "center", padding: 14, background: TOKENS.paper, borderRadius: 6 }}>
+                    <p style={{ fontSize: 24, fontWeight: 700, color: TOKENS.ink, margin: "0 0 2px" }}>{resumeScoreResult.formattingScore}</p>
+                    <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: 0 }}>Formatting</p>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: TOKENS.ink, margin: "0 0 8px" }}>Weak Bullet Points</p>
+                  {(resumeScoreResult.weakBulletPoints || []).map((b, i) => (
+                    <p key={i} style={{ fontSize: 13.5, color: TOKENS.inkSoft, margin: "0 0 6px", lineHeight: 1.5 }}>• {b}</p>
+                  ))}
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: TOKENS.ink, margin: "0 0 8px" }}>Missing Skills</p>
+                  {(resumeScoreResult.missingSkills || []).map((s, i) => (
+                  <p key={i} style={{ fontSize: 13.5, color: TOKENS.inkSoft, margin: "0 0 6px" }}>• {s}</p>
+                  ))}
+                </div>
+
+                <div style={{ marginBottom: 24, padding: 16, background: TOKENS.paper, borderRadius: 6 }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: TOKENS.ink, margin: "0 0 6px" }}>Employer Readiness</p>
+                  <p style={{ fontSize: 13.5, color: TOKENS.inkSoft, margin: 0, lineHeight: 1.5 }}>{resumeScoreResult.employerReadiness}</p>
+                </div>
+
+                <p style={{ fontSize: 13, color: TOKENS.inkSoft, marginBottom: 16 }}>
+                  We've also emailed a copy of this score to you.
+                </p>
+
+                <Button variant="primary" onClick={() => setView("landing")} style={{ width: "100%", justifyContent: "center" }}>
+                  Fix These Issues With Resume Builder
+                </Button>
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+{view === "wizard" && (  
         <>
           <div style={{ marginBottom: "1.75rem" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
