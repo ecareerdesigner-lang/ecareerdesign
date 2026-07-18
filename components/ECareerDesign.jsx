@@ -218,7 +218,7 @@ Output STRICT, VALID JSON in exactly this shape:
   "atsScore": <integer 0-100, how well this would parse and rank in an Applicant Tracking System>,
   "keywordScore": <integer 0-100, presence of strong, relevant, industry-standard keywords and skills>,
   "formattingScore": <integer 0-100, structure, consistency, scannability>,
-  "weakBulletPoints": ["up to 5 specific bullet points from the resume that are vague, passive, or lack measurable impact, quoted or closely paraphrased"],
+"weakBulletPoints": ["up to 5 specific bullet points from the resume that are vague, passive, or lack measurable impact, PARAPHRASED in your own words rather than quoted verbatim, to avoid introducing special characters"],
   "missingSkills": ["up to 6 skills or qualifications commonly expected for this type of role that are absent from the resume"],
   "employerReadiness": "2-3 sentence honest assessment of how ready this resume is to be sent to employers today, and the single biggest thing to fix first"
 }
@@ -1298,9 +1298,17 @@ async function handleAuthSubmit() {
         throw new Error(parseData.error || "Could not read this file.");
       }
 
-      const text = await callClaude(resumeScorePrompt(parseData.text), tokensForBudget(1200));
-      const cleaned = text.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(cleaned);
+      let parsed;
+      try {
+        const text = await callClaude(resumeScorePrompt(parseData.text), tokensForBudget(1200));
+        const cleaned = text.replace(/```json|```/g, "").trim();
+        parsed = JSON.parse(cleaned);
+      } catch (parseErr) {
+        console.warn("First scoring attempt failed to parse, retrying once:", parseErr);
+        const text2 = await callClaude(resumeScorePrompt(parseData.text), tokensForBudget(1200));
+        const cleaned2 = text2.replace(/```json|```/g, "").trim();
+        parsed = JSON.parse(cleaned2);
+      }
       setResumeScoreResult(parsed);
 
       const { data: { user } } = await supabase.auth.getUser();
