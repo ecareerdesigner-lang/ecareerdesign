@@ -3000,11 +3000,38 @@ async function runJobCardMatch(job, key) {
             <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 40, margin: 0, letterSpacing: "-0.01em" }}>
               eCareer Design
             </h1>
-            {authChecked && (
+             {authChecked && (
               currentUser ? (
-                <Button variant="ghost" onClick={async () => { await supabase.auth.signOut(); }}>
-                  Log Out
-                </Button>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  {isPremium && (
+                    <Button
+                      variant="ghost"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch('/api/create-portal-session', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: currentUser.email }),
+                          });
+                          const data = await res.json();
+                          if (data.url) {
+                            window.location.href = data.url;
+                          } else {
+                            alert(data.error || 'Unable to open subscription management');
+                          }
+                        } catch (err) {
+                          console.error(err);
+                          alert('Something went wrong. Please try again.');
+                        }
+                      }}
+                    >
+                      Manage Subscription
+                    </Button>
+                  )}
+                  <Button variant="ghost" onClick={async () => { await supabase.auth.signOut(); }}>
+                    Log Out
+                  </Button>
+                </div>
               ) : (
                 <Button variant="ghost" onClick={() => setView("auth")}>
                   Log In
