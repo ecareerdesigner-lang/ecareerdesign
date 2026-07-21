@@ -61,8 +61,12 @@ export default function RootLayout({ children }) {
             })(window, document, "clarity", "script", "xq4knfwz85");
           `}
         </Script>
+        <Script
+          src="https://analytics.ahrefs.com/analytics.js"
+          data-key="wyD4Y7/9B4NV0giP8LSgFg"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
 }
-
