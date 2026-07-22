@@ -150,18 +150,22 @@ function interviewQuestionsPrompt(background, requirements, jobTitle, interviewT
 
 ${reqList ? `The job posting's key requirements are: ${reqList}` : "No specific job posting was provided for this session — write general but realistic questions for this type of role and interview style."}
 
-Based on the candidate's background below, generate a realistic interview question set that a hiring manager would actually ask for this exact role and interview style.
+Based on the candidate's background below, generate a realistic interview question set that a hiring manager would actually ask for this exact role and interview style. Include 6 to 8 questions spanning a mix of categories relevant to this role (e.g. behavioral, technical, situational, culture fit).
 
 Candidate background: ${JSON.stringify(background)}
 
 Output STRICT, VALID JSON in exactly this shape:
 {
-  "score": <integer 0-100, overall match percentage>,
-  "matchedSkills": ["up to 6 specific skills/qualifications from the posting that the candidate's background clearly supports"],
-  "missingSkills": ["up to 6 specific skills/qualifications from the posting that the candidate's background does NOT clearly show"],
-  "summary": "2-3 sentence honest assessment of fit, mentioning the strongest match and the biggest gap"
+  "openingAnswer": "A brief, natural first-person opening statement the candidate could use to introduce themselves at the start of this interview, grounded in their actual background",
+  "questions": [
+    {
+      "category": "Short category label, e.g. Behavioral, Technical, Situational, Culture Fit",
+      "text": "The full interview question text"
+    }
+  ]
 }
-Every string value must be valid JSON: escape any internal double quotes as \\", and do not include literal line breaks inside any string value. Return ONLY the JSON object, no markdown fences, no commentary.`;}
+Every string value must be valid JSON: escape any internal double quotes as \\", and do not include literal line breaks inside any string value. Return ONLY the JSON object, no markdown fences, no commentary.`;
+}
 
 function answerEvaluationPrompt(question, answerText, background) {
   return `You are an experienced hiring manager evaluating a candidate's mock interview answer, holistically considering structure (STAR where applicable), specificity, confidence, and professionalism.
@@ -1889,7 +1893,7 @@ Categorize each story into ONE of these categories: "Leadership", "Process Impro
 
 Candidate background: ${JSON.stringify(background)}
 
-Output STRICT JSON in exactly this shape, nothing else:
+Output STRICT, VALID JSON in exactly this shape, nothing else:
 [
   {
     "title": "Short descriptive title, a few words",
@@ -1902,16 +1906,23 @@ Output STRICT JSON in exactly this shape, nothing else:
   }
 ]
 
-Return ONLY the JSON array. No markdown fences, no commentary. If the background doesn't contain enough detail for a solid story in a category, skip that category rather than inventing one.`;
+Every string value must be valid JSON: escape any internal double quotes as \\", and do not include literal line breaks inside any string value. Return ONLY the JSON array. No markdown fences, no commentary. If the background doesn't contain enough detail for a solid story in a category, skip that category rather than inventing one.`;
   }
 
   async function extractCareerStories() {
     setCoachExtracting(true);
     setCoachExtractError("");
     try {
-      const background = buildBackground();
-      const text = await callClaude(coachStoriesPrompt(background), 3200);
-      const stories = parseJsonArray(text);
+     const background = buildBackground();
+      let stories;
+      try {
+        const text = await callClaude(coachStoriesPrompt(background), 6000);
+        stories = parseJsonArray(text);
+      } catch (parseErr) {
+        console.warn("First story extraction failed to parse, retrying once:", parseErr);
+        const text2 = await callClaude(coachStoriesPrompt(background), 6000);
+        stories = parseJsonArray(text2);
+      }
       const withIds = stories.map((s) => ({ ...s, id: newId("story") }));
       setCareerStories(withIds);
 
