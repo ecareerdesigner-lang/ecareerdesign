@@ -1483,9 +1483,11 @@ useEffect(() => {
 useEffect(() => {
     async function loadProfile() {
       let loadedFromCloud = false;
+      let isLoggedIn = false;
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          isLoggedIn = true;
           const { data: row } = await supabase
             .from("resume_profiles")
             .select("profile_data")
@@ -1519,7 +1521,27 @@ useEffect(() => {
       } catch (e) {
         console.error("Cloud load error", e);
       }
-      if (loadedFromCloud) return;
+     if (loadedFromCloud) return;
+      if (isLoggedIn) {
+        setWorkExperience([]);
+        setEducation([]);
+        setTrainingEntries([]);
+        setTrainingPasteText("");
+        setAdditionalContext({ projects: "", toolsSystems: "", outcomes: "", certifications: "" });
+        setContactInfo({ name: "", email: "", phone: "", street: "", city: "", state: "", zip: "" });
+        setResumePhoto(null);
+        setJobTitle("");
+        setSelectedLib(null);
+        setRequirements([]);
+        setClCompanyName("");
+        setClCompanyStreet("");
+        setClCompanyCity("");
+        setClCompanyState("");
+        setClCompanyZip("");
+        setClJobTitle("");
+        setClHiringManager("");
+        return;
+      }
       try {
         const raw = localStorage.getItem("ecareerdesign-profile");
         if (raw) {
