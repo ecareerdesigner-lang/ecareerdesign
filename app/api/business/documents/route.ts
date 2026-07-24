@@ -42,7 +42,7 @@ export async function POST(request: Request) {
   const buffer = Buffer.from(arrayBuffer);
 
   const { error: uploadError } = await supabase.storage
-    .from('business-documents')
+    .from('business_documents')
     .upload(filePath, buffer, {
       contentType: file.type,
     });
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
   }
 
   const { data: urlData } = supabase.storage
-    .from('business-documents')
+    .from('business_documents')
     .getPublicUrl(filePath);
 
   const { data, error } = await supabase
