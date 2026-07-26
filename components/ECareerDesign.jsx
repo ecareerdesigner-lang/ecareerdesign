@@ -2555,6 +2555,30 @@ const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     }
   }
 
+function collectSafeBreakPoints(container) {
+    // Every block-level element's bottom edge is a place where content is
+    // fully complete — text hasn't wrapped past it. We use these as the only
+    // valid places to cut a page, so paragraphs and bullets never get sliced
+    // mid-line the way a blind fixed-height cut would.
+    const containerRect = container.getBoundingClientRect();
+    const points = new Set([0]);
+    const all = container.querySelectorAll("*");
+    all.forEach((el) => {
+      const style = window.getComputedStyle(el);
+      if (style.display === "none" || style.visibility === "hidden") return;
+      const blockish =
+        ["block", "list-item", "table", "table-row-group", "flow-root"].includes(style.display) ||
+        el.tagName === "LI" ||
+        el.tagName === "P" ||
+        /^H[1-6]$/.test(el.tagName);
+      if (!blockish) return;
+      const rect = el.getBoundingClientRect();
+      const bottom = rect.bottom - containerRect.top;
+      if (bottom > 0) points.add(Math.round(bottom));
+    });
+    return Array.from(points).sort((a, b) => a - b);
+  }
+
   async function buildPdfFromElement(element) {
     const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
       import("html2canvas"),
@@ -2566,6 +2590,12 @@ const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     if (document.fonts?.ready) {
       await document.fonts.ready;
     }
+
+    // Measure safe break points in real DOM pixels BEFORE capturing the
+    // canvas, while the element's layout is guaranteed to still match what
+    // will be rendered.
+    const breakPointsCss = collectSafeBreakPoints(element);
+    const elementWidthCss = element.getBoundingClientRect().width;
 
     const canvas = await html2canvas(element, {
       scale: 1.5,
@@ -2588,6 +2618,12 @@ const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       throw new Error(`Captured content looks invalid: ${canvas.width}x${canvas.height}px. Please try again.`);
     }
 
+    // Convert the DOM-pixel break points into canvas-pixel break points using
+    // the actual measured scale ratio (canvas px per CSS px), rather than
+    // assuming it matches the `scale: 1.5` option exactly.
+    const scaleRatio = elementWidthCss > 0 ? canvas.width / elementWidthCss : 1.5;
+    const breakPointsCanvasPx = breakPointsCss.map((p) => Math.round(p * scaleRatio));
+
     const pdf = new jsPDF({ unit: "pt", format: "letter" });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
@@ -2598,17 +2634,44 @@ const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       // Fits on one page.
       pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, pageWidth, scaledHeight);
     } else {
-      // Slice the full-resolution canvas into page-sized chunks and add
-      // each as its own PDF page, so multi-page documents still print cleanly.
-      // pageHeightPx is guaranteed >= 1 here since canvas.width/pageWidth/pageHeight
-      // are all positive at this point, but MAX_PAGES is a hard backstop against
-      // any future change (or edge case) accidentally reintroducing a runaway loop.
+      // Slice the full-resolution canvas into page-sized chunks, but snap
+      // each cut to the nearest safe break point at or before the target
+      // page height instead of a blind fixed-height cut — so multi-page
+      // documents never split a sentence or bullet across pages.
       const pageHeightPx = Math.max(1, Math.floor((canvas.width * pageHeight) / pageWidth));
       const MAX_PAGES = 30;
+      const MIN_FILL_RATIO = 0.5;
       let renderedPx = 0;
       let pageIndex = 0;
       while (renderedPx < canvas.height && pageIndex < MAX_PAGES) {
-        const sliceHeightPx = Math.min(pageHeightPx, canvas.height - renderedPx);
+        const remaining = canvas.height - renderedPx;
+        let sliceHeightPx;
+
+        if (remaining <= pageHeightPx) {
+          // Last page — take everything left, no need to search for a break.
+          sliceHeightPx = remaining;
+        } else {
+          const targetBoundary = renderedPx + pageHeightPx;
+          let best = null;
+          for (let i = 0; i < breakPointsCanvasPx.length; i++) {
+            const bp = breakPointsCanvasPx[i];
+            if (bp <= renderedPx) continue;
+            if (bp <= targetBoundary) {
+              best = bp;
+            } else {
+              break;
+            }
+          }
+          const minFillPx = pageHeightPx * MIN_FILL_RATIO;
+          if (best !== null && best - renderedPx >= minFillPx) {
+            sliceHeightPx = best - renderedPx;
+          } else {
+            // No good break point found close enough to the target — fall
+            // back to a hard cut rather than leaving a near-empty page.
+            sliceHeightPx = pageHeightPx;
+          }
+        }
+
         const pageCanvas = document.createElement("canvas");
         pageCanvas.width = canvas.width;
         pageCanvas.height = sliceHeightPx;
