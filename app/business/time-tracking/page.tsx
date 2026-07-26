@@ -21,6 +21,22 @@ interface TimeEntry {
   employee_id?: string;
 }
 
+function getMonday(d: Date): Date {
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+  date.setDate(diff);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function toDateInputValue(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export default function TimeTrackingPage() {
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -31,6 +47,14 @@ export default function TimeTrackingPage() {
   const [description, setDescription] = useState('');
   const [employeeId, setEmployeeId] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  // Bulk entry state
+  const [showBulkForm, setShowBulkForm] = useState(false);
+  const [bulkEmployeeId, setBulkEmployeeId] = useState('');
+  const [bulkWeekStart, setBulkWeekStart] = useState(toDateInputValue(getMonday(new Date())));
+  const [bulkHours, setBulkHours] = useState<Record<number, string>>({});
+  const [bulkNotes, setBulkNotes] = useState<Record<number, string>>({});
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
 
   useEffect(() => {
     fetchEmployees();
@@ -113,6 +137,65 @@ export default function TimeTrackingPage() {
     return emp?.name || '-';
   };
 
+  const weekDayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+  const getWeekDates = (): Date[] => {
+    const [year, month, day] = bulkWeekStart.split('-').map(Number);
+    const start = new Date(year, month - 1, day);
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      return d;
+    });
+  };
+
+  const weekDates = getWeekDates();
+
+  const submitBulkWeek = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBulkSubmitting(true);
+    try {
+      const entriesToCreate = weekDates
+        .map((d, i) => ({
+          date: toDateInputValue(d),
+          hours_worked: parseFloat(bulkHours[i] || '0'),
+          description: bulkNotes[i] || '',
+          employee_id: bulkEmployeeId || null,
+          status: 'draft',
+        }))
+        .filter((entry) => entry.hours_worked > 0);
+
+      if (entriesToCreate.length === 0) {
+        alert('Enter hours for at least one day before submitting.');
+        setBulkSubmitting(false);
+        return;
+      }
+
+      await Promise.all(
+        entriesToCreate.map((entry) =>
+          fetch('/api/business/time-entries', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(entry),
+          })
+        )
+      );
+
+      setBulkHours({});
+      setBulkNotes({});
+      setBulkEmployeeId('');
+      setShowBulkForm(false);
+      fetchEntries();
+    } catch (error) {
+      console.error('Bulk entry error:', error);
+      alert('Something went wrong submitting the week. Please try again.');
+    } finally {
+      setBulkSubmitting(false);
+    }
+  };
+
+  const bulkWeekTotal = Object.values(bulkHours).reduce((sum, h) => sum + (parseFloat(h) || 0), 0);
+
   const filteredEntries = entries.filter((entry) =>
     statusFilter === 'all' ? true : entry.status === statusFilter
   );
@@ -135,6 +218,12 @@ export default function TimeTrackingPage() {
           onClick: () => setShowForm(!showForm),
         }}
       />
+
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={() => setShowBulkForm(!showBulkForm)}>
+          {showBulkForm ? 'Close Bulk Entry' : 'Bulk Entry (Full Week)'}
+        </Button>
+      </div>
 
       {showForm && (
         <Card>
@@ -169,6 +258,82 @@ export default function TimeTrackingPage() {
               <div className="flex gap-2">
                 <Button type="submit">Log Hours</Button>
                 <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {showBulkForm && (
+        <Card>
+          <CardHeader>
+            <h2 className="text-lg font-semibold">Bulk Entry — Full Week</h2>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={submitBulkWeek} className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <select
+                  value={bulkEmployeeId}
+                  onChange={(e) => setBulkEmployeeId(e.target.value)}
+                  className="px-3 py-2 border rounded-md text-sm dark:bg-neutral-950"
+                  required
+                >
+                  <option value="">Select Employee</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name}
+                    </option>
+                  ))}
+                </select>
+                <div>
+                  <label className="block text-sm text-neutral-500 mb-1">Week Starting (Monday)</label>
+                  <Input
+                    type="date"
+                    value={bulkWeekStart}
+                    onChange={(e) => setBulkWeekStart(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {weekDates.map((d, i) => (
+                  <div key={i} className="grid grid-cols-12 gap-2 items-center border-b pb-2">
+                    <div className="col-span-3 text-sm font-medium">
+                      {weekDayLabels[i]}
+                      <div className="text-xs text-neutral-500">{formatDateSafe(toDateInputValue(d))}</div>
+                    </div>
+                    <div className="col-span-2">
+                      <Input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        placeholder="Hours"
+                        value={bulkHours[i] || ''}
+                        onChange={(e) => setBulkHours({ ...bulkHours, [i]: e.target.value })}
+                      />
+                    </div>
+                    <div className="col-span-7">
+                      <Input
+                        type="text"
+                        placeholder="Note (optional)"
+                        value={bulkNotes[i] || ''}
+                        onChange={(e) => setBulkNotes({ ...bulkNotes, [i]: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <p className="text-sm font-semibold">Week Total: {bulkWeekTotal.toFixed(1)}h</p>
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={bulkSubmitting}>
+                    {bulkSubmitting ? 'Submitting...' : 'Submit Week'}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setShowBulkForm(false)}>
+                    Cancel
+                  </Button>
+                </div>
               </div>
             </form>
           </CardContent>
