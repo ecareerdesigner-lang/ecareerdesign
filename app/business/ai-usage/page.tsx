@@ -5,6 +5,7 @@ import { SectionHeader, Card, CardHeader, CardContent } from '@/components/busin
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
+import { formatDateSafe } from '@/lib/utils';
 
 interface AIUsage {
   id: string;
@@ -195,7 +196,7 @@ export default function AIUsagePage() {
                 <tbody>
                   {entries.map((entry) => (
                     <tr key={entry.id} className="border-b hover:bg-neutral-50">
-                      <td className="px-6 py-3 text-sm">{new Date(entry.date).toLocaleDateString()}</td>
+                      <td className="px-6 py-3 text-sm">{formatDateSafe(entry.date)}</td>
                       <td className="px-6 py-3 text-sm">{entry.model || '-'}</td>
                       <td className="px-6 py-3 font-semibold">{entry.requests}</td>
                       <td className="px-6 py-3 text-sm">{entry.tokens_used.toLocaleString()}</td>

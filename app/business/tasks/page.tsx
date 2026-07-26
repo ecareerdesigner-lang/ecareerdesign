@@ -5,6 +5,7 @@ import { SectionHeader, Card, CardHeader, CardContent } from '@/components/busin
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
+import { formatDateSafe } from '@/lib/utils';
 
 interface Task {
   id: string;
@@ -214,7 +215,7 @@ export default function TasksPage() {
                         </span>
                       </td>
                       <td className="px-6 py-3 text-sm text-neutral-500">
-                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
+                        {task.due_date ? formatDateSafe(task.due_date) : '-'}
                       </td>
                       <td className="px-6 py-3 text-right">
                         <button onClick={() => deleteTask(task.id)} className="text-red-600 hover:text-red-700">

@@ -5,6 +5,7 @@ import { SectionHeader, Card, CardHeader, CardContent } from '@/components/busin
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
+import { formatDateSafe } from '@/lib/utils';
 
 interface RevenueEntry {
   id: string;
@@ -163,7 +164,7 @@ export default function RevenuePage() {
                 <tbody>
                   {entries.map((entry) => (
                     <tr key={entry.id} className="border-b hover:bg-neutral-50">
-                      <td className="px-6 py-3 text-sm">{new Date(entry.date).toLocaleDateString()}</td>
+                      <td className="px-6 py-3 text-sm">{formatDateSafe(entry.date)}</td>
                       <td className="px-6 py-3 text-sm">{entry.source || '-'}</td>
                       <td className="px-6 py-3 font-semibold">${entry.amount.toFixed(2)}</td>
                       <td className="px-6 py-3 text-sm text-neutral-500">{entry.description || '-'}</td>

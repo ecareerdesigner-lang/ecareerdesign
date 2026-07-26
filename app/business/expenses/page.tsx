@@ -5,6 +5,7 @@ import { SectionHeader, Card, CardHeader, CardContent } from '@/components/busin
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
+import { formatDateSafe } from '@/lib/utils';
 
 interface Employee {
   id: string;
@@ -252,7 +253,7 @@ export default function ExpensesPage() {
                 <tbody>
                   {filteredExpenses.map((exp) => (
                     <tr key={exp.id} className="border-b hover:bg-neutral-50">
-                      <td className="px-6 py-3 text-sm">{new Date(exp.date).toLocaleDateString()}</td>
+                      <td className="px-6 py-3 text-sm">{formatDateSafe(exp.date)}</td>
                       <td className="px-6 py-3 text-sm capitalize">{exp.category}</td>
                       <td className="px-6 py-3 font-semibold">${exp.amount.toFixed(2)}</td>
                       <td className="px-6 py-3 text-sm">{getEmployeeName(exp.employee_id)}</td>
