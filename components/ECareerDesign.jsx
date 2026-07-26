@@ -103,12 +103,115 @@ Candidate background: ${JSON.stringify(background)}
 Target length: aim for about ${target} characters. Do not exceed ${budget} characters under any circumstances — this is a hard limit. Return only the response text, no preamble.`;
 }
 
-function resumePrompt(background, contact) {
-  return `Write content for a polished, professional resume for a federal government job applicant, based on the candidate's background below. This resume is not targeting any specific posting — write it as a strong general-purpose resume that presents the candidate's full career well.
+// ---------- Resume length control ----------
+// These three helpers keep the generated resume itself to an appropriate
+// length (entry-level: 1 page, mid-career: 1-2 pages, senior: 2 pages) by
+// (a) trimming which jobs are sent to the AI for the resume specifically,
+// and (b) telling the AI how many bullets and how much summary detail to
+// use. They deliberately do NOT touch buildBackground() itself, so every
+// other feature (KSA responses, job tailoring, interview prep, career
+// stories) still sees the candidate's FULL work history, unfiltered.
+//
+// Dates in this app are free-typed as MM/DD/YYYY, so we pull the year out
+// with a regex rather than assuming a fixed string position.
+function extractYear(dateString) {
+  if (!dateString) return null;
+  const match = String(dateString).match(/(19|20)\d{2}/);
+  return match ? parseInt(match[0], 10) : null;
+}
+
+function calculateYearsOfExperience(workExperience) {
+  const years = (workExperience || [])
+    .map((w) => extractYear(w.startDate))
+    .filter((y) => y !== null);
+  if (years.length === 0) return 0;
+  const earliestYear = Math.min(...years);
+  const currentYear = new Date().getFullYear();
+  return Math.max(0, currentYear - earliestYear);
+}
+
+function getResumeLengthGuidance(years) {
+  if (years <= 5) {
+    return {
+      stage: "entry-level",
+      yearsLimit: 10,
+      maxJobs: 3,
+      guidance:
+        "This candidate is entry-level (0-5 years of experience). The finished resume MUST fit on ONE page. Keep the summary to 2 short sentences, use 3-4 concise bullets per job (one line each, under 20 words), and put the most impressive, most recent achievement first within each job.",
+    };
+  }
+  if (years <= 15) {
+    return {
+      stage: "mid-career",
+      yearsLimit: 12,
+      maxJobs: 5,
+      guidance:
+        "This candidate is mid-career (5-15 years of experience). The finished resume should fit on ONE page if possible, or TWO pages at most. Use 3-4 concise bullets (one line each, under 20 words) for the most recent 1-2 roles and 2-3 for earlier roles. Front-load the most important skills and most recent achievements in the summary and the top of the work history.",
+    };
+  }
+  return {
+    stage: "senior-level",
+    yearsLimit: 15,
+    maxJobs: 7,
+    guidance:
+      "This candidate is senior-level (15+ years of experience). The finished resume should use TWO pages to properly show career growth, leadership, and major impact — but no more than two, and no more than roughly 18-20 bullets total across all jobs combined. Use up to 4 concise bullets (one line each, under 20 words) for the most recent 1-2 roles, 2-3 for other recent roles, and just 1-2 for older roles further back. Front-load the most important skills and highest-impact recent achievements, since recruiters often scan for under 7 seconds before deciding whether to keep reading.",
+  };
+}
+
+function getRecentWorkExperience(workExperience, yearsLimit, maxJobs) {
+  const list = workExperience || [];
+  if (list.length === 0) return list;
+  const currentYear = new Date().getFullYear();
+  const cutoffYear = currentYear - yearsLimit;
+
+  const parseEndYear = (w) => {
+    if (w.current) return currentYear + 1; // "Present" always ranks as most recent
+    const end = extractYear(w.endDate);
+    return end === null ? currentYear : end;
+  };
+  const parseStartYear = (w) => {
+    const start = extractYear(w.startDate);
+    return start === null ? 0 : start;
+  };
+
+  let candidates = list.filter((w) => parseEndYear(w) >= cutoffYear);
+  if (candidates.length === 0) {
+    candidates = list.slice(0, Math.min(2, list.length));
+  }
+
+  // If there are still more roles than the career-stage target (common for
+  // candidates with many short-tenure roles, e.g. frequent promotions),
+  // rank by actual recency and keep only the most recent maxJobs.
+  if (maxJobs && candidates.length > maxJobs) {
+    const ranked = [...candidates].sort((a, b) => {
+      const endDiff = parseEndYear(b) - parseEndYear(a);
+      if (endDiff !== 0) return endDiff;
+      return parseStartYear(b) - parseStartYear(a);
+    });
+    const keepSet = new Set(ranked.slice(0, maxJobs));
+    candidates = candidates.filter((w) => keepSet.has(w));
+  }
+
+  // Always display in true reverse-chronological order (most recent
+  // first), regardless of the order roles happen to be stored in — dates
+  // are free-typed, so entry order can't be relied on to match this.
+  return [...candidates].sort((a, b) => {
+    const endDiff = parseEndYear(b) - parseEndYear(a);
+    if (endDiff !== 0) return endDiff;
+    return parseStartYear(b) - parseStartYear(a);
+  });
+}
+
+function resumePrompt(background, contact, lengthGuidance) {
+  return `Write content for a polished, professional resume for a federal government job applicant, based on the candidate's background below. This resume is not targeting any specific posting — write it as a strong general-purpose resume that presents the candidate's career well.
+
+${lengthGuidance ? `LENGTH AND STRUCTURE GUIDANCE (follow this closely): ${lengthGuidance}` : ""}
+
+The work experience list below has already been filtered to the candidate's most relevant recent roles for resume purposes — do not add, invent, or reference any roles beyond what's listed here.
 
 Output STRICT JSON in exactly this shape, nothing else:
 {
-  "summary": "2-3 sentence professional summary",
+  "summary": "2-3 sentence professional summary, front-loaded with the candidate's strongest, most recent qualifications",
   "skills": ["short skill phrase", "..."],
   "workHistory": [
     { "bullets": ["achievement-oriented bullet, one sentence, no leading dash", "..."] }
@@ -117,7 +220,8 @@ Output STRICT JSON in exactly this shape, nothing else:
 
 Rules:
 - "skills" should have 6 to 10 short phrases (2-4 words each), drawn from the candidate's tools, training, and additional context.
-- "workHistory" must have exactly one entry per work experience item listed below, IN THE SAME ORDER, each with 3-4 bullet points.
+- "workHistory" must have exactly one entry per work experience item listed below, IN THE SAME ORDER.
+- Within each job's bullets, put the most impressive and most relevant achievement FIRST.
 - Every bullet must be grounded in details actually present in the candidate's background — do not invent employers, numbers, dates, or credentials that aren't provided.
 - Return ONLY the JSON object. No markdown fences, no commentary.
 
@@ -453,8 +557,8 @@ const resumePageStyle = {
 
 function ResumeSidebarTemplate({ contact, data, color, photo }) {
   return (
-    <div style={{ ...resumePageStyle, display: "flex", borderRadius: 4 }}>
-      <div style={{ width: "34%", background: color, color: "#fff", padding: "28px 20px" }}>
+    <div style={{ ...resumePageStyle, display: "table", tableLayout: "fixed", borderRadius: 4 }}>
+      <div style={{ display: "table-cell", verticalAlign: "top", width: "34%", background: color, color: "#fff", padding: "28px 20px" }}>
         {photo && (
           <img src={photo} alt="" style={{ width: 88, height: 88, borderRadius: "50%", objectFit: "cover", border: "3px solid rgba(255,255,255,0.5)", marginBottom: 16, display: "block" }} />
         )}
@@ -483,7 +587,7 @@ function ResumeSidebarTemplate({ contact, data, color, photo }) {
           </div>
         )}
       </div>
-      <div style={{ flex: 1, padding: "28px 22px" }}>
+      <div style={{ display: "table-cell", verticalAlign: "top", padding: "28px 22px" }}>
         {data.summary && (
           <div style={{ marginBottom: 20 }}>
             <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.06em", color, margin: "0 0 8px" }}>PROFESSIONAL SUMMARY</p>
@@ -1828,10 +1932,30 @@ const saveProfile = useCallback(async () => {
     setResumeGenerating(true);
     setResumeError(false);
     try {
-      const bg = buildBackground();
-      const text = await callClaude(resumePrompt(bg, contactInfo), 10000);
+      // Trim the resume-specific background to the candidate's career-stage
+      // page-length guideline (last 10-15 years, capped bullet counts).
+      // This only affects the resume — buildBackground() itself, used by
+      // KSA responses, job tailoring, and interview prep, still sees the
+      // candidate's full, untrimmed work history.
+      const totalYears = calculateYearsOfExperience(workExperience);
+      const { yearsLimit, maxJobs, guidance } = getResumeLengthGuidance(totalYears);
+      const recentJobs = getRecentWorkExperience(workExperience, yearsLimit, maxJobs);
+
+      const bg = {
+        ...buildBackground(),
+        workExperience: recentJobs.map((w) => ({
+          positionTitle: w.positionTitle,
+          employer: w.employer,
+          location: w.location,
+          type: w.postalType,
+          dates: `${w.startDate || "?"} - ${w.current ? "Present" : (w.endDate || "?")}`,
+          description: w.expandedDescription || w.basicDescription || "",
+        })),
+      };
+
+      const text = await callClaude(resumePrompt(bg, contactInfo, guidance), 10000);
       const parsed = parseJsonObject(text);
-      const workHistory = workExperience.map((w, i) => ({
+      const workHistory = recentJobs.map((w, i) => ({
         title: w.positionTitle,
         employer: w.employer,
         location: w.location,
