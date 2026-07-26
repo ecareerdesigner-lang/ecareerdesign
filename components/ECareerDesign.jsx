@@ -790,9 +790,9 @@ function ResumeMinimalTemplate({ contact, data, color, photo }) {
 // ---------- Ivory: light off-white left sidebar, icon-based contact list ----------
 function ResumeIvoryTemplate({ contact, data, color, photo }) {
   const contactRow = (icon, text) => text && (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-      {icon}
-      <p style={{ fontSize: 11, margin: 0, color: "#555", wordBreak: "break-all" }}>{text}</p>
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 6 }}>
+      <div style={{ flexShrink: 0, marginTop: 1 }}>{icon}</div>
+      <p style={{ fontSize: 11, margin: 0, color: "#555", wordBreak: "break-word", overflowWrap: "break-word", minWidth: 0, flex: 1 }}>{text}</p>
     </div>
   );
   return (
@@ -953,9 +953,9 @@ function ResumeBannerTemplate({ contact, data, color, photo }) {
 // ---------- Slate: main content on the left, light grey secondary column on the right ----------
 function ResumeSlateTemplate({ contact, data, color, photo }) {
   const contactRow = (icon, text) => text && (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-      {icon}
-      <p style={{ fontSize: 11, margin: 0, color: "#555", wordBreak: "break-all" }}>{text}</p>
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 6 }}>
+      <div style={{ flexShrink: 0, marginTop: 1 }}>{icon}</div>
+      <p style={{ fontSize: 11, margin: 0, color: "#555", wordBreak: "break-word", overflowWrap: "break-word", minWidth: 0, flex: 1 }}>{text}</p>
     </div>
   );
   return (
