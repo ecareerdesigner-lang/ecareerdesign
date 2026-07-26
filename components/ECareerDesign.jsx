@@ -6,7 +6,7 @@ import {
   Search, FileText, Check, RefreshCw, Copy, Download,
   ChevronRight, ChevronLeft, Sparkles, AlertCircle, Save, Plus, Trash2,
   Loader2, Briefcase, GraduationCap, Award, ExternalLink,
-  Mail, MessageSquare, Clock, Star, X, Send, Mic, Volume2
+  Mail, MessageSquare, Clock, Star, X, Send, Mic, Volume2, Globe
 } 
 from "lucide-react";
 
@@ -567,6 +567,7 @@ function ResumeSidebarTemplate({ contact, data, color, photo }) {
           {contact.email && <p style={{ margin: 0 }}>{contact.email}</p>}
           {contact.phone && <p style={{ margin: 0 }}>{contact.phone}</p>}
           {formatAddress(contact) && <p style={{ margin: 0 }}>{formatAddress(contact)}</p>}
+          {contact.linkedin && <p style={{ margin: 0, wordBreak: "break-all" }}>{contact.linkedin}</p>}
         </div>
         {data.skills?.length > 0 && (
           <div style={{ marginBottom: 22 }}>
@@ -575,7 +576,7 @@ function ResumeSidebarTemplate({ contact, data, color, photo }) {
           </div>
         )}
         {data.education?.length > 0 && (
-          <div>
+          <div style={{ marginBottom: 22 }}>
             <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", opacity: 0.85, margin: "0 0 8px" }}>EDUCATION</p>
             {data.education.map((e, i) => (
               <div key={i} style={{ marginBottom: 10 }}>
@@ -583,6 +584,16 @@ function ResumeSidebarTemplate({ contact, data, color, photo }) {
                 <p style={{ fontSize: 11, opacity: 0.85, margin: "2px 0 0" }}>{e.institution}</p>
                 <p style={{ fontSize: 11, opacity: 0.85, margin: 0 }}>{e.dates}</p>
               </div>
+            ))}
+          </div>
+        )}
+        {data.languages?.length > 0 && (
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", opacity: 0.85, margin: "0 0 8px" }}>LANGUAGES</p>
+            {data.languages.map((l, i) => (
+              <p key={i} style={{ fontSize: 12, margin: "0 0 5px", opacity: 0.95 }}>
+                {l.name}{l.proficiency ? ` — ${l.proficiency}` : ""}
+              </p>
             ))}
           </div>
         )}
@@ -632,7 +643,7 @@ function ResumeClassicTemplate({ contact, data, color, photo }) {
         )}
         <p style={{ fontFamily: "'Fraunces', serif", fontSize: 24, fontWeight: 600, letterSpacing: "0.03em", margin: 0 }}>{contact.name || "Your Name"}</p>
         <p style={{ fontSize: 12, color: "#555", margin: "6px 0 0" }}>
-          {[formatAddress(contact), contact.phone, contact.email].filter(Boolean).join("  ·  ")}
+          {[formatAddress(contact), contact.phone, contact.email, contact.linkedin].filter(Boolean).join("  ·  ")}
         </p>
       </div>
 
@@ -685,6 +696,15 @@ function ResumeClassicTemplate({ contact, data, color, photo }) {
           ))}
         </div>
       )}
+
+      {data.languages?.length > 0 && (
+        <div>
+          {sectionHeading("LANGUAGES")}
+          <p style={{ fontSize: 12.5, margin: 0 }}>
+            {data.languages.map((l) => l.name + (l.proficiency ? ` (${l.proficiency})` : "")).join("   ·   ")}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -702,7 +722,7 @@ function ResumeMinimalTemplate({ contact, data, color, photo }) {
         <div>
           <p style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 600, color, margin: 0 }}>{contact.name || "Your Name"}</p>
           <p style={{ fontSize: 12, color: "#666", margin: "4px 0 0" }}>
-            {[contact.email, contact.phone, formatAddress(contact)].filter(Boolean).join("   ")}
+            {[contact.email, contact.phone, formatAddress(contact), contact.linkedin].filter(Boolean).join("   ")}
           </p>
         </div>
       </div>
@@ -748,6 +768,15 @@ function ResumeMinimalTemplate({ contact, data, color, photo }) {
               {[e.credential, e.subject].filter(Boolean).join(": ")} — {e.institution}{e.dates ? `, ${e.dates}` : ""}
             </p>
           ))}
+        </div>
+      )}
+
+      {data.languages?.length > 0 && (
+        <div>
+          {sectionHeading("Languages")}
+          <p style={{ fontSize: 12.5, lineHeight: 1.8, margin: 0 }}>
+            {data.languages.map((l) => l.name + (l.proficiency ? ` (${l.proficiency})` : "")).join("   ·   ")}
+          </p>
         </div>
       )}
     </div>
@@ -1464,7 +1493,7 @@ async function handleAuthSubmit() {
   const [extracting, setExtracting] = useState(false);
   const [extractError, setExtractError] = useState("");
 
-  const [contactInfo, setContactInfo] = useState({ name: "", email: "", phone: "", street: "", city: "", state: "", zip: "" });
+  const [contactInfo, setContactInfo] = useState({ name: "", email: "", phone: "", street: "", city: "", state: "", zip: "", linkedin: "" });
   const [resumePhoto, setResumePhoto] = useState(null);
   const photoInputRef = useRef(null);
   const [photoProcessing, setPhotoProcessing] = useState(false);
@@ -1559,6 +1588,7 @@ const [jobMatchResults, setJobMatchResults] = useState({});
 
   const [workExperience, setWorkExperience] = useState([]);
   const [education, setEducation] = useState([]);
+  const [languages, setLanguages] = useState([]);
   const [trainingPasteText, setTrainingPasteText] = useState("");
   const [trainingEntries, setTrainingEntries] = useState([]);
   const [trainingExtracting, setTrainingExtracting] = useState(false);
@@ -1601,6 +1631,7 @@ useEffect(() => {
             const saved = row.profile_data;
             if (saved.workExperience) setWorkExperience(saved.workExperience);
             if (saved.education) setEducation(saved.education);
+            if (saved.languages) setLanguages(saved.languages);
             if (saved.trainingEntries) setTrainingEntries(saved.trainingEntries);
             if (saved.trainingPasteText) setTrainingPasteText(saved.trainingPasteText);
             if (saved.additionalContext) setAdditionalContext(saved.additionalContext);
@@ -1629,10 +1660,11 @@ useEffect(() => {
       if (isLoggedIn) {
         setWorkExperience([]);
         setEducation([]);
+        setLanguages([]);
         setTrainingEntries([]);
         setTrainingPasteText("");
         setAdditionalContext({ projects: "", toolsSystems: "", outcomes: "", certifications: "" });
-        setContactInfo({ name: "", email: "", phone: "", street: "", city: "", state: "", zip: "" });
+        setContactInfo({ name: "", email: "", phone: "", street: "", city: "", state: "", zip: "", linkedin: "" });
         setResumePhoto(null);
         setJobTitle("");
         setSelectedLib(null);
@@ -1652,6 +1684,7 @@ useEffect(() => {
           const saved = JSON.parse(raw);
           if (saved.workExperience) setWorkExperience(saved.workExperience);
           if (saved.education) setEducation(saved.education);
+          if (saved.languages) setLanguages(saved.languages);
           if (saved.trainingEntries) setTrainingEntries(saved.trainingEntries);
           if (saved.trainingPasteText) setTrainingPasteText(saved.trainingPasteText);
           if (saved.additionalContext) setAdditionalContext(saved.additionalContext);
@@ -1699,7 +1732,7 @@ useEffect(() => {
 
 const saveProfile = useCallback(async () => {
     const profileData = {
-      workExperience, education, trainingEntries, trainingPasteText, additionalContext, contactInfo, resumePhoto,
+      workExperience, education, languages, trainingEntries, trainingPasteText, additionalContext, contactInfo, resumePhoto,
       jobTitle, selectedLib, requirements,
       clCompanyName, clCompanyStreet, clCompanyCity, clCompanyState, clCompanyZip, clJobTitle, clHiringManager,
     };
@@ -1723,7 +1756,7 @@ const saveProfile = useCallback(async () => {
     setProfileSaved(true);
     setTimeout(() => setProfileSaved(false), 1800);
   }, [
-    workExperience, education, trainingEntries, trainingPasteText, additionalContext, contactInfo, resumePhoto,
+    workExperience, education, languages, trainingEntries, trainingPasteText, additionalContext, contactInfo, resumePhoto,
     jobTitle, selectedLib, requirements,
     clCompanyName, clCompanyStreet, clCompanyCity, clCompanyState, clCompanyZip, clJobTitle, clHiringManager,
   ]);
@@ -1837,7 +1870,7 @@ const saveProfile = useCallback(async () => {
   // ---------- Education ----------
   function addEducation() {
     setEducation((ed) => [...ed, {
-      id: newId("ed"), institution: "", startDate: "", endDate: "", subject: "", credential: "",
+      id: newId("ed"), institution: "", startDate: "", endDate: "", subject: "", credential: "", completed: true,
     }]);
   }
   function updateEducation(id, patch) {
@@ -1845,6 +1878,15 @@ const saveProfile = useCallback(async () => {
   }
   function removeEducation(id) {
     setEducation((ed) => ed.filter((e) => e.id !== id));
+  }
+  function addLanguage() {
+    setLanguages((ls) => [...ls, { id: newId("lang"), name: "", proficiency: "" }]);
+  }
+  function updateLanguage(id, patch) {
+    setLanguages((ls) => ls.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+  }
+  function removeLanguage(id) {
+    setLanguages((ls) => ls.filter((l) => l.id !== id));
   }
 
   // ---------- Training ----------
@@ -1894,6 +1936,7 @@ const saveProfile = useCallback(async () => {
         credential: e.credential,
       })),
       training: trainingEntries.map((t) => ({ dates: `${t.startDate} - ${t.endDate}`, facility: t.facility, course: t.course })),
+      languages: languages.filter((l) => (l.name || "").trim()).map((l) => ({ name: l.name, proficiency: l.proficiency })),
       significantProjectsOrInitiatives: additionalContext.projects,
       programsToolsAndSystemsUsed: additionalContext.toolsSystems,
       notableMeasuredOutcomes: additionalContext.outcomes,
@@ -1962,17 +2005,23 @@ const saveProfile = useCallback(async () => {
         dates: `${w.startDate || "?"} - ${w.current ? "Present" : (w.endDate || "?")}`,
         bullets: parsed.workHistory?.[i]?.bullets || [],
       }));
-      const educationList = education.map((e) => ({
-        credential: e.credential,
-        subject: e.subject,
-        institution: e.institution,
-        dates: `${e.startDate || "?"} - ${e.endDate || "?"}`,
-      }));
+      const educationList = education
+        .filter((e) => e.completed !== false)
+        .map((e) => ({
+          credential: e.credential,
+          subject: e.subject,
+          institution: e.institution,
+          dates: `${e.startDate || "?"} - ${e.endDate || "?"}`,
+        }));
+      const languageList = languages
+        .filter((l) => (l.name || "").trim())
+        .map((l) => ({ name: l.name, proficiency: l.proficiency }));
       setResumeData({
         summary: parsed.summary || "",
         skills: parsed.skills || [],
         workHistory,
         education: educationList,
+        languages: languageList,
       });
     } catch (e) {
       setResumeError(true);
@@ -4179,8 +4228,9 @@ async function runJobCardMatch(job, key) {
                 <input style={smallInputStyle} placeholder="State" value={contactInfo.state} onChange={(e) => setContactInfo((c) => ({ ...c, state: e.target.value }))} />
                 <input style={smallInputStyle} placeholder="ZIP" value={contactInfo.zip} onChange={(e) => setContactInfo((c) => ({ ...c, zip: e.target.value }))} />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <input style={smallInputStyle} placeholder="Phone" value={contactInfo.phone} onChange={(e) => setContactInfo((c) => ({ ...c, phone: e.target.value }))} />
+                <input style={smallInputStyle} placeholder="LinkedIn URL (optional)" value={contactInfo.linkedin} onChange={(e) => setContactInfo((c) => ({ ...c, linkedin: e.target.value }))} />
               </div>
 
               {mode === "resume" && (
@@ -4300,13 +4350,34 @@ async function runJobCardMatch(job, key) {
                   <input style={smallInputStyle} placeholder="Start date" value={e.startDate} onChange={(ev) => updateEducation(e.id, { startDate: ev.target.value })} />
                   <input style={smallInputStyle} placeholder="End date" value={e.endDate} onChange={(ev) => updateEducation(e.id, { endDate: ev.target.value })} />
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <input style={smallInputStyle} placeholder="Subject studied" value={e.subject} onChange={(ev) => updateEducation(e.id, { subject: ev.target.value })} />
                   <input style={smallInputStyle} placeholder="Degree / certificate / status" value={e.credential} onChange={(ev) => updateEducation(e.id, { credential: ev.target.value })} />
                 </div>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: TOKENS.inkSoft, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={e.completed !== false}
+                    onChange={(ev) => updateEducation(e.id, { completed: ev.target.checked })}
+                  />
+                  Completed (uncheck if this program wasn't finished — it will still be saved here, but left off your generated resume)
+                </label>
               </div>
             ))}
             <Button variant="secondary" icon={<Plus size={14} />} onClick={addEducation}>Add education</Button>
+          </Card>
+
+          {/* Languages */}
+          <Card style={{ marginBottom: 16 }}>
+            <SectionHeading icon={<Globe size={18} color={TOKENS.accent} />} title="Languages" subtitle="Optional — only shown on your resume if you add at least one." />
+            {languages.map((l) => (
+              <div key={l.id} style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr auto", gap: 8, marginBottom: 8, alignItems: "center" }}>
+                <input style={smallInputStyle} placeholder="Language" value={l.name} onChange={(e) => updateLanguage(l.id, { name: e.target.value })} />
+                <input style={smallInputStyle} placeholder="Proficiency (e.g. Fluent)" value={l.proficiency} onChange={(e) => updateLanguage(l.id, { proficiency: e.target.value })} />
+                <Button variant="dangerGhost" icon={<Trash2 size={13} />} onClick={() => removeLanguage(l.id)} />
+              </div>
+            ))}
+            <Button variant="secondary" icon={<Plus size={14} />} style={{ marginTop: 8 }} onClick={addLanguage}>Add language</Button>
           </Card>
 
           {/* Training */}
