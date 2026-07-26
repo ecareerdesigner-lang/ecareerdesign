@@ -4968,9 +4968,15 @@ careerBackground={buildBackground()}
       <p style={{ textAlign: "center", fontSize: 12, color: "#9AA3A0", marginTop: 40 }}>
         eCareer Design AI Resume Studio · {APP_VERSION}
         <br />
-        <Link href="/privacy" style={{ color: "#9AA3A0", marginRight: 12 }}>Privacy Notice</Link>
-        <Link href="/terms" style={{ color: "#9AA3A0", marginRight: 12 }}>Terms of Use</Link>
-        <a href="mailto:hello@ecareerdesign.net" style={{ color: "#9AA3A0" }}>Contact Us</a>
+        <Link href="/blog" style={{ color: "#9AA3A0", marginRight: 12 }}>Blog</Link>
+<Link href="/privacy" style={{ color: "#9AA3A0", marginRight: 12 }}>Privacy Notice</Link>
+<Link href="/terms" style={{ color: "#9AA3A0", marginRight: 12 }}>Terms of Use</Link>
+<a href="mailto:hello@ecareerdesign.net" style={{ color: "#9AA3A0", marginRight: 12 }}>Contact Us</a>
+<a href="https://www.facebook.com/profile.php?id=61591358744526" target="_blank" rel="noopener noreferrer" style={{ color: "#9AA3A0", marginRight: 12 }}>Facebook</a>
+<a href="https://www.instagram.com/ecareerdesign/" target="_blank" rel="noopener noreferrer" style={{ color: "#9AA3A0", marginRight: 12 }}>Instagram</a>
+<a href="https://www.linkedin.com/in/ecareer-design-874062420/" target="_blank" rel="noopener noreferrer" style={{ color: "#9AA3A0", marginRight: 12 }}>LinkedIn</a>
+<a href="https://www.tiktok.com/@ecareerdesign.net" target="_blank" rel="noopener noreferrer" style={{ color: "#9AA3A0", marginRight: 12 }}>TikTok</a>
+<a href="https://www.youtube.com/@eCareerdesign" target="_blank" rel="noopener noreferrer" style={{ color: "#9AA3A0" }}>YouTube</a>
       </p>
 
       <VirtualAssistant />
