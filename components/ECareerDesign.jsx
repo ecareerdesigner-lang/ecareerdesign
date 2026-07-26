@@ -6,7 +6,8 @@ import {
   Search, FileText, Check, RefreshCw, Copy, Download,
   ChevronRight, ChevronLeft, Sparkles, AlertCircle, Save, Plus, Trash2,
   Loader2, Briefcase, GraduationCap, Award, ExternalLink,
-  Mail, MessageSquare, Clock, Star, X, Send, Mic, Volume2, Globe
+  Mail, MessageSquare, Clock, Star, X, Send, Mic, Volume2, Globe,
+  Phone, MapPin
 } 
 from "lucide-react";
 
@@ -410,6 +411,9 @@ const RESUME_TEMPLATES = [
   { id: "sidebar", label: "Sidebar" },
   { id: "classic", label: "Classic" },
   { id: "minimal", label: "Minimal" },
+  { id: "ivory", label: "Ivory" },
+  { id: "banner", label: "Banner" },
+  { id: "slate", label: "Slate" },
 ];
 
 const COVER_LETTER_TEMPLATES = [
@@ -783,9 +787,255 @@ function ResumeMinimalTemplate({ contact, data, color, photo }) {
   );
 }
 
+// ---------- Ivory: light off-white left sidebar, icon-based contact list ----------
+function ResumeIvoryTemplate({ contact, data, color, photo }) {
+  const contactRow = (icon, text) => text && (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+      {icon}
+      <p style={{ fontSize: 11, margin: 0, color: "#555", wordBreak: "break-all" }}>{text}</p>
+    </div>
+  );
+  return (
+    <div style={{ ...resumePageStyle, display: "table", tableLayout: "fixed", borderRadius: 4 }}>
+      <div style={{ display: "table-cell", verticalAlign: "top", width: "32%", background: "#F7F5F0", padding: "30px 22px" }}>
+        {photo && (
+          <img src={photo} alt="" style={{ width: 76, height: 76, borderRadius: "50%", objectFit: "cover", marginBottom: 14, display: "block" }} />
+        )}
+        <p style={{ fontFamily: "'Fraunces', serif", fontSize: 24, fontWeight: 600, color: "#1a1a1a", margin: "0 0 2px", lineHeight: 1.15 }}>{contact.name || "Your Name"}</p>
+        <div style={{ width: 34, height: 2, background: color, margin: "10px 0 16px" }} />
+        {contactRow(<Mail size={12} color={color} />, contact.email)}
+        {contactRow(<Phone size={12} color={color} />, contact.phone)}
+        {contactRow(<MapPin size={12} color={color} />, formatAddress(contact))}
+        {contactRow(<Globe size={12} color={color} />, contact.linkedin)}
+        {data.skills?.length > 0 && (
+          <div style={{ marginTop: 20 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "#1a1a1a", margin: "0 0 10px" }}>SKILLS</p>
+            {data.skills.map((s, i) => (
+              <p key={i} style={{ fontSize: 11.5, color: "#555", margin: "0 0 6px" }}>{s}</p>
+            ))}
+          </div>
+        )}
+        {data.education?.length > 0 && (
+          <div style={{ marginTop: 20 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "#1a1a1a", margin: "0 0 10px" }}>EDUCATION</p>
+            {data.education.map((e, i) => (
+              <div key={i} style={{ marginBottom: 12 }}>
+                <p style={{ fontSize: 11.5, fontWeight: 600, color: "#1a1a1a", margin: 0 }}>{e.dates}</p>
+                <p style={{ fontSize: 11.5, fontWeight: 600, margin: "2px 0 0" }}>{[e.credential, e.subject].filter(Boolean).join(": ")}</p>
+                <p style={{ fontSize: 11, color: "#777", margin: "1px 0 0" }}>{e.institution}</p>
+              </div>
+            ))}
+          </div>
+        )}
+        {data.languages?.length > 0 && (
+          <div style={{ marginTop: 20 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "#1a1a1a", margin: "0 0 10px" }}>LANGUAGES</p>
+            {data.languages.map((l, i) => (
+              <p key={i} style={{ fontSize: 11.5, color: "#555", margin: "0 0 6px" }}>{l.name}{l.proficiency ? ` — ${l.proficiency}` : ""}</p>
+            ))}
+          </div>
+        )}
+      </div>
+      <div style={{ display: "table-cell", verticalAlign: "top", padding: "30px 28px" }}>
+        {data.summary && (
+          <div style={{ marginBottom: 22 }}>
+            <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color, margin: "0 0 8px" }}>PROFILE SUMMARY</p>
+            <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0, color: "#333" }}>{data.summary}</p>
+          </div>
+        )}
+        {data.workHistory?.length > 0 && (
+          <div>
+            <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color, margin: "0 0 12px" }}>WORK EXPERIENCE</p>
+            {data.workHistory.map((w, i) => (
+              <div key={i} style={{ marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, margin: 0, color: "#1a1a1a" }}>{w.title || "(untitled position)"}</p>
+                  <p style={{ fontSize: 11, color: "#888", margin: 0 }}>{w.dates}</p>
+                </div>
+                <p style={{ fontSize: 12, color: "#777", margin: "1px 0 6px" }}>
+                  {[w.employer, w.location].filter(Boolean).join(" — ")}
+                </p>
+                <ul style={{ margin: 0, paddingLeft: 16 }}>
+                  {(w.bullets || []).map((b, bi) => (
+                    <li key={bi} style={{ fontSize: 12.5, lineHeight: 1.55, marginBottom: 3, color: "#333" }}>{b}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------- Banner: full-width header banner over a light grey / white two-column body ----------
+function ResumeBannerTemplate({ contact, data, color, photo }) {
+  const contactLine = [contact.phone, contact.email, formatAddress(contact), contact.linkedin].filter(Boolean).join("   ·   ");
+  return (
+    <div style={{ ...resumePageStyle, padding: 0, overflow: "hidden" }}>
+      <div style={{ padding: "26px 32px 20px", borderBottom: `1px solid #e5e5e5`, display: "flex", alignItems: "center", gap: 16 }}>
+        {photo && (
+          <img src={photo} alt="" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+        )}
+        <div>
+          <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: 30, fontWeight: 500, letterSpacing: "0.02em", margin: 0, color: "#1a1a1a" }}>
+            {contact.name || "Your Name"}
+          </p>
+          <p style={{ fontSize: 11.5, color: "#666", margin: "6px 0 0" }}>{contactLine}</p>
+        </div>
+      </div>
+      <div style={{ display: "table", tableLayout: "fixed", width: "100%" }}>
+        <div style={{ display: "table-cell", verticalAlign: "top", width: "32%", background: "#F5F5F5", padding: "24px 20px" }}>
+          {data.education?.length > 0 && (
+            <div style={{ marginBottom: 22 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color, margin: "0 0 10px" }}>EDUCATION</p>
+              {data.education.map((e, i) => (
+                <div key={i} style={{ marginBottom: 12 }}>
+                  <p style={{ fontSize: 11.5, fontWeight: 600, margin: 0, color: "#1a1a1a" }}>{[e.credential, e.subject].filter(Boolean).join(": ")}</p>
+                  <p style={{ fontSize: 11, color: "#777", margin: "2px 0 0" }}>{e.institution}</p>
+                  <p style={{ fontSize: 11, color: "#999", margin: 0 }}>{e.dates}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {data.skills?.length > 0 && (
+            <div style={{ marginBottom: 22 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color, margin: "0 0 10px" }}>SKILLS</p>
+              {data.skills.map((s, i) => (
+                <p key={i} style={{ fontSize: 11.5, color: "#444", margin: "0 0 6px" }}>{s}</p>
+              ))}
+            </div>
+          )}
+          {data.languages?.length > 0 && (
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color, margin: "0 0 10px" }}>LANGUAGES</p>
+              {data.languages.map((l, i) => (
+                <p key={i} style={{ fontSize: 11.5, color: "#444", margin: "0 0 6px" }}>{l.name}{l.proficiency ? ` — ${l.proficiency}` : ""}</p>
+              ))}
+            </div>
+          )}
+        </div>
+        <div style={{ display: "table-cell", verticalAlign: "top", padding: "24px 28px", background: "#fff" }}>
+          {data.summary && (
+            <div style={{ marginBottom: 20 }}>
+              <p style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: "0.1em", color, margin: "0 0 8px" }}>PROFILE SUMMARY</p>
+              <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0, color: "#333" }}>{data.summary}</p>
+            </div>
+          )}
+          {data.workHistory?.length > 0 && (
+            <div>
+              <p style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: "0.1em", color, margin: "0 0 12px" }}>WORK EXPERIENCE</p>
+              {data.workHistory.map((w, i) => (
+                <div key={i} style={{ marginBottom: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, margin: 0, color: "#1a1a1a" }}>{w.title || "(untitled position)"}</p>
+                    <p style={{ fontSize: 11, color: "#888", margin: 0 }}>{w.dates}</p>
+                  </div>
+                  <p style={{ fontSize: 12, color: "#777", margin: "1px 0 6px" }}>
+                    {[w.employer, w.location].filter(Boolean).join(" — ")}
+                  </p>
+                  <ul style={{ margin: 0, paddingLeft: 16 }}>
+                    {(w.bullets || []).map((b, bi) => (
+                      <li key={bi} style={{ fontSize: 12.5, lineHeight: 1.55, marginBottom: 3, color: "#333" }}>{b}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Slate: main content on the left, light grey secondary column on the right ----------
+function ResumeSlateTemplate({ contact, data, color, photo }) {
+  const contactRow = (icon, text) => text && (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+      {icon}
+      <p style={{ fontSize: 11, margin: 0, color: "#555", wordBreak: "break-all" }}>{text}</p>
+    </div>
+  );
+  return (
+    <div style={{ ...resumePageStyle, display: "table", tableLayout: "fixed", borderRadius: 4 }}>
+      <div style={{ display: "table-cell", verticalAlign: "top", padding: "30px 28px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
+          {photo && (
+            <img src={photo} alt="" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+          )}
+          <p style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 600, margin: 0, color: "#1a1a1a" }}>{contact.name || "Your Name"}</p>
+        </div>
+        {data.summary && (
+          <div style={{ marginBottom: 20 }}>
+            <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color, margin: "0 0 8px" }}>PROFILE</p>
+            <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0, color: "#333" }}>{data.summary}</p>
+          </div>
+        )}
+        {data.workHistory?.length > 0 && (
+          <div>
+            <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color, margin: "0 0 12px" }}>WORK EXPERIENCE</p>
+            {data.workHistory.map((w, i) => (
+              <div key={i} style={{ marginBottom: 16 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, margin: 0, color: "#1a1a1a" }}>{w.title || "(untitled position)"}</p>
+                <p style={{ fontSize: 12, color: "#777", margin: "1px 0 2px" }}>
+                  {[w.employer, w.location].filter(Boolean).join(" — ")}{w.dates ? ` · ${w.dates}` : ""}
+                </p>
+                <ul style={{ margin: "4px 0 0", paddingLeft: 16 }}>
+                  {(w.bullets || []).map((b, bi) => (
+                    <li key={bi} style={{ fontSize: 12.5, lineHeight: 1.55, marginBottom: 3, color: "#333" }}>{b}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div style={{ display: "table-cell", verticalAlign: "top", width: "30%", background: "#F5F5F5", padding: "30px 22px" }}>
+        {contactRow(<Phone size={12} color={color} />, contact.phone)}
+        {contactRow(<Mail size={12} color={color} />, contact.email)}
+        {contactRow(<MapPin size={12} color={color} />, formatAddress(contact))}
+        {contactRow(<Globe size={12} color={color} />, contact.linkedin)}
+        {data.education?.length > 0 && (
+          <div style={{ marginTop: 20 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "#1a1a1a", margin: "0 0 10px" }}>EDUCATION</p>
+            {data.education.map((e, i) => (
+              <div key={i} style={{ marginBottom: 12 }}>
+                <p style={{ fontSize: 11.5, fontWeight: 600, margin: 0 }}>{[e.credential, e.subject].filter(Boolean).join(": ")}</p>
+                <p style={{ fontSize: 11, color: "#777", margin: "1px 0 0" }}>{e.institution}</p>
+                <p style={{ fontSize: 11, color: "#999", margin: 0 }}>{e.dates}</p>
+              </div>
+            ))}
+          </div>
+        )}
+        {data.skills?.length > 0 && (
+          <div style={{ marginTop: 20 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "#1a1a1a", margin: "0 0 10px" }}>SKILLS</p>
+            {data.skills.map((s, i) => (
+              <p key={i} style={{ fontSize: 11.5, color: "#555", margin: "0 0 6px" }}>{s}</p>
+            ))}
+          </div>
+        )}
+        {data.languages?.length > 0 && (
+          <div style={{ marginTop: 20 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "#1a1a1a", margin: "0 0 10px" }}>LANGUAGES</p>
+            {data.languages.map((l, i) => (
+              <p key={i} style={{ fontSize: 11.5, color: "#555", margin: "0 0 6px" }}>{l.name}{l.proficiency ? ` — ${l.proficiency}` : ""}</p>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ResumePreview({ template, contact, data, color, photo }) {
   if (template === "classic") return <ResumeClassicTemplate contact={contact} data={data} color={color} photo={photo} />;
   if (template === "minimal") return <ResumeMinimalTemplate contact={contact} data={data} color={color} photo={photo} />;
+  if (template === "ivory") return <ResumeIvoryTemplate contact={contact} data={data} color={color} photo={photo} />;
+  if (template === "banner") return <ResumeBannerTemplate contact={contact} data={data} color={color} photo={photo} />;
+  if (template === "slate") return <ResumeSlateTemplate contact={contact} data={data} color={color} photo={photo} />;
   return <ResumeSidebarTemplate contact={contact} data={data} color={color} photo={photo} />;
 }
 
