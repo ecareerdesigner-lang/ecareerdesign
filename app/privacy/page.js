@@ -1,6 +1,6 @@
 export const metadata = {
   title: "Privacy Notice | eCareer Design",
-  description: "What eCareer Design collects, why, and where it goes.",
+  description: "Read eCareer Design's privacy notice to learn what personal information we collect, how it's used, and the choices you have to control your data.",
 };
 
 const styles = {

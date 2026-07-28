@@ -3,7 +3,7 @@ import { supabase } from "../../lib/supabase";
 
 export const metadata = {
   title: "Career Advice Blog | eCareer Design",
-  description: "Resume tips, ATS insights, and job search advice to help you land more interviews.",
+  description: "Practical resume tips, ATS insights, and job search strategies from eCareer Design to help you write stronger applications and land more interviews.",
 };
 
 export const revalidate = 60;
