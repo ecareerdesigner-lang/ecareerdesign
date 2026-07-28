@@ -35,11 +35,18 @@ export default async function BlogPost({ params }) {
     notFound();
   }
 
-  const html = marked.parse(post.content || "");
+  // The page's own <h1> (below) is the post title. If a post's markdown
+  // content happens to use a top-level "#" heading too, downgrade it to an
+  // <h2> so every page has exactly one H1, never zero and never multiple.
+  const rawHtml = marked.parse(post.content || "");
+  const html = rawHtml.replace(/<h1(\s|>)/gi, "<h2$1").replace(/<\/h1>/gi, "</h2>");
 
   return (
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px", fontFamily: "system-ui, sans-serif" }}>
       <Link href="/blog" style={{ color: "#3C5069", fontSize: 14, textDecoration: "none" }}>← All Posts</Link>
+      <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 34, color: "#16283D", margin: "20px 0 8px", lineHeight: 1.25 }}>
+        {post.title}
+      </h1>
       <article
         style={{ marginTop: 24, fontSize: 16, lineHeight: 1.7, color: "#16283D" }}
         className="blog-content"
