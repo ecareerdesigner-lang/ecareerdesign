@@ -8,9 +8,9 @@ import {
   Loader2, Briefcase, GraduationCap, Award, ExternalLink,
   Mail, MessageSquare, Clock, Star, X, Send, Mic, Volume2, Globe,
   Phone, MapPin
-} 
+}
 from "lucide-react";
-
+import { hasPremium } from "../lib/premium.js";
 const TOKENS = {
   ink: "#16283D",
   inkSoft: "#3C5069",
@@ -1600,10 +1600,10 @@ useEffect(() => {
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("is_premium")
+          .select("is_premium, premium_until")
           .eq("id", user.id)
           .maybeSingle();
-        setIsPremium(!!profile?.is_premium);
+        setIsPremium(hasPremium(profile));
       }
       setAuthChecked(true);
     }
@@ -1635,10 +1635,10 @@ async function handleAuthSubmit() {
         setCurrentUser(data.user);
         const { data: profile } = await supabase
           .from("profiles")
-          .select("is_premium")
+          .select("is_premium, premium_until")
           .eq("id", data.user.id)
           .maybeSingle();
-        setIsPremium(!!profile?.is_premium);
+        setIsPremium(hasPremium(profile));
       }
       setAuthEmail("");
       setAuthPassword("");
@@ -1650,14 +1650,14 @@ async function handleAuthSubmit() {
       setAuthLoading(false);
     }
   }
-  async function handleCheckout() {
+  async function handleCheckout(plan = "subscription") {
     if (!currentUser) return;
     setCheckoutLoading(true);
     try {
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: currentUser.id, email: currentUser.email }),
+        body: JSON.stringify({ userId: currentUser.id, email: currentUser.email, plan }),
       });
       const data = await res.json();
       if (data.url) {
@@ -3786,6 +3786,41 @@ async function runJobCardMatch(job, key) {
                 style={{ width: "100%", justifyContent: "center", fontSize: 16, padding: "14px 20px" }}
               >
                 {checkoutLoading ? "Redirecting to checkout..." : !currentUser ? "Sign up first — $9.99/mo" : "Subscribe — $9.99/mo"}
+              </Button>
+            </Card>
+<Card style={{ padding: 32, border: `2px solid ${TOKENS.accent}` }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: TOKENS.accent, margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                No commitment
+              </p>
+              <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, margin: "0 0 6px" }}>30-Day Pass</h2>
+              <p style={{ fontSize: 15, color: TOKENS.inkSoft, margin: "0 0 20px", lineHeight: 1.5 }}>
+                Every premium feature for thirty days. One payment, no card kept on file, nothing to cancel.
+              </p>
+              <p style={{ fontSize: 34, fontWeight: 700, margin: "0 0 24px" }}>
+                $15.99<span style={{ fontSize: 16, fontWeight: 400, color: TOKENS.inkSoft }}> once</span>
+              </p>
+
+              <div style={{ borderTop: `1px solid ${TOKENS.line || "rgba(0,0,0,0.12)"}`, paddingTop: 20, display: "flex", flexDirection: "column", gap: 16, marginBottom: 28 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: TOKENS.inkSoft, margin: 0, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  Same as Premium:
+                </p>
+                <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <Check size={18} color={TOKENS.accent} style={{ flexShrink: 0, marginTop: 2 }} />
+                  <p style={{ fontSize: 15, margin: 0 }}>Career Dashboard, Interview Coach, and Resume Match Scoring</p>
+                </div>
+                <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <Check size={18} color={TOKENS.accent} style={{ flexShrink: 0, marginTop: 2 }} />
+                  <p style={{ fontSize: 15, margin: 0 }}>Ends on its own after 30 days</p>
+                </div>
+              </div>
+
+              <Button
+                variant="secondary"
+                disabled={checkoutLoading}
+                onClick={() => (currentUser ? handleCheckout("pass") : setView("auth"))}
+                style={{ width: "100%", justifyContent: "center", fontSize: 16, padding: "14px 20px" }}
+              >
+                {checkoutLoading ? "Redirecting to checkout..." : !currentUser ? "Sign up first — $15.99" : "Buy 30 days — $15.99"}
               </Button>
             </Card>
 
