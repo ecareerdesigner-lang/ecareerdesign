@@ -1,6 +1,6 @@
 export const metadata = {
   title: "Terms of Use | eCareer Design",
-  description: "Review the terms of use for eCareer Design, including your rights and responsibilities when using our AI-powered resume and career tools.",
+  description: "The terms for using eCareer Design.",
 };
 
 const styles = {
