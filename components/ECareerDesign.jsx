@@ -5278,11 +5278,6 @@ async function runJobCardMatch(job, key) {
             )}
           </div>
 
-          {mode === "application" && (
-            <p style={{ fontSize: 12, color: TOKENS.inkSoft, marginTop: 20, borderTop: `1px solid ${TOKENS.line}`, paddingTop: 16 }}>
-              This demo exports plain text. A production build would generate a formatted .docx matching this same structure, using the docx library server-side.
-            </p>
-          )}
           </Card>
         </>
       )}
