@@ -2055,20 +2055,21 @@ const saveProfile = useCallback(async () => {
     });
   }
 
-  async function extractFromPosting() {
-    if (!rawPosting.trim()) return;
-    setExtracting(true);
-    setExtractError("");
-    try {
-      const text = await callClaude(extractionPrompt(rawPosting), 1000);
-      const arr = parseJsonArray(text);
-      setRequirements(arr.map((t, i) => ({ id: `r${i}`, text: t })));
-    } catch (e) {
-      setExtractError("Could not parse requirements from that text. Try pasting just the qualifications section.");
-    } finally {
-      setExtracting(false);
-    }
+async function extractFromPosting() {
+  if (!rawPosting.trim()) return;
+  setExtracting(true);
+  setExtractError("");
+  try {
+    const text = await callClaude(extractionPrompt(rawPosting), 4096);
+    const arr = parseJsonArray(text);
+    setRequirements(arr.map((t, i) => ({ id: `r${i}`, text: t })));
+  } catch (e) {
+    console.error("Extraction parse failure:", e);
+    setExtractError("Could not parse requirements from that text. Try pasting just the qualifications section.");
+  } finally {
+    setExtracting(false);
   }
+}
 
   function evenBudgets(reqs) {
     const n = reqs.length || 1;
