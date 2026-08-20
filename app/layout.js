@@ -24,15 +24,15 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata = {
-  metadataBase: new URL("https://ecareerdesign.net"),
+  metadataBase: new URL("https://www.ecareerdesign.net"),
   title: "eCareer Design: AI Resume, Cover Letter & Interview Prep",
-  description: "STAR-format response and resume builder for your next job application.",
+  description: "Build a job-winning resume, cover letter, and interview answers with AI — trusted by career changers and federal job seekers. Try eCareer Design free.",
   openGraph: {
     title: "eCareer Design",
     description: "Tailored resumes, cover letters, and mock interviews, all built from the exact job you're applying for, using one background you enter just once.",
     siteName: "eCareer Design",
     type: "website",
-    url: "https://ecareerdesign.net",
+    url: "https://www.ecareerdesign.net",
   },
   twitter: {
     card: "summary_large_image",

@@ -1,6 +1,6 @@
 export const metadata = {
   title: "Terms of Use | eCareer Design",
-  description: "The terms for using eCareer Design.",
+  description: "Read the terms and conditions for using eCareer Design's AI resume, cover letter, and interview preparation tools.",
 };
 
 const styles = {
