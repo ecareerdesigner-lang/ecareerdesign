@@ -1,6 +1,7 @@
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Fraunces, Inter, IBM_Plex_Mono } from "next/font/google";
+import Script from "next/script";
 
 // Self-hosted via Next.js instead of a runtime @import: these get included
 // directly in the initial HTML response, so there's no separate network
@@ -51,6 +52,18 @@ export default function RootLayout({ children }) {
         {children}
         <Analytics />
         <SpeedInsights />
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-PST16FSVMK"
+          strategy="afterInteractive"
+        />
+        <Script id="ga4-init" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-PST16FSVMK');
+          `}
+        </Script>
       </body>
     </html>
   );
