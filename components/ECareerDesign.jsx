@@ -3618,7 +3618,7 @@ async function runJobCardMatch(job, key) {
               Free · Takes 30 seconds
             </p>
             <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, margin: "0 0 8px", color: TOKENS.ink }}>
-              Get Your Free Resume Score
+              Stop Guessing If You're Hireable. Get a Brutal 30-Second Employer Readiness Assessment.
             </h2>
             <p style={{ fontSize: 14.5, color: TOKENS.inkSoft, margin: "0 0 4px", lineHeight: 1.5 }}>
               Upload your resume and get an instant Overall Score, ATS Score, Keyword Score, Formatting Score, weak bullet points, missing skills, and an honest Employer Readiness assessment.
