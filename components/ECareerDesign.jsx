@@ -1327,6 +1327,7 @@ const [showJobMatches, setShowJobMatches] = useState(false);
     }
   }
   async function runMatchScore() {
+    if (!requireLogin()) return;
     if (!matchJobDescription.trim()) return;
     setMatchLoading(true);
     setMatchError(null);
@@ -1599,6 +1600,17 @@ const [resumeScoreFile, setResumeScoreFile] = useState(null);
   const [resumeScoreError, setResumeScoreError] = useState("");
   const [resumeScoreResult, setResumeScoreResult] = useState(null);
   const [returnToView, setReturnToView] = useState("landing");
+  const [returnToMode, setReturnToMode] = useState(null);
+  const [returnToStep, setReturnToStep] = useState(null);
+
+  function requireLogin() {
+    if (currentUser) return true;
+    setReturnToView(view);
+    setReturnToMode(mode);
+    setReturnToStep(step);
+    setView("auth");
+    return false;
+  }
 useEffect(() => {
     async function loadSession() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -1649,7 +1661,11 @@ async function handleAuthSubmit() {
       setAuthEmail("");
       setAuthPassword("");
       setView(returnToView);
+      if (returnToMode) setMode(returnToMode);
+      if (returnToStep !== null) setStep(returnToStep);
       setReturnToView("landing");
+      setReturnToMode(null);
+      setReturnToStep(null);
     } catch (e) {
       setAuthError(e?.message || "Something went wrong. Please try again.");
     } finally {
@@ -1678,6 +1694,7 @@ async function handleAuthSubmit() {
   }
 
   async function runResumeScore() {
+    if (!requireLogin()) return;
     if (!resumeScoreFile) return;
     setResumeScoreLoading(true);
     setResumeScoreError("");
@@ -2056,6 +2073,7 @@ const saveProfile = useCallback(async () => {
   }
 
 async function extractFromPosting() {
+  if (!requireLogin()) return;
   if (!rawPosting.trim()) return;
   setExtracting(true);
   setExtractError("");
@@ -2112,6 +2130,7 @@ async function extractFromPosting() {
     setWorkExperience((w) => w.filter((e) => e.id !== id));
   }
   async function expandWorkExperience(id) {
+    if (!requireLogin()) return;
     const entry = workExperience.find((e) => e.id === id);
     if (!entry || !entry.basicDescription?.trim()) return;
     updateWorkExperience(id, { generating: true });
@@ -2148,6 +2167,7 @@ async function extractFromPosting() {
 
   // ---------- Training ----------
   async function extractTraining() {
+    if (!requireLogin()) return;
     if (!trainingPasteText.trim()) return;
     setTrainingExtracting(true);
     setTrainingError("");
@@ -2206,6 +2226,7 @@ async function extractFromPosting() {
   const overBudget = totalUsed > TOTAL_BUDGET;
 
   async function generateOne(req) {
+    if (!requireLogin()) return;
     setResponses((r) => ({ ...r, [req.id]: { ...(r[req.id] || {}), generating: true } }));
     try {
       const budget = budgets[req.id] || 500;
@@ -2218,6 +2239,7 @@ async function extractFromPosting() {
   }
 
   async function generateSkills() {
+    if (!requireLogin()) return;
     setSkills({ text: "", generating: true });
     try {
       const text = await callClaude(skillsPrompt(jobTitle || selectedLib?.title || "this position", buildBackground(), SKILLS_BUDGET), tokensForBudget(SKILLS_BUDGET));
@@ -2229,6 +2251,7 @@ async function extractFromPosting() {
   }
 
   async function generateResume() {
+    if (!requireLogin()) return;
     setResumeGenerating(true);
     setResumeError(false);
     try {
@@ -2288,6 +2311,7 @@ async function extractFromPosting() {
   }
 
   async function generateCoverLetter() {
+    if (!requireLogin()) return;
     setCoverLetterGenerating(true);
     setCoverLetterError(false);
     try {
@@ -2312,6 +2336,7 @@ async function extractFromPosting() {
   }
 
   async function generateInterviewQuestions() {
+    if (!requireLogin()) return;
     setIvGenerating(true);
     setIvGenError("");
     try {
@@ -2362,6 +2387,7 @@ Every string value must be valid JSON: escape any internal double quotes as \\",
   }
 
   async function extractCareerStories() {
+    if (!requireLogin()) return;
     setCoachExtracting(true);
     setCoachExtractError("");
     try {
@@ -2431,6 +2457,7 @@ Return ONLY the JSON array. No markdown fences, no commentary.`;
   }
 
   async function generateCoachQuestions() {
+    if (!requireLogin()) return;
     setCoachQuestionsGenerating(true);
     setCoachQuestionsError("");
     try {
@@ -2483,6 +2510,7 @@ Return ONLY the JSON object. No markdown fences, no commentary.`;
   }
 
   async function scorePracticeAnswer() {
+    if (!requireLogin()) return;
     setPracticeScoring(true);
     setPracticeError("");
     try {
@@ -2654,6 +2682,7 @@ function toggleVoiceInput() {
     setMockListening(true);
   }
 async function scoreAndAdvanceMock() {
+  if (!requireLogin()) return;
     setMockScoring(true);
     setMockError("");
     try {
@@ -2711,6 +2740,7 @@ Return ONLY the JSON object. No markdown fences, no commentary.`;
   }
 
   async function generateNextMockQuestion(history) {
+    if (!requireLogin()) return;
     setMockGeneratingQuestion(true);
     setMockError("");
     try {
@@ -2804,6 +2834,7 @@ const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     }
   }
  async function submitAnswer() {
+   if (!requireLogin()) return;
     if (!interviewQuestions) return;
     const q = interviewQuestions.questions[currentQuestionIndex];
     if (!q || !currentAnswerText.trim()) return;
@@ -3247,6 +3278,7 @@ function collectSafeBreakPoints(container) {
     }
   }
 async function runJobCardMatch(job, key) {
+  if (!requireLogin()) return;
     if (!currentUser || !isPremium) {
       setView("pricing");
       return;
