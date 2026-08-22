@@ -13,6 +13,16 @@ const nextConfig = {
         destination: '/blog/ai-resume-builders-vs-writing-your-own-resume',
         permanent: true,
       },
+      {
+        source: '/cover_letter',
+        destination: '/cover-letter-generator',
+        permanent: true,
+      },
+      {
+        source: '/coverletter',
+        destination: '/cover-letter-generator',
+        permanent: true,
+      },
     ]
   },
 }
