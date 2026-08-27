@@ -21,11 +21,38 @@ The narrative MUST satisfy this rating standard FOR THIS GOAL:
 
 Only claim things supported by what's given to you — never invent accomplishments, numbers, or outcomes. If the notes are thin, write an honest, solid paragraph and don't force an unsupported claim.
 
-Respond with ONLY valid JSON, no markdown fences, no preamble:
-{
-  "narrative": "the full first-person write-up as plain text",
-  "elements_demonstrated": ["surpassed_outcomes" | "unique_contribution" | "extraordinary_effort", ...]
-}`;
+Call the submit_enhanced_narrative tool with your result.`;
+
+// Same fix as the Accomplishments route, same reason: a model hand-typing
+// JSON has to manually escape every newline in the narrative as "\n", and
+// natural multi-paragraph prose is exactly what tends to slip and emit a
+// real line break instead — invalid inside a JSON string, and the actual
+// cause of "Could not parse AI response." Tool use moves the JSON
+// structuring into Anthropic's API itself; there is no hand-parsed text
+// left for a stray newline to break.
+const NARRATIVE_TOOL = {
+  name: "submit_enhanced_narrative",
+  description: "Submit the polished first-person narrative for this goal.",
+  input_schema: {
+    type: "object",
+    properties: {
+      narrative: {
+        type: "string",
+        description: "The full first-person write-up for this one goal, as plain text.",
+      },
+      elements_demonstrated: {
+        type: "array",
+        items: {
+          type: "string",
+          enum: ["surpassed_outcomes", "unique_contribution", "extraordinary_effort"],
+        },
+        description:
+          "Which of the three elements the narrative demonstrates (at least two).",
+      },
+    },
+    required: ["narrative", "elements_demonstrated"],
+  },
+};
 
 export async function POST(req, { params }) {
   const body = await req.json();
@@ -99,6 +126,8 @@ ${goal.summary_text || "(none provided)"}`;
       max_tokens: 1000,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userPrompt }],
+      tools: [NARRATIVE_TOOL],
+      tool_choice: { type: "tool", name: "submit_enhanced_narrative" },
     }),
   });
 
@@ -108,18 +137,13 @@ ${goal.summary_text || "(none provided)"}`;
   }
 
   const claudeData = await claudeRes.json();
-  const textBlock = claudeData.content?.find((b) => b.type === "text");
-  if (!textBlock?.text) {
-    return NextResponse.json({ error: "AI returned no text." }, { status: 502 });
+  const toolUseBlock = claudeData.content?.find((b) => b.type === "tool_use");
+
+  if (!toolUseBlock?.input?.narrative) {
+    return NextResponse.json({ error: "AI did not return the expected response." }, { status: 502 });
   }
 
-  let parsed;
-  try {
-    const cleaned = textBlock.text.replace(/```json|```/g, "").trim();
-    parsed = JSON.parse(cleaned);
-  } catch {
-    return NextResponse.json({ error: "Could not parse AI response." }, { status: 502 });
-  }
+  const parsed = toolUseBlock.input;
 
   await supabase
     .from("performance_goals")
