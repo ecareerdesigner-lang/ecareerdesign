@@ -12,6 +12,24 @@ export default async function sitemap() {
       priority: 1,
     },
     {
+      url: `${baseUrl}/ats-checker`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/cover-letter-generator`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/federal-resume-builder`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
       url: `${baseUrl}/performance-review`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
