@@ -1,30 +1,65 @@
 import { NextResponse } from "next/server";
 import { getSupabase, checkPremium } from "@/lib/performance-review-server.js";
-import { REVIEW_PERIOD_LABELS, PERIOD_FRAMING } from "@/lib/performance-review-shared.js";
 
-const SYSTEM_PROMPT = `You are helping a federal/postal employee write the overall "Accomplishments" narrative section of a formal performance review, pulling together everything across all their goals. Write in FIRST PERSON, as the employee themselves — "I delivered...", "I built...", never "the employee" or third person.
+const REVIEW_PERIOD_LABELS = {
+  mid_year: "Mid-Year",
+  end_of_year: "End of Year",
+  end_of_position: "End of Position",
+};
+
+const SYSTEM_PROMPT = `You are helping a federal/postal employee write the "Accomplishments" narrative section of a formal performance review.
 
 You will receive:
 - The review period (mid-year, end of year, or end of position)
 - A list of goals, each with its tasks/targets and a short summary the employee wrote
 - The employee's own rough notes about their accomplishments
 
-Write a polished, natural-sounding first-person narrative (one flowing write-up, or a short paragraph per goal if that reads better) that a real supervisor could read as the employee's own account. Do not write it as a bulleted checklist. Do not sound robotic or use corporate buzzword soup — write like a person describing real work.
+Write a polished, natural-sounding narrative (one flowing write-up, or a short paragraph per goal if that reads better) that a real supervisor could paste directly into a review. Do not write it as a bulleted checklist. Do not sound robotic or use corporate buzzword soup. Write like a thoughtful manager who knows this employee's work.
 
 The narrative MUST satisfy this rating standard:
-1. It must show I met all standard "Fully Successful" expectations for each goal.
-2. It must also clearly demonstrate AT LEAST TWO of the following three things, woven naturally into the writing (do not label or list them — show them through specific, concrete detail pulled from what was actually given to you):
-   a. surpassed_outcomes — I surpassed most of the outcomes/targets tied to the goal, not merely met them.
-   b. unique_contribution — my work product went beyond expectations in a way that included a special or unique contribution to the organization/unit.
-   c. extraordinary_effort — I put forth extraordinary effort toward the goal.
+1. It must show the employee met all standard "Fully Successful" expectations for each goal.
+2. It must also clearly demonstrate AT LEAST TWO of the following three things, woven naturally into the writing (do not label or list them — show them through specific, concrete detail pulled from what the employee actually gave you):
+   a. surpassed_outcomes — the employee surpassed most of the outcomes/targets tied to the goal, not merely met them.
+   b. unique_contribution — the employee's work product went beyond expectations in a way that included a special or unique contribution to the organization/unit.
+   c. extraordinary_effort — the employee put forth extraordinary effort toward the goal.
 
 Only claim things that are supported by the goals, tasks, and notes provided — never invent accomplishments, numbers, or outcomes that weren't given to you. If the notes are thin for a goal, write an honest, solid paragraph for it and simply don't force an unsupported claim.
 
-Respond with ONLY valid JSON, no markdown fences, no preamble:
-{
-  "narrative": "the full write-up as plain text with \\n\\n between paragraphs",
-  "elements_demonstrated": ["surpassed_outcomes" | "unique_contribution" | "extraordinary_effort", ...]
-}`;
+Call the submit_enhanced_narrative tool with your result. Use a real blank line (two newlines) between paragraphs in the narrative text.`;
+
+// Structured output via tool use, not hand-written JSON. A model asked to
+// type valid JSON as plain text has to manually escape every newline in a
+// multi-paragraph narrative as "\n" — the one section generating genuine
+// flowing prose is exactly the one most likely to slip and emit a real
+// line break instead, which is invalid inside a JSON string and is what
+// "Could not parse AI response" actually was. Forcing a tool call moves
+// the JSON structuring into Anthropic's API itself, which parses it
+// server-side — there is no text for a regex-and-JSON.parse step to get
+// wrong, because there is no longer a JSON.parse step at all.
+const NARRATIVE_TOOL = {
+  name: "submit_enhanced_narrative",
+  description: "Submit the polished performance review narrative.",
+  input_schema: {
+    type: "object",
+    properties: {
+      narrative: {
+        type: "string",
+        description:
+          "The full write-up as plain text, with a real blank line between paragraphs.",
+      },
+      elements_demonstrated: {
+        type: "array",
+        items: {
+          type: "string",
+          enum: ["surpassed_outcomes", "unique_contribution", "extraordinary_effort"],
+        },
+        description:
+          "Which of the three elements the narrative demonstrates (at least two).",
+      },
+    },
+    required: ["narrative", "elements_demonstrated"],
+  },
+};
 
 export async function POST(req, { params }) {
   const body = await req.json();
@@ -74,7 +109,6 @@ export async function POST(req, { params }) {
     .join("\n\n");
 
   const userPrompt = `Review period: ${REVIEW_PERIOD_LABELS[review.review_period]}
-${PERIOD_FRAMING[review.review_period]}
 
 ${goalsBlock}
 
@@ -97,6 +131,8 @@ ${review.accomplishments_raw || "(none provided)"}`;
       max_tokens: 1500,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userPrompt }],
+      tools: [NARRATIVE_TOOL],
+      tool_choice: { type: "tool", name: "submit_enhanced_narrative" },
     }),
   });
 
@@ -106,18 +142,16 @@ ${review.accomplishments_raw || "(none provided)"}`;
   }
 
   const claudeData = await claudeRes.json();
-  const textBlock = claudeData.content?.find((b) => b.type === "text");
-  if (!textBlock?.text) {
-    return NextResponse.json({ error: "AI returned no text." }, { status: 502 });
+  const toolUseBlock = claudeData.content?.find((b) => b.type === "tool_use");
+
+  // Anthropic's API guarantees this input matches input_schema when
+  // tool_choice forces this specific tool — no JSON.parse, no cleanup
+  // regex, nothing left that a stray newline could break.
+  if (!toolUseBlock?.input?.narrative) {
+    return NextResponse.json({ error: "AI did not return the expected response." }, { status: 502 });
   }
 
-  let parsed;
-  try {
-    const cleaned = textBlock.text.replace(/```json|```/g, "").trim();
-    parsed = JSON.parse(cleaned);
-  } catch {
-    return NextResponse.json({ error: "Could not parse AI response." }, { status: 502 });
-  }
+  const parsed = toolUseBlock.input;
 
   await supabase
     .from("performance_reviews")
