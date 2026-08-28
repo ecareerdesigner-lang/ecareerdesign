@@ -1,4 +1,5 @@
 import mammoth from "mammoth";
+import { logError } from "@/lib/logError.js";
 
 export const runtime = "nodejs";
 
@@ -28,12 +29,14 @@ export async function POST(req) {
 
     text = (text || "").trim();
     if (!text) {
+      await logError({ source: "server", feature: "parse-resume", message: "Could not extract any text from this file.", context: { filename } });
       return Response.json({ error: "Could not extract any text from this file." }, { status: 400 });
     }
 
     return Response.json({ text: text.slice(0, 15000) });
   } catch (e) {
     console.error("parse-resume failed:", e);
+    await logError({ source: "server", feature: "parse-resume", message: e.message, stack: e.stack });
     return Response.json({ error: "Could not read this file. Try a different format or file." }, { status: 500 });
   }
 }

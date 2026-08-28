@@ -64,6 +64,29 @@ export default function RootLayout({ children }) {
             gtag('config', 'G-PST16FSVMK');
           `}
         </Script>
+        <Script id="error-capture-init" strategy="afterInteractive">
+          {`
+            function reportClientError(message, stack, feature) {
+              try {
+                fetch('/api/log-error', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ message: message, stack: stack, feature: feature || 'uncaught' }),
+                  keepalive: true,
+                });
+              } catch (e) {}
+            }
+            window.addEventListener('error', function(event) {
+              reportClientError(event.message, event.error && event.error.stack, 'window-error');
+            });
+            window.addEventListener('unhandledrejection', function(event) {
+              var reason = event.reason;
+              var message = reason && reason.message ? reason.message : String(reason);
+              var stack = reason && reason.stack ? reason.stack : null;
+              reportClientError(message, stack, 'unhandled-rejection');
+            });
+          `}
+        </Script>
       </body>
     </html>
   );

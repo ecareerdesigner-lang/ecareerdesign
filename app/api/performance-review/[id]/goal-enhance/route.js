@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabase, checkPremium } from "@/lib/performance-review-server.js";
 import { REVIEW_PERIOD_LABELS, PERIOD_FRAMING } from "@/lib/performance-review-shared.js";
+import { logError } from "@/lib/logError.js";
 
 const SYSTEM_PROMPT = `You are helping a federal/postal employee write the narrative for ONE specific goal on their formal performance review. Write in FIRST PERSON, as the employee themselves — "I delivered...", "I built...", never "the employee" or third person.
 
@@ -55,51 +56,52 @@ const NARRATIVE_TOOL = {
 };
 
 export async function POST(req, { params }) {
-  const body = await req.json();
-  const { userId, goalId } = body;
+  try {
+    const body = await req.json();
+    const { userId, goalId } = body;
 
-  if (!userId || !goalId) {
-    return NextResponse.json({ error: "Missing userId or goalId." }, { status: 400 });
-  }
-  if (!(await checkPremium(userId))) {
-    return NextResponse.json({ error: "Premium required." }, { status: 403 });
-  }
+    if (!userId || !goalId) {
+      return NextResponse.json({ error: "Missing userId or goalId." }, { status: 400 });
+    }
+    if (!(await checkPremium(userId))) {
+      return NextResponse.json({ error: "Premium required." }, { status: 403 });
+    }
 
-  const supabase = getSupabase();
+    const supabase = getSupabase();
 
-  // Confirm the review belongs to this user, and pull period for context
-  const { data: review, error: reviewErr } = await supabase
-    .from("performance_reviews")
-    .select("id, review_period")
-    .eq("id", params.id)
-    .eq("user_id", userId)
-    .single();
+    // Confirm the review belongs to this user, and pull period for context
+    const { data: review, error: reviewErr } = await supabase
+      .from("performance_reviews")
+      .select("id, review_period")
+      .eq("id", params.id)
+      .eq("user_id", userId)
+      .single();
 
-  if (reviewErr || !review) {
-    return NextResponse.json({ error: "Review not found." }, { status: 404 });
-  }
+    if (reviewErr || !review) {
+      return NextResponse.json({ error: "Review not found." }, { status: 404 });
+    }
 
-  // Confirm the goal belongs to this review
-  const { data: goal, error: goalErr } = await supabase
-    .from("performance_goals")
-    .select("*")
-    .eq("id", goalId)
-    .eq("review_id", params.id)
-    .single();
+    // Confirm the goal belongs to this review
+    const { data: goal, error: goalErr } = await supabase
+      .from("performance_goals")
+      .select("*")
+      .eq("id", goalId)
+      .eq("review_id", params.id)
+      .single();
 
-  if (goalErr || !goal) {
-    return NextResponse.json({ error: "Goal not found." }, { status: 404 });
-  }
+    if (goalErr || !goal) {
+      return NextResponse.json({ error: "Goal not found." }, { status: 404 });
+    }
 
-  const { data: tasks } = await supabase
-    .from("performance_goal_tasks")
-    .select("*")
-    .eq("goal_id", goalId)
-    .order("sort_order", { ascending: true });
+    const { data: tasks } = await supabase
+      .from("performance_goal_tasks")
+      .select("*")
+      .eq("goal_id", goalId)
+      .order("sort_order", { ascending: true });
 
-  const tasksBlock = (tasks ?? []).map((t) => `  - ${t.task_text}`).join("\n") || "  (none listed)";
+    const tasksBlock = (tasks ?? []).map((t) => `  - ${t.task_text}`).join("\n") || "  (none listed)";
 
-  const userPrompt = `Review period: ${REVIEW_PERIOD_LABELS[review.review_period]}
+    const userPrompt = `Review period: ${REVIEW_PERIOD_LABELS[review.review_period]}
 ${PERIOD_FRAMING[review.review_period]}
 
 Goal: ${goal.goal_text}
@@ -110,48 +112,54 @@ ${tasksBlock}
 My summary of my performance on this goal:
 ${goal.summary_text || "(none provided)"}`;
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json({ error: "Server missing ANTHROPIC_API_KEY." }, { status: 500 });
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return NextResponse.json({ error: "Server missing ANTHROPIC_API_KEY." }, { status: 500 });
+    }
+
+    const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-5",
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: userPrompt }],
+        tools: [NARRATIVE_TOOL],
+        tool_choice: { type: "tool", name: "submit_enhanced_narrative" },
+      }),
+    });
+
+    if (!claudeRes.ok) {
+      const errText = await claudeRes.text();
+      await logError({ source: "server", feature: "performance-review-goal-enhance", message: `AI request failed: ${errText}`, context: { reviewId: params.id, goalId, status: claudeRes.status } });
+      return NextResponse.json({ error: `AI request failed: ${errText}` }, { status: 502 });
+    }
+
+    const claudeData = await claudeRes.json();
+    const toolUseBlock = claudeData.content?.find((b) => b.type === "tool_use");
+
+    if (!toolUseBlock?.input?.narrative) {
+      await logError({ source: "server", feature: "performance-review-goal-enhance", message: "AI did not return the expected response.", context: { reviewId: params.id, goalId } });
+      return NextResponse.json({ error: "AI did not return the expected response." }, { status: 502 });
+    }
+
+    const parsed = toolUseBlock.input;
+
+    await supabase
+      .from("performance_goals")
+      .update({
+        enhanced_summary: parsed.narrative,
+        elements_demonstrated: parsed.elements_demonstrated,
+      })
+      .eq("id", goalId);
+
+    return NextResponse.json(parsed);
+  } catch (e) {
+    await logError({ source: "server", feature: "performance-review-goal-enhance", message: e.message, stack: e.stack, context: { reviewId: params?.id } });
+    return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
   }
-
-  const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-5",
-      max_tokens: 1000,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: userPrompt }],
-      tools: [NARRATIVE_TOOL],
-      tool_choice: { type: "tool", name: "submit_enhanced_narrative" },
-    }),
-  });
-
-  if (!claudeRes.ok) {
-    const errText = await claudeRes.text();
-    return NextResponse.json({ error: `AI request failed: ${errText}` }, { status: 502 });
-  }
-
-  const claudeData = await claudeRes.json();
-  const toolUseBlock = claudeData.content?.find((b) => b.type === "tool_use");
-
-  if (!toolUseBlock?.input?.narrative) {
-    return NextResponse.json({ error: "AI did not return the expected response." }, { status: 502 });
-  }
-
-  const parsed = toolUseBlock.input;
-
-  await supabase
-    .from("performance_goals")
-    .update({
-      enhanced_summary: parsed.narrative,
-      elements_demonstrated: parsed.elements_demonstrated,
-    })
-    .eq("id", goalId);
-
-  return NextResponse.json(parsed);
 }

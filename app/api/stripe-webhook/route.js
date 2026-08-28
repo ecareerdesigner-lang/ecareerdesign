@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 import { nextPassEnd } from "../../../lib/premium.js";
+import { logError } from "@/lib/logError.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -81,6 +82,7 @@ export async function POST(req) {
     return Response.json({ received: true });
   } catch (e) {
     console.error("stripe-webhook handler failed:", e);
+    await logError({ source: "server", feature: "stripe-webhook", message: e.message, stack: e.stack, context: { eventType: event?.type } });
     return Response.json({ error: e.message }, { status: 500 });
   }
 }

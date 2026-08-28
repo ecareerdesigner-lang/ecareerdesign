@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { logError } from "@/lib/logError.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -17,6 +18,7 @@ export async function POST(req) {
 
     if (!priceId) {
       console.error("Missing price id for plan:", plan);
+      await logError({ source: "server", feature: "stripe-checkout", message: `Missing price id for plan: ${plan}` });
       return Response.json(
         { error: "That plan is not available right now." },
         { status: 500 }
@@ -40,6 +42,7 @@ export async function POST(req) {
     return Response.json({ url: session.url });
   } catch (e) {
     console.error("create-checkout-session failed:", e);
+    await logError({ source: "server", feature: "stripe-checkout", message: e.message, stack: e.stack });
     return Response.json({ error: e.message }, { status: 500 });
   }
 }
