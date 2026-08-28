@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { logError } from "@/lib/logError.js";
 export const dynamic = 'force-dynamic';
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -51,6 +52,7 @@ export async function GET(request) {
         }
       } catch (e) {
         console.error(`Job search failed for user ${profile.user_id}:`, e);
+        await logError({ source: "server", feature: "cron-match-jobs", message: e.message, stack: e.stack, context: { userId: profile.user_id, stage: "search" } });
         continue;
       }
 
@@ -64,6 +66,7 @@ export async function GET(request) {
 
       if (insertError) {
         console.error(`Insert failed for user ${profile.user_id}:`, insertError);
+        await logError({ source: "server", feature: "cron-match-jobs", message: insertError.message, context: { userId: profile.user_id, stage: "insert" } });
         continue;
       }
 
@@ -74,6 +77,7 @@ export async function GET(request) {
     return Response.json({ success: true, usersProcessed, totalNewMatches });
   } catch (e) {
     console.error("match-jobs cron failed:", e);
+    await logError({ source: "server", feature: "cron-match-jobs", message: e.message, stack: e.stack, context: { stage: "top-level" } });
     return Response.json({ error: e.message }, { status: 500 });
   }
 }

@@ -9,6 +9,8 @@
 // Any source can be left unconfigured — it's skipped with a warning rather
 // than failing the whole request.
 
+import { logError } from "@/lib/logError.js";
+
 export async function POST(req) {
   const { title, location } = await req.json();
   const results = [];
@@ -46,9 +48,11 @@ export async function POST(req) {
         });
       } else {
         warnings.push("USAJOBS search failed (check USAJOBS_API_KEY / USAJOBS_EMAIL).");
+        await logError({ source: "server", feature: "job-search-usajobs", message: `USAJOBS returned ${res.status}`, context: { title, location } });
       }
     } catch (e) {
       warnings.push("USAJOBS search failed.");
+      await logError({ source: "server", feature: "job-search-usajobs", message: e.message, stack: e.stack, context: { title, location } });
     }
   } else {
     warnings.push("USAJOBS is not configured yet.");
@@ -80,9 +84,11 @@ export async function POST(req) {
         });
       } else {
         warnings.push("Adzuna search failed (check ADZUNA_APP_ID / ADZUNA_APP_KEY).");
+        await logError({ source: "server", feature: "job-search-adzuna", message: `Adzuna returned ${res.status}`, context: { title, location } });
       }
     } catch (e) {
       warnings.push("Adzuna search failed.");
+      await logError({ source: "server", feature: "job-search-adzuna", message: e.message, stack: e.stack, context: { title, location } });
     }
   } else {
     warnings.push("Adzuna is not configured yet.");
@@ -114,9 +120,11 @@ export async function POST(req) {
         });
       } else {
         warnings.push("Jooble search failed (check JOOBLE_API_KEY).");
+        await logError({ source: "server", feature: "job-search-jooble", message: `Jooble returned ${res.status}`, context: { title, location } });
       }
     } catch (e) {
       warnings.push("Jooble search failed.");
+      await logError({ source: "server", feature: "job-search-jooble", message: e.message, stack: e.stack, context: { title, location } });
     }
   } else {
     warnings.push("Jooble is not configured yet.");

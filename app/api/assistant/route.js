@@ -3,6 +3,8 @@
 // chatbot. Keeping the system prompt accurate to what's really built prevents
 // it from promising features that don't exist.
 
+import { logError } from "@/lib/logError.js";
+
 const SYSTEM_PROMPT = `You are the in-app assistant for eCareer Design, a free web app that helps people build resumes, cover letters, tailored job application responses, and interview practice using AI.
 
 Your job is to help visitors understand what the app does and walk them through using it — you are a guide to the app itself, not a general career coach or job-search advisor. Keep answers short, friendly, and specific to eCareer Design's real features, listed below. Do not invent features that aren't listed here.
@@ -56,6 +58,7 @@ export async function POST(req) {
 
     const data = await response.json();
     if (!response.ok) {
+      await logError({ source: "server", feature: "in-app-assistant", message: data?.error?.message || "Assistant request failed.", context: { status: response.status } });
       return Response.json({ error: data?.error?.message || "Assistant request failed." }, { status: response.status });
     }
 
@@ -66,6 +69,7 @@ export async function POST(req) {
 
     return Response.json({ text });
   } catch (e) {
+    await logError({ source: "server", feature: "in-app-assistant", message: e.message, stack: e.stack });
     return Response.json({ error: e.message || "Something went wrong." }, { status: 500 });
   }
 }

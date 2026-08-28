@@ -7,6 +7,8 @@
 //   RESEND_FROM_EMAIL   — required, must be a verified sender/domain in Resend
 //   RESEND_AUDIENCE_ID  — optional; only needed if you want the opt-in list feature
 
+import { logError } from "@/lib/logError.js";
+
 export async function POST(req) {
   let email, optIn, content, contentType, pdfBase64, pdfFilename;
   try {
@@ -47,6 +49,7 @@ export async function POST(req) {
 
     if (sendResult.error) {
       console.error("Resend send error:", sendResult.error);
+      await logError({ source: "server", feature: "subscribe-email", message: sendResult.error.message || "Resend send error" });
       return Response.json({ success: false, error: sendResult.error.message || "Could not send the email." }, { status: 500 });
     }
 
@@ -70,6 +73,7 @@ export async function POST(req) {
     return Response.json({ success: true });
   } catch (e) {
     console.error("subscribe route failed:", e);
+    await logError({ source: "server", feature: "subscribe-email", message: e.message, stack: e.stack });
     return Response.json({ success: false, error: e.message || "Something went wrong." }, { status: 500 });
   }
 }
