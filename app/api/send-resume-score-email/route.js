@@ -1,3 +1,5 @@
+import { logError } from "@/lib/logError.js";
+
 export async function POST(req) {
   let email, scores = {};
   try {
@@ -59,6 +61,7 @@ This is an independent tool, not an official product of any employer, agency, or
 
     if (sendResult.error) {
       console.error("Resend send error:", sendResult.error);
+      await logError({ source: "server", feature: "resume-score-email", message: sendResult.error.message || "Resend send error", context: { stage: "send" } });
       return Response.json({ success: false, error: sendResult.error.message || "Could not send the email." }, { status: 500 });
     }
 
@@ -77,6 +80,7 @@ This is an independent tool, not an official product of any employer, agency, or
     return Response.json({ success: true });
   } catch (e) {
     console.error("send-resume-score-email route failed:", e);
+    await logError({ source: "server", feature: "resume-score-email", message: e.message, stack: e.stack });
     return Response.json({ success: false, error: e.message || "Something went wrong." }, { status: 500 });
   }
 }

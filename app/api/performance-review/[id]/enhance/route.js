@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabase, checkPremium } from "@/lib/performance-review-server.js";
 import { REVIEW_PERIOD_LABELS, PERIOD_FRAMING } from "@/lib/performance-review-shared.js";
+import { logError } from "@/lib/logError.js";
 
 const SYSTEM_PROMPT = `You are helping a federal/postal employee write the overall "Accomplishments" narrative section of a formal performance review, pulling together everything across all their goals. Write in FIRST PERSON, as the employee themselves — "I delivered...", "I built...", never "the employee" or third person.
 
@@ -57,53 +58,54 @@ const NARRATIVE_TOOL = {
 };
 
 export async function POST(req, { params }) {
-  const body = await req.json();
-  const { userId } = body;
+  try {
+    const body = await req.json();
+    const { userId } = body;
 
-  if (!userId) return NextResponse.json({ error: "Missing userId." }, { status: 400 });
-  if (!(await checkPremium(userId))) {
-    return NextResponse.json({ error: "Premium required." }, { status: 403 });
-  }
+    if (!userId) return NextResponse.json({ error: "Missing userId." }, { status: 400 });
+    if (!(await checkPremium(userId))) {
+      return NextResponse.json({ error: "Premium required." }, { status: 403 });
+    }
 
-  const supabase = getSupabase();
+    const supabase = getSupabase();
 
-  const { data: review, error: reviewErr } = await supabase
-    .from("performance_reviews")
-    .select("*")
-    .eq("id", params.id)
-    .eq("user_id", userId)
-    .single();
+    const { data: review, error: reviewErr } = await supabase
+      .from("performance_reviews")
+      .select("*")
+      .eq("id", params.id)
+      .eq("user_id", userId)
+      .single();
 
-  if (reviewErr || !review) {
-    return NextResponse.json({ error: "Review not found." }, { status: 404 });
-  }
+    if (reviewErr || !review) {
+      return NextResponse.json({ error: "Review not found." }, { status: 404 });
+    }
 
-  const { data: goals } = await supabase
-    .from("performance_goals")
-    .select("*")
-    .eq("review_id", params.id)
-    .order("sort_order", { ascending: true });
+    const { data: goals } = await supabase
+      .from("performance_goals")
+      .select("*")
+      .eq("review_id", params.id)
+      .order("sort_order", { ascending: true });
 
-  const goalIds = (goals ?? []).map((g) => g.id);
-  const { data: tasks } = goalIds.length
-    ? await supabase.from("performance_goal_tasks").select("*").in("goal_id", goalIds)
-    : { data: [] };
+    const goalIds = (goals ?? []).map((g) => g.id);
+    const { data: tasks } = goalIds.length
+      ? await supabase.from("performance_goal_tasks").select("*").in("goal_id", goalIds)
+      : { data: [] };
 
-  if (!goals || goals.length < 3) {
-    return NextResponse.json({ error: "At least 3 goals are required before enhancing." }, { status: 400 });
-  }
+    if (!goals || goals.length < 3) {
+      return NextResponse.json({ error: "At least 3 goals are required before enhancing." }, { status: 400 });
+    }
 
-  const goalsBlock = goals
-    .map((g, i) => {
-      const goalTasks = (tasks ?? [])
-        .filter((t) => t.goal_id === g.id)
-        .map((t) => `    - ${t.task_text}`)
-        .join("\n");
-      return `Goal ${i + 1}: ${g.goal_text}\n  Tasks/Targets:\n${goalTasks}\n  Employee's summary: ${g.summary_text || "(none provided)"}`;
-    })
-    .join("\n\n");
+    const goalsBlock = goals
+      .map((g, i) => {
+        const goalTasks = (tasks ?? [])
+          .filter((t) => t.goal_id === g.id)
+          .map((t) => `    - ${t.task_text}`)
+          .join("\n");
+        return `Goal ${i + 1}: ${g.goal_text}\n  Tasks/Targets:\n${goalTasks}\n  Employee's summary: ${g.summary_text || "(none provided)"}`;
+      })
+      .join("\n\n");
 
-  const userPrompt = `Review period: ${REVIEW_PERIOD_LABELS[review.review_period]}
+    const userPrompt = `Review period: ${REVIEW_PERIOD_LABELS[review.review_period]}
 ${PERIOD_FRAMING[review.review_period]}
 
 ${goalsBlock}
@@ -111,51 +113,57 @@ ${goalsBlock}
 Employee's raw accomplishment notes:
 ${review.accomplishments_raw || "(none provided)"}`;
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json({ error: "Server missing ANTHROPIC_API_KEY." }, { status: 500 });
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return NextResponse.json({ error: "Server missing ANTHROPIC_API_KEY." }, { status: 500 });
+    }
+
+    const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-5",
+        max_tokens: 1500,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: userPrompt }],
+        tools: [NARRATIVE_TOOL],
+        tool_choice: { type: "tool", name: "submit_enhanced_narrative" },
+      }),
+    });
+
+    if (!claudeRes.ok) {
+      const errText = await claudeRes.text();
+      await logError({ source: "server", feature: "performance-review-accomplishments-enhance", message: `AI request failed: ${errText}`, context: { reviewId: params.id, status: claudeRes.status } });
+      return NextResponse.json({ error: `AI request failed: ${errText}` }, { status: 502 });
+    }
+
+    const claudeData = await claudeRes.json();
+    const toolUseBlock = claudeData.content?.find((b) => b.type === "tool_use");
+
+    // Anthropic's API guarantees this input matches input_schema when
+    // tool_choice forces this specific tool — no JSON.parse, no cleanup
+    // regex, nothing left that a stray newline could break.
+    if (!toolUseBlock?.input?.narrative) {
+      await logError({ source: "server", feature: "performance-review-accomplishments-enhance", message: "AI did not return the expected response.", context: { reviewId: params.id } });
+      return NextResponse.json({ error: "AI did not return the expected response." }, { status: 502 });
+    }
+
+    const parsed = toolUseBlock.input;
+
+    await supabase
+      .from("performance_reviews")
+      .update({
+        accomplishments_enhanced: parsed.narrative,
+        elements_demonstrated: parsed.elements_demonstrated,
+      })
+      .eq("id", params.id);
+
+    return NextResponse.json(parsed);
+  } catch (e) {
+    await logError({ source: "server", feature: "performance-review-accomplishments-enhance", message: e.message, stack: e.stack, context: { reviewId: params?.id } });
+    return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
   }
-
-  const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-5",
-      max_tokens: 1500,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: userPrompt }],
-      tools: [NARRATIVE_TOOL],
-      tool_choice: { type: "tool", name: "submit_enhanced_narrative" },
-    }),
-  });
-
-  if (!claudeRes.ok) {
-    const errText = await claudeRes.text();
-    return NextResponse.json({ error: `AI request failed: ${errText}` }, { status: 502 });
-  }
-
-  const claudeData = await claudeRes.json();
-  const toolUseBlock = claudeData.content?.find((b) => b.type === "tool_use");
-
-  // Anthropic's API guarantees this input matches input_schema when
-  // tool_choice forces this specific tool — no JSON.parse, no cleanup
-  // regex, nothing left that a stray newline could break.
-  if (!toolUseBlock?.input?.narrative) {
-    return NextResponse.json({ error: "AI did not return the expected response." }, { status: 502 });
-  }
-
-  const parsed = toolUseBlock.input;
-
-  await supabase
-    .from("performance_reviews")
-    .update({
-      accomplishments_enhanced: parsed.narrative,
-      elements_demonstrated: parsed.elements_demonstrated,
-    })
-    .eq("id", params.id);
-
-  return NextResponse.json(parsed);
 }
