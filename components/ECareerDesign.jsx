@@ -1599,6 +1599,8 @@ const [resumeScoreFile, setResumeScoreFile] = useState(null);
   const [resumeScoreLoading, setResumeScoreLoading] = useState(false);
   const [resumeScoreError, setResumeScoreError] = useState("");
   const [resumeScoreResult, setResumeScoreResult] = useState(null);
+  const [resumeScoreEmailInput, setResumeScoreEmailInput] = useState("");
+  const [resumeScoreEmailStatus, setResumeScoreEmailStatus] = useState("idle"); // 'idle' | 'sending' | 'sent' | 'error'
   const [returnToView, setReturnToView] = useState("landing");
   const [returnToMode, setReturnToMode] = useState(null);
   const [returnToStep, setReturnToStep] = useState(null);
@@ -1694,7 +1696,6 @@ async function handleAuthSubmit() {
   }
 
   async function runResumeScore() {
-    if (!requireLogin()) return;
     if (!resumeScoreFile) return;
     setResumeScoreLoading(true);
     setResumeScoreError("");
@@ -1755,6 +1756,33 @@ async function handleAuthSubmit() {
       setResumeScoreError(e.message || "Something went wrong scoring your resume. Please try again.");
     } finally {
       setResumeScoreLoading(false);
+    }
+  }
+
+  async function sendResumeScoreEmail() {
+    if (!resumeScoreResult || !resumeScoreEmailInput) return;
+    setResumeScoreEmailStatus("sending");
+    try {
+      const res = await fetch("/api/send-resume-score-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: resumeScoreEmailInput,
+          overallScore: resumeScoreResult.overallScore,
+          atsScore: resumeScoreResult.atsScore,
+          keywordScore: resumeScoreResult.keywordScore,
+          formattingScore: resumeScoreResult.formattingScore,
+          weakBulletPoints: resumeScoreResult.weakBulletPoints,
+          missingSkills: resumeScoreResult.missingSkills,
+          employerReadiness: resumeScoreResult.employerReadiness,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || "Could not send that.");
+      setResumeScoreEmailStatus("sent");
+    } catch (e) {
+      console.error("sendResumeScoreEmail failed:", e);
+      setResumeScoreEmailStatus("error");
     }
   }
   const [step, setStep] = useState(0);
@@ -3604,14 +3632,7 @@ async function runJobCardMatch(job, key) {
 
           <Card
             interactive
-            onClick={() => {
-              if (currentUser) {
-                setView("resumescore");
-              } else {
-                setReturnToView("resumescore");
-                setView("auth");
-              }
-            }}
+            onClick={() => setView("resumescore")}
             style={{ marginBottom: 24, border: `2px solid ${TOKENS.accent}` }}
           >
             <p style={{ fontSize: 12, fontWeight: 600, color: TOKENS.accent, margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
@@ -4037,9 +4058,46 @@ async function runJobCardMatch(job, key) {
                   <p style={{ fontSize: 13.5, color: TOKENS.inkSoft, margin: 0, lineHeight: 1.5 }}>{resumeScoreResult.employerReadiness}</p>
                 </div>
 
-                <p style={{ fontSize: 13, color: TOKENS.inkSoft, marginBottom: 16 }}>
-                  We've also emailed a copy of this score to you.
-                </p>
+                {currentUser ? (
+                  <p style={{ fontSize: 13, color: TOKENS.inkSoft, marginBottom: 16 }}>
+                    We've also emailed a copy of this score to you.
+                  </p>
+                ) : (
+                  <div style={{ marginBottom: 20, padding: 16, background: TOKENS.paper, borderRadius: 6 }}>
+                    {resumeScoreEmailStatus === "sent" ? (
+                      <p style={{ fontSize: 13.5, color: TOKENS.ink, margin: 0 }}>
+                        Sent — check your inbox for a copy of this score.
+                      </p>
+                    ) : (
+                      <>
+                        <p style={{ fontSize: 13.5, fontWeight: 600, color: TOKENS.ink, margin: "0 0 8px" }}>
+                          Want a copy of this emailed to you?
+                        </p>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <input
+                            type="email"
+                            value={resumeScoreEmailInput}
+                            onChange={(e) => setResumeScoreEmailInput(e.target.value)}
+                            placeholder="you@example.com"
+                            style={{ ...inputStyle, flex: 1 }}
+                          />
+                          <Button
+                            variant="primary"
+                            disabled={!resumeScoreEmailInput || resumeScoreEmailStatus === "sending"}
+                            onClick={sendResumeScoreEmail}
+                          >
+                            {resumeScoreEmailStatus === "sending" ? "Sending..." : "Email it to me"}
+                          </Button>
+                        </div>
+                        {resumeScoreEmailStatus === "error" && (
+                          <p style={{ color: TOKENS.red, fontSize: 13, margin: "8px 0 0" }}>
+                            Could not send that — check the address and try again.
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
 
                 <Button variant="primary" onClick={() => setView("landing")} style={{ width: "100%", justifyContent: "center" }}>
                   Fix These Issues With Resume Builder
