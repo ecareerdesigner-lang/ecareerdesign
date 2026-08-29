@@ -3980,19 +3980,6 @@ async function runJobCardMatch(job, key) {
           <Card>
             {!resumeScoreResult && (
               <>
-                <div style={{ marginBottom: 20 }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: TOKENS.inkSoft, margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                    New here? Watch how this works (55 sec)
-                  </p>
-                  <video
-                    src="/videos/free-resume-score.mp4"
-                    controls
-                    playsInline
-                    preload="metadata"
-                    style={{ width: "100%", borderRadius: 8, display: "block", background: "#000" }}
-                  />
-                </div>
-
                 <div style={{ border: `2px dashed ${TOKENS.line}`, borderRadius: 8, padding: 32, textAlign: "center", marginBottom: 16 }}>
                   <input
                     type="file"
@@ -4023,6 +4010,19 @@ async function runJobCardMatch(job, key) {
                 {resumeScoreError && (
                   <p style={{ color: TOKENS.red, fontSize: 13, marginTop: 12 }}>{resumeScoreError}</p>
                 )}
+
+                <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${TOKENS.line}`, textAlign: "center" }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: TOKENS.inkSoft, margin: "0 0 10px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    New here? Watch how this works (30 sec)
+                  </p>
+                  <video
+                    src="/videos/free-resume-score.mp4"
+                    controls
+                    playsInline
+                    preload="metadata"
+                    style={{ width: "100%", maxWidth: 320, borderRadius: 8, display: "block", background: "#000", margin: "0 auto" }}
+                  />
+                </div>
               </>
             )}
 
@@ -5439,7 +5439,7 @@ async function runJobCardMatch(job, key) {
                     </p>
                   ))}
                 </div>
-              )}Not yet started: resume match scoring (compare a resume against a specific job posting, return a %), and the "one-click auto-apply" idea remains a deliberately separate, unstarted decision (ToS/automation complexity flagged, not ruled out).
+              )}
 
               <div>
                 <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.accent, margin: "0 0 10px", textTransform: "uppercase" }}>Full Transcript</p>
