@@ -4016,7 +4016,7 @@ async function runJobCardMatch(job, key) {
                     New here? Watch how this works (30 sec)
                   </p>
                   <video
-                    src="/videos/free-resume-score.mp4"
+                    src="/free-resume-score.mp4"
                     controls
                     playsInline
                     preload="metadata"
