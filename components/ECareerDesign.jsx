@@ -3980,6 +3980,19 @@ async function runJobCardMatch(job, key) {
           <Card>
             {!resumeScoreResult && (
               <>
+                <div style={{ marginBottom: 20 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: TOKENS.inkSoft, margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    New here? Watch how this works (55 sec)
+                  </p>
+                  <video
+                    src="/videos/free-resume-score.mp4"
+                    controls
+                    playsInline
+                    preload="metadata"
+                    style={{ width: "100%", borderRadius: 8, display: "block", background: "#000" }}
+                  />
+                </div>
+
                 <div style={{ border: `2px dashed ${TOKENS.line}`, borderRadius: 8, padding: 32, textAlign: "center", marginBottom: 16 }}>
                   <input
                     type="file"
