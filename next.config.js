@@ -1,11 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    outputFileTracingIncludes: {
-      '/api/parse-resume/route': ['./public/tessdata/**'],
-    },
-  },
   async redirects() {
     return [
       {
