@@ -4112,7 +4112,7 @@ async function runJobCardMatch(job, key) {
                   </div>
                 )}
 
-                <Button variant="primary" onClick={() => setView("landing")} style={{ width: "100%", justifyContent: "center" }}>
+                <Button variant="primary" onClick={() => { setMode("resume"); setStep(1); setView("wizard"); }} style={{ width: "100%", justifyContent: "center" }}>
                   Fix These Issues With Resume Builder
                 </Button>
               </div>
