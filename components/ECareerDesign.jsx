@@ -29,6 +29,12 @@ const TOKENS = {
   shadowHover: "0 2px 4px rgba(16,24,40,0.06), 0 10px 24px rgba(16,24,40,0.12)",
 };
 
+function trackEvent(name, params) {
+  if (typeof window !== "undefined" && typeof window.gtag === "function") {
+    window.gtag("event", name, params || {});
+  }
+}
+
 const APP_VERSION = "v2.0";
 
 const TOTAL_BUDGET = 6000;   // Summary of Accomplishments (requirement responses), combined
@@ -1721,6 +1727,7 @@ async function handleAuthSubmit() {
         parsed = JSON.parse(cleaned2);
       }
       setResumeScoreResult(parsed);
+      trackEvent("resume_score_completed", { overall_score: parsed.overallScore });
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -3647,15 +3654,15 @@ async function runJobCardMatch(job, key) {
           </Card>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 28 }}>
-            <Card interactive onClick={() => { setMode("resume"); setStep(1); setView("wizard"); }}>
+            <Card interactive onClick={() => { trackEvent("builder_entered", { source: "homepage", mode: "resume" }); setMode("resume"); setStep(1); setView("wizard"); }}>
               <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 6px" }}>Resume Builder</h3>
               <p style={{ fontSize: 14, color: TOKENS.inkSoft, margin: 0 }}>Build an ATS-friendly resume in minutes.</p>
             </Card>
-            <Card interactive onClick={() => { setMode("application"); setStep(0); setView("wizard"); }}>
+            <Card interactive onClick={() => { trackEvent("builder_entered", { source: "homepage", mode: "application" }); setMode("application"); setStep(0); setView("wizard"); }}>
               <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 6px" }}>Job Tailoring</h3>
               <p style={{ fontSize: 14, color: TOKENS.inkSoft, margin: 0 }}>Tailored STAR responses for any posting.</p>
             </Card>
-            <Card interactive onClick={() => { setMode("coverletter"); setStep(0); setView("wizard"); }}>
+            <Card interactive onClick={() => { trackEvent("builder_entered", { source: "homepage", mode: "coverletter" }); setMode("coverletter"); setStep(0); setView("wizard"); }}>
               <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 6px" }}>Cover Letter</h3>
               <p style={{ fontSize: 14, color: TOKENS.inkSoft, margin: 0 }}>Generate a matching cover letter.</p>
             </Card>
@@ -3851,7 +3858,7 @@ async function runJobCardMatch(job, key) {
                 variant="primary"
                 icon={checkoutLoading ? <Loader2 size={16} className="cf-spin" /> : null}
                 disabled={checkoutLoading}
-                onClick={() => (currentUser ? handleCheckout() : setView("auth"))}
+                onClick={() => { trackEvent("checkout_started", { logged_in: !!currentUser }); currentUser ? handleCheckout() : setView("auth"); }}
                 style={{ width: "100%", justifyContent: "center", fontSize: 16, padding: "14px 20px" }}
               >
                 {checkoutLoading ? "Redirecting to checkout..." : !currentUser ? "Sign up first — $9.99/mo" : "Subscribe — $9.99/mo"}
@@ -4112,7 +4119,7 @@ async function runJobCardMatch(job, key) {
                   </div>
                 )}
 
-                <Button variant="primary" onClick={() => { setMode("resume"); setStep(1); setView("wizard"); }} style={{ width: "100%", justifyContent: "center" }}>
+                <Button variant="primary" onClick={() => { trackEvent("builder_entered", { source: "resume_score", mode: "resume" }); setMode("resume"); setStep(1); setView("wizard"); }} style={{ width: "100%", justifyContent: "center" }}>
                   Fix These Issues With Resume Builder
                 </Button>
               </div>
@@ -5564,9 +5571,9 @@ async function runJobCardMatch(job, key) {
         <Dashboard
           contactInfo={contactInfo}
           recentProjects={recentProjects}
-          onResumeBuilder={() => { setMode("resume"); setStep(1); setView("wizard"); }}
-          onJobTailoring={() => { setMode("application"); setStep(0); setView("wizard"); }}
-          onCoverLetter={() => { setMode("coverletter"); setStep(0); setView("wizard"); }}
+          onResumeBuilder={() => { trackEvent("builder_entered", { source: "dashboard", mode: "resume" }); setMode("resume"); setStep(1); setView("wizard"); }}
+          onJobTailoring={() => { trackEvent("builder_entered", { source: "dashboard", mode: "application" }); setMode("application"); setStep(0); setView("wizard"); }}
+          onCoverLetter={() => { trackEvent("builder_entered", { source: "dashboard", mode: "coverletter" }); setMode("coverletter"); setStep(0); setView("wizard"); }}
           onInterviewPrep={() => { setMode("interview"); setStep(0); setView("wizard"); }}
 onInterviewCoach={() => { setMode("coach"); setStep(0); setView("wizard"); }}
           onRemoveProject={removeRecentProject}
