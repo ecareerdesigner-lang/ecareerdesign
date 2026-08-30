@@ -1745,15 +1745,22 @@ async function handleAuthSubmit() {
       }
 
       let parsed;
-      try {
-        const text = await callClaude(resumeScorePrompt(resumeText), tokensForBudget(1200));
-        const cleaned = text.replace(/```json|```/g, "").trim();
-        parsed = JSON.parse(cleaned);
-      } catch (parseErr) {
-        console.warn("First scoring attempt failed to parse, retrying once:", parseErr);
-        const text2 = await callClaude(resumeScorePrompt(resumeText), tokensForBudget(1200));
-        const cleaned2 = text2.replace(/```json|```/g, "").trim();
-        parsed = JSON.parse(cleaned2);
+      let lastParseErr;
+      const MAX_SCORE_ATTEMPTS = 3;
+      for (let attempt = 1; attempt <= MAX_SCORE_ATTEMPTS; attempt++) {
+        try {
+          const text = await callClaude(resumeScorePrompt(resumeText), tokensForBudget(1200));
+          const cleaned = text.replace(/```json|```/g, "").trim();
+          parsed = JSON.parse(cleaned);
+          break;
+        } catch (parseErr) {
+          lastParseErr = parseErr;
+          console.warn(`Scoring attempt ${attempt} failed to parse:`, parseErr);
+        }
+      }
+      if (!parsed) {
+        console.error("All scoring attempts failed to parse:", lastParseErr);
+        throw new Error("We had trouble generating your score just now. Please try again in a moment.");
       }
       setResumeScoreResult(parsed);
       trackEvent("resume_score_completed", { overall_score: parsed.overallScore });
