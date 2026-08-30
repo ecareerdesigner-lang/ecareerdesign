@@ -2,6 +2,47 @@ import mammoth from "mammoth";
 import { logError } from "@/lib/logError.js";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
+
+const MAX_OCR_PAGES = 5;
+
+async function extractPdfImages(buffer) {
+  const { PDFDocument, PDFName, PDFRawStream, PDFDict } = await import("pdf-lib");
+  const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true });
+  const images = [];
+  for (const page of pdfDoc.getPages()) {
+    const resources = page.node.Resources();
+    if (!resources) continue;
+    const xObject = resources.lookup(PDFName.of("XObject"));
+    if (!(xObject instanceof PDFDict)) continue;
+    for (const key of xObject.keys()) {
+      const obj = xObject.lookup(key);
+      if (obj instanceof PDFRawStream) {
+        const filter = obj.dict.get(PDFName.of("Filter"));
+        const subtype = obj.dict.get(PDFName.of("Subtype"));
+        if (filter?.toString() === "/DCTDecode" && subtype?.toString() === "/Image") {
+          images.push(Buffer.from(obj.contents));
+        }
+      }
+    }
+  }
+  return images;
+}
+
+async function ocrPdfImages(images) {
+  const { createWorker } = await import("tesseract.js");
+  const worker = await createWorker("eng", 1, { logger: () => {} });
+  let text = "";
+  try {
+    for (const img of images.slice(0, MAX_OCR_PAGES)) {
+      const { data } = await worker.recognize(img);
+      text += data.text + "\n\n";
+    }
+  } finally {
+    await worker.terminate();
+  }
+  return text.trim();
+}
 
 export async function POST(req) {
   try {
@@ -19,7 +60,14 @@ export async function POST(req) {
     if (lower.endsWith(".pdf") || file.type === "application/pdf") {
       const pdfParse = (await import("pdf-parse/lib/pdf-parse.js")).default;
       const data = await pdfParse(buffer);
-      text = data.text;
+      text = (data.text || "").trim();
+
+      if (!text) {
+        const images = await extractPdfImages(buffer);
+        if (images.length > 0) {
+          text = await ocrPdfImages(images);
+        }
+      }
     } else if (lower.endsWith(".docx") || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
       const result = await mammoth.extractRawText({ buffer });
       text = result.value;
