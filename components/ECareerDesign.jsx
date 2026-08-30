@@ -3756,6 +3756,14 @@ async function runJobCardMatch(job, key) {
             </p>
           </div>
 
+          {resumeScoreResult && (
+            <div style={{ background: TOKENS.accentSoft, border: `1px solid ${TOKENS.accent}`, borderRadius: 8, padding: "16px 20px", marginBottom: 28, textAlign: "center" }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: TOKENS.ink, margin: 0, lineHeight: 1.5 }}>
+                Your resume scored {resumeScoreResult.overallScore}/100.{resumeScoreResult.missingSkills && resumeScoreResult.missingSkills[0] ? ` Premium's Resume Match Scoring can help close gaps like "${resumeScoreResult.missingSkills[0]}."` : " Premium's Resume Match Scoring and Interview Coach are built to fix exactly what's holding you back."}
+              </p>
+            </div>
+          )}
+
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20, marginBottom: 24 }}>
 
             <Card style={{ padding: 32 }}>
