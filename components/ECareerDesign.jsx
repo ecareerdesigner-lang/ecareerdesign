@@ -1751,7 +1751,15 @@ async function handleAuthSubmit() {
         try {
           const text = await callClaude(resumeScorePrompt(resumeText), tokensForBudget(1200));
           const cleaned = text.replace(/```json|```/g, "").trim();
-          parsed = JSON.parse(cleaned);
+          try {
+            parsed = JSON.parse(cleaned);
+          } catch (directParseErr) {
+            // Claude occasionally leaves a stray unescaped quote or literal newline
+            // inside a string value; jsonrepair fixes that class of near-valid JSON
+            // without burning a full extra attempt.
+            const { jsonrepair } = await import("jsonrepair");
+            parsed = JSON.parse(jsonrepair(cleaned));
+          }
           break;
         } catch (parseErr) {
           lastParseErr = parseErr;
