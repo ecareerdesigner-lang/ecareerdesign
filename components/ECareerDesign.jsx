@@ -35,6 +35,21 @@ function trackEvent(name, params) {
   }
 }
 
+async function ocrImagesInBrowser(base64Images) {
+  const { createWorker } = await import("tesseract.js");
+  const worker = await createWorker("eng", 1, { langPath: "/tessdata", gzip: true, cacheMethod: "none" });
+  let text = "";
+  try {
+    for (const b64 of base64Images) {
+      const { data } = await worker.recognize(`data:image/jpeg;base64,${b64}`);
+      text += data.text + "\n\n";
+    }
+  } finally {
+    await worker.terminate();
+  }
+  return text.trim();
+}
+
 const APP_VERSION = "v2.0";
 
 const TOTAL_BUDGET = 6000;   // Summary of Accomplishments (requirement responses), combined
@@ -1603,6 +1618,7 @@ const [authMode, setAuthMode] = useState("login"); // 'login' | 'signup'
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 const [resumeScoreFile, setResumeScoreFile] = useState(null);
   const [resumeScoreLoading, setResumeScoreLoading] = useState(false);
+  const [resumeScoreOcrActive, setResumeScoreOcrActive] = useState(false);
   const [resumeScoreError, setResumeScoreError] = useState("");
   const [resumeScoreResult, setResumeScoreResult] = useState(null);
   const [resumeScoreEmailInput, setResumeScoreEmailInput] = useState("");
@@ -1715,14 +1731,27 @@ async function handleAuthSubmit() {
         throw new Error(parseData.error || "Could not read this file.");
       }
 
+      let resumeText = parseData.text;
+      if (parseData.needsOcr) {
+        setResumeScoreOcrActive(true);
+        try {
+          resumeText = await ocrImagesInBrowser(parseData.images);
+        } finally {
+          setResumeScoreOcrActive(false);
+        }
+        if (!resumeText || !resumeText.trim()) {
+          throw new Error("Could not read any text from this scanned resume. Try a clearer scan or a different file.");
+        }
+      }
+
       let parsed;
       try {
-        const text = await callClaude(resumeScorePrompt(parseData.text), tokensForBudget(1200));
+        const text = await callClaude(resumeScorePrompt(resumeText), tokensForBudget(1200));
         const cleaned = text.replace(/```json|```/g, "").trim();
         parsed = JSON.parse(cleaned);
       } catch (parseErr) {
         console.warn("First scoring attempt failed to parse, retrying once:", parseErr);
-        const text2 = await callClaude(resumeScorePrompt(parseData.text), tokensForBudget(1200));
+        const text2 = await callClaude(resumeScorePrompt(resumeText), tokensForBudget(1200));
         const cleaned2 = text2.replace(/```json|```/g, "").trim();
         parsed = JSON.parse(cleaned2);
       }
@@ -4019,7 +4048,7 @@ async function runJobCardMatch(job, key) {
                   onClick={runResumeScore}
                   style={{ width: "100%", justifyContent: "center" }}
                 >
-                  {resumeScoreLoading ? "Analyzing your resume..." : "Get My Free Score"}
+                  {resumeScoreLoading ? (resumeScoreOcrActive ? "Reading scanned resume..." : "Analyzing your resume...") : "Get My Free Score"}
                 </Button>
 
                 {resumeScoreError && (
