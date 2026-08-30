@@ -1,3 +1,4 @@
+import path from "path";
 import mammoth from "mammoth";
 import { logError } from "@/lib/logError.js";
 
@@ -5,6 +6,7 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const MAX_OCR_PAGES = 5;
+const TESSDATA_PATH = path.join(process.cwd(), "public", "tessdata");
 
 async function extractPdfImages(buffer) {
   const { PDFDocument, PDFName, PDFRawStream, PDFDict } = await import("pdf-lib");
@@ -31,7 +33,15 @@ async function extractPdfImages(buffer) {
 
 async function ocrPdfImages(images) {
   const { createWorker } = await import("tesseract.js");
-  const worker = await createWorker("eng", 1, { logger: () => {} });
+  // langPath points at a locally bundled trained-data file so the worker never
+  // fetches from the jsdelivr CDN at request time — that runtime fetch was
+  // stalling long enough on Vercel to hit the function\'s 60s timeout.
+  const worker = await createWorker("eng", 1, {
+    langPath: TESSDATA_PATH,
+    gzip: true,
+    cacheMethod: "none",
+    logger: () => {},
+  });
   let text = "";
   try {
     for (const img of images.slice(0, MAX_OCR_PAGES)) {
