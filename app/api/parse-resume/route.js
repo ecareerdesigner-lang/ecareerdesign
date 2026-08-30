@@ -17,7 +17,7 @@ export async function POST(req) {
 
     let text = "";
     if (lower.endsWith(".pdf") || file.type === "application/pdf") {
-      const pdfParse = (await import("pdf-parse")).default;
+      const pdfParse = (await import("pdf-parse/lib/pdf-parse.js")).default;
       const data = await pdfParse(buffer);
       text = data.text;
     } else if (lower.endsWith(".docx") || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
