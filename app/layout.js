@@ -54,9 +54,9 @@ export default function RootLayout({ children }) {
         <SpeedInsights />
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-PST16FSVMK"
-          strategy="afterInteractive"
+          strategy="beforeInteractive"
         />
-        <Script id="ga4-init" strategy="afterInteractive">
+        <Script id="ga4-init" strategy="beforeInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
