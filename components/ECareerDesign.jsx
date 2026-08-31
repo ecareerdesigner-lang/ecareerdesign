@@ -3739,6 +3739,23 @@ async function runJobCardMatch(job, key) {
               {currentUser && isPremium ? "Go to Dashboard" : "See Premium Plans"}
             </Button>
           </Card>
+
+          <Card style={{ marginTop: 24 }}>
+            <p style={{ fontSize: 12, fontWeight: 600, color: TOKENS.accent, margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              From the Blog
+            </p>
+            <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 12px" }}>
+              Free resume guides
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <Link href="/blog/how-to-find-keywords-in-job-description" style={{ fontSize: 14.5, color: TOKENS.ink, textDecoration: "underline" }}>
+                Job Description Keywords: How to Find the Right Ones
+              </Link>
+              <Link href="/blog/how-to-tailor-your-resume-to-a-job-description" style={{ fontSize: 14.5, color: TOKENS.ink, textDecoration: "underline" }}>
+                Tailor Your Resume to a Job Description in 10 Minutes
+              </Link>
+            </div>
+          </Card>
         </div>
       )}
       {view === "auth" && (
