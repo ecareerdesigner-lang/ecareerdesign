@@ -23,6 +23,73 @@ export async function generateMetadata({ params }) {
   };
 }
 
+// Blog posts don't share one consistent FAQ markdown format (plain
+// alternating question/answer lines, bold-question-plus-inline-answer, or
+// heading-per-question), so this parses all three shapes rather than
+// assuming one. Used to emit FAQPage structured data -- if nothing matches,
+// it returns an empty list and no schema is emitted, rather than guessing.
+function extractFaqPairs(rawContent) {
+  if (!rawContent) return [];
+  const content = rawContent.replace(/\r\n/g, "\n");
+  const headingMatch = content.match(/^[ \t]*#{0,3}[ \t]*Frequently Asked Questions.*$/im);
+  if (!headingMatch) return [];
+  const afterHeading = content.slice(headingMatch.index + headingMatch[0].length);
+  const endMatch = afterHeading.match(/\n_{10,}\n|\n---\n/);
+  const body = (endMatch ? afterHeading.slice(0, endMatch.index) : afterHeading).trim();
+  if (!body) return [];
+
+  const stripWrap = (s) =>
+    s.trim().replace(/^#+\s*/, "").replace(/^\*\*([\s\S]*)\*\*$/, "$1").trim();
+  const isQuestion = (s) => stripWrap(s).endsWith("?");
+  const cleanText = (s) =>
+    s
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const chunks = body.split(/\n\s*\n/).map((c) => c.trim()).filter(Boolean);
+  const pairs = [];
+
+  if (chunks.length <= 1) {
+    const lines = body.split("\n").map((l) => l.trim()).filter(Boolean);
+    for (let i = 0; i + 1 < lines.length; i += 2) {
+      if (lines[i].endsWith("?")) {
+        pairs.push([cleanText(lines[i]), cleanText(lines[i + 1])]);
+      }
+    }
+    return pairs.filter(([q, a]) => q && a);
+  }
+
+  let i = 0;
+  while (i < chunks.length) {
+    const chunk = chunks[i];
+    const inlineMatch = chunk.match(/^\*\*([^*]+\?)\*\*\s*([\s\S]*)$/);
+    if (inlineMatch && inlineMatch[2].trim()) {
+      pairs.push([cleanText(inlineMatch[1]), cleanText(inlineMatch[2])]);
+      i += 1;
+      continue;
+    }
+    if (isQuestion(chunk)) {
+      const q = stripWrap(chunk);
+      let j = i + 1;
+      const answerParts = [];
+      while (j < chunks.length && !isQuestion(chunks[j]) && !chunks[j].match(/^\*\*([^*]+\?)\*\*/)) {
+        answerParts.push(chunks[j]);
+        j += 1;
+      }
+      if (answerParts.length) {
+        pairs.push([cleanText(q), cleanText(answerParts.join(" "))]);
+      }
+      i = j;
+      continue;
+    }
+    i += 1;
+  }
+  return pairs.filter(([q, a]) => q && a);
+}
+
 export default async function BlogPost({ params }) {
   const { data: post } = await supabase
     .from("blog_posts")
@@ -41,8 +108,27 @@ export default async function BlogPost({ params }) {
   const rawHtml = marked.parse(post.content || "");
   const html = rawHtml.replace(/<h1(\s|>)/gi, "<h2$1").replace(/<\/h1>/gi, "</h2>");
 
+  const faqPairs = extractFaqPairs(post.content);
+  const faqSchema = faqPairs.length
+    ? {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faqPairs.map(([q, a]) => ({
+          "@type": "Question",
+          name: q,
+          acceptedAnswer: { "@type": "Answer", text: a },
+        })),
+      }
+    : null;
+
   return (
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px", fontFamily: "system-ui, sans-serif" }}>
+      {faqSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        />
+      )}
       <Link href="/blog" style={{ color: "#3C5069", fontSize: 14, textDecoration: "none" }}>← All Posts</Link>
       <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 34, color: "#16283D", margin: "20px 0 8px", lineHeight: 1.25 }}>
         {post.title}
