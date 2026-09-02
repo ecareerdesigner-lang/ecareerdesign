@@ -1348,7 +1348,6 @@ const [showJobMatches, setShowJobMatches] = useState(false);
     }
   }
   async function runMatchScore() {
-    if (!requireLogin()) return;
     if (!matchJobDescription.trim()) return;
     setMatchLoading(true);
     setMatchError(null);
