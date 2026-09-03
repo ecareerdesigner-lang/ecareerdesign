@@ -44,6 +44,8 @@ const styles = {
   ctaHeading: { fontFamily: "'Fraunces', Georgia, serif", fontSize: 26, color: "#fff", margin: "0 0 20px", lineHeight: 1.25 },
   relatedLine: { fontSize: 14.5, color: TOKENS.inkSoft, marginTop: 8 },
   relatedLink: { color: TOKENS.accent, textDecoration: "underline" },
+  videoWrap: { position: "relative", paddingBottom: "56.25%", height: 0, overflow: "hidden", borderRadius: 14, marginTop: 24, boxShadow: TOKENS.shadow },
+  videoIframe: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" },
 };
 
 export default function FederalResumeBuilderPage() {
@@ -59,7 +61,7 @@ export default function FederalResumeBuilderPage() {
         &mdash; before you submit, not after you get the notice.
       </p>
       <div style={styles.ctaRow}>
-        <a href="/" style={styles.button}>Check My Resume Free</a>
+        <a href="/resume-job-match" style={styles.button}>Check My Resume Free</a>
       </div>
       <p style={styles.trustLine}>No account required to start.</p>
 
@@ -101,6 +103,17 @@ export default function FederalResumeBuilderPage() {
         </div>
       </div>
 
+      <h2 style={styles.h2}>Watch: Federal Job Application Strategies</h2>
+      <div style={styles.videoWrap}>
+        <iframe
+          style={styles.videoIframe}
+          src="https://www.youtube.com/embed/krsFYlHjuhI"
+          title="Crack Federal Job Applications: AI Strategies for USAJOBS & Security Clearance Tips"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+
       <h2 style={styles.h2}>Frequently Asked Questions</h2>
       <div style={styles.faqItem}>
         <p style={styles.faqQ}>Does &ldquo;Not Referred&rdquo; mean I was rejected?</p>
@@ -118,7 +131,7 @@ export default function FederalResumeBuilderPage() {
       <div style={styles.ctaCard}>
         <p style={styles.ctaEyebrow}>Before you submit</p>
         <h2 style={styles.ctaHeading}>Check Whether Your Resume Actually Matches the Announcement</h2>
-        <a href="/" style={styles.button}>Check My Resume Free</a>
+        <a href="/resume-job-match" style={styles.button}>Check My Resume Free</a>
       </div>
 
       <p style={styles.relatedLine}>
