@@ -18,6 +18,12 @@ export default async function sitemap() {
       priority: 0.9,
     },
     {
+      url: `${baseUrl}/resume-job-match`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
       url: `${baseUrl}/cover-letter-generator`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
