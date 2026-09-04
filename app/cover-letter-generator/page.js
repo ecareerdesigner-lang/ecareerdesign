@@ -29,7 +29,11 @@ const styles = {
     display: "inline-block", background: TOKENS.ink, color: "#fff", fontFamily: "'Inter', Arial, sans-serif",
     fontSize: 15, fontWeight: 600, padding: "13px 26px", borderRadius: 10, textDecoration: "none", border: "none",
   },
-  trustLine: { fontSize: 13.5, color: TOKENS.inkSoft, margin: "0 0 48px" },
+  trustLine: { fontSize: 13.5, color: TOKENS.inkSoft, margin: "10px 0 32px" },
+  heroSample: { background: TOKENS.paper, border: `1.5px solid ${TOKENS.accent}`, borderRadius: 16, padding: "1.25rem 1.5rem", marginBottom: 44 },
+  heroSampleLabel: { fontSize: 12, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: TOKENS.accent, margin: "0 0 8px" },
+  heroSampleText: { fontSize: 15, color: TOKENS.ink, fontStyle: "italic", margin: "0 0 8px", lineHeight: 1.6 },
+  heroSampleCaption: { fontSize: 13, color: TOKENS.inkSoft, margin: 0 },
   h2: { fontFamily: "'Fraunces', Georgia, serif", fontSize: 26, fontWeight: 600, margin: "56px 0 20px", color: TOKENS.ink },
   stepsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 18, marginBottom: 8 },
   card: { background: TOKENS.surface, border: `1px solid ${TOKENS.line}`, borderRadius: 18, padding: "1.5rem", boxShadow: TOKENS.shadow },
@@ -65,9 +69,18 @@ export default function CoverLetterGeneratorPage() {
         actually is &mdash; matched to the exact job posting, built from your resume, ready in about a minute.
       </p>
       <div style={styles.ctaRow}>
-        <a href="/" style={styles.button}>Generate My Cover Letter Free</a>
+        <a href="/" style={styles.button}>See My Cover Letter in 60 Seconds</a>
       </div>
-      <p style={styles.trustLine}>No account required to start.</p>
+      <p style={styles.trustLine}>No account required &mdash; ready in about 60 seconds.</p>
+
+      <div style={styles.heroSample}>
+        <p style={styles.heroSampleLabel}>What you&rsquo;ll get &mdash; matched to the job</p>
+        <p style={styles.heroSampleText}>
+          &ldquo;Your team is scaling lifecycle campaigns ahead of a Q4 launch &mdash; I spent the last two years doing
+          exactly that, growing email-driven revenue 34% while cutting send volume. Here&rsquo;s how I&rsquo;d apply that here.&rdquo;
+        </p>
+        <p style={styles.heroSampleCaption}>Generated from your resume + the job posting &mdash; not a template with blanks.</p>
+      </div>
 
       <h2 style={styles.h2}>How It Works</h2>
       <div style={styles.stepsGrid}>
@@ -125,7 +138,7 @@ export default function CoverLetterGeneratorPage() {
       <div style={styles.ctaCard}>
         <p style={styles.ctaEyebrow}>Ready when you are</p>
         <h2 style={styles.ctaHeading}>Write Your Next Cover Letter in a Minute, Not an Hour</h2>
-        <a href="/" style={styles.button}>Generate My Cover Letter Free</a>
+        <a href="/" style={styles.button}>See My Cover Letter in 60 Seconds</a>
       </div>
 
       <p style={styles.relatedLine}>
