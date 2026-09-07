@@ -3696,6 +3696,10 @@ async function runJobCardMatch(job, key) {
             </p>
           </Card>
 
+          <p style={{ fontSize: 14, color: TOKENS.inkSoft, textAlign: "center", margin: "-12px 0 24px" }}>
+            Already have a specific job posting? <a href="/resume-job-match" style={{ color: TOKENS.accent, fontWeight: 600, textDecoration: "underline" }}>Check your resume's match score →</a>
+          </p>
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 28 }}>
             <Card interactive onClick={() => { trackEvent("builder_entered", { source: "homepage", mode: "resume" }); setMode("resume"); setStep(1); setView("wizard"); }}>
               <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 6px" }}>Resume Builder</h3>
@@ -4112,77 +4116,73 @@ async function runJobCardMatch(job, key) {
                   </p>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 14, marginBottom: 28 }}>
-                  <div style={{ textAlign: "center", padding: 14, background: TOKENS.paper, borderRadius: 6 }}>
-                    <p style={{ fontSize: 24, fontWeight: 700, color: TOKENS.ink, margin: "0 0 2px" }}>{resumeScoreResult.atsScore}</p>
-                    <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: 0 }}>ATS Score</p>
-                  </div>
-                  <div style={{ textAlign: "center", padding: 14, background: TOKENS.paper, borderRadius: 6 }}>
-                    <p style={{ fontSize: 24, fontWeight: 700, color: TOKENS.ink, margin: "0 0 2px" }}>{resumeScoreResult.keywordScore}</p>
-                    <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: 0 }}>Keyword Score</p>
-                  </div>
-                  <div style={{ textAlign: "center", padding: 14, background: TOKENS.paper, borderRadius: 6 }}>
-                    <p style={{ fontSize: 24, fontWeight: 700, color: TOKENS.ink, margin: "0 0 2px" }}>{resumeScoreResult.formattingScore}</p>
-                    <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: 0 }}>Formatting</p>
-                  </div>
-                </div>
+                {(currentUser || resumeScoreEmailStatus === "sent") ? (
+                  <>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 14, marginBottom: 28 }}>
+                      <div style={{ textAlign: "center", padding: 14, background: TOKENS.paper, borderRadius: 6 }}>
+                        <p style={{ fontSize: 24, fontWeight: 700, color: TOKENS.ink, margin: "0 0 2px" }}>{resumeScoreResult.atsScore}</p>
+                        <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: 0 }}>ATS Score</p>
+                      </div>
+                      <div style={{ textAlign: "center", padding: 14, background: TOKENS.paper, borderRadius: 6 }}>
+                        <p style={{ fontSize: 24, fontWeight: 700, color: TOKENS.ink, margin: "0 0 2px" }}>{resumeScoreResult.keywordScore}</p>
+                        <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: 0 }}>Keyword Score</p>
+                      </div>
+                      <div style={{ textAlign: "center", padding: 14, background: TOKENS.paper, borderRadius: 6 }}>
+                        <p style={{ fontSize: 24, fontWeight: 700, color: TOKENS.ink, margin: "0 0 2px" }}>{resumeScoreResult.formattingScore}</p>
+                        <p style={{ fontSize: 12, color: TOKENS.inkSoft, margin: 0 }}>Formatting</p>
+                      </div>
+                    </div>
 
-                <div style={{ marginBottom: 20 }}>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: TOKENS.ink, margin: "0 0 8px" }}>Weak Bullet Points</p>
-                  {(resumeScoreResult.weakBulletPoints || []).map((b, i) => (
-                    <p key={i} style={{ fontSize: 13.5, color: TOKENS.inkSoft, margin: "0 0 6px", lineHeight: 1.5 }}>• {b}</p>
-                  ))}
-                </div>
+                    <div style={{ marginBottom: 20 }}>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: TOKENS.ink, margin: "0 0 8px" }}>Weak Bullet Points</p>
+                      {(resumeScoreResult.weakBulletPoints || []).map((b, i) => (
+                        <p key={i} style={{ fontSize: 13.5, color: TOKENS.inkSoft, margin: "0 0 6px", lineHeight: 1.5 }}>• {b}</p>
+                      ))}
+                    </div>
 
-                <div style={{ marginBottom: 20 }}>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: TOKENS.ink, margin: "0 0 8px" }}>Missing Skills</p>
-                  {(resumeScoreResult.missingSkills || []).map((s, i) => (
-                  <p key={i} style={{ fontSize: 13.5, color: TOKENS.inkSoft, margin: "0 0 6px" }}>• {s}</p>
-                  ))}
-                </div>
+                    <div style={{ marginBottom: 20 }}>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: TOKENS.ink, margin: "0 0 8px" }}>Missing Skills</p>
+                      {(resumeScoreResult.missingSkills || []).map((s, i) => (
+                      <p key={i} style={{ fontSize: 13.5, color: TOKENS.inkSoft, margin: "0 0 6px" }}>• {s}</p>
+                      ))}
+                    </div>
 
-                <div style={{ marginBottom: 24, padding: 16, background: TOKENS.paper, borderRadius: 6 }}>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: TOKENS.ink, margin: "0 0 6px" }}>Employer Readiness</p>
-                  <p style={{ fontSize: 13.5, color: TOKENS.inkSoft, margin: 0, lineHeight: 1.5 }}>{resumeScoreResult.employerReadiness}</p>
-                </div>
+                    <div style={{ marginBottom: 24, padding: 16, background: TOKENS.paper, borderRadius: 6 }}>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: TOKENS.ink, margin: "0 0 6px" }}>Employer Readiness</p>
+                      <p style={{ fontSize: 13.5, color: TOKENS.inkSoft, margin: 0, lineHeight: 1.5 }}>{resumeScoreResult.employerReadiness}</p>
+                    </div>
 
-                {currentUser ? (
-                  <p style={{ fontSize: 13, color: TOKENS.inkSoft, marginBottom: 16 }}>
-                    We've also emailed a copy of this score to you.
-                  </p>
-                ) : (
-                  <div style={{ marginBottom: 20, padding: 16, background: TOKENS.paper, borderRadius: 6 }}>
-                    {resumeScoreEmailStatus === "sent" ? (
-                      <p style={{ fontSize: 13.5, color: TOKENS.ink, margin: 0 }}>
-                        Sent — check your inbox for a copy of this score.
+                    {currentUser && (
+                      <p style={{ fontSize: 13, color: TOKENS.inkSoft, marginBottom: 16 }}>
+                        We've also emailed a copy of this score to you.
                       </p>
-                    ) : (
-                      <>
-                        <p style={{ fontSize: 13.5, fontWeight: 600, color: TOKENS.ink, margin: "0 0 8px" }}>
-                          Want a copy of this emailed to you?
-                        </p>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <input
-                            type="email"
-                            value={resumeScoreEmailInput}
-                            onChange={(e) => setResumeScoreEmailInput(e.target.value)}
-                            placeholder="you@example.com"
-                            style={{ ...inputStyle, flex: 1 }}
-                          />
-                          <Button
-                            variant="primary"
-                            disabled={!resumeScoreEmailInput || resumeScoreEmailStatus === "sending"}
-                            onClick={sendResumeScoreEmail}
-                          >
-                            {resumeScoreEmailStatus === "sending" ? "Sending..." : "Email it to me"}
-                          </Button>
-                        </div>
-                        {resumeScoreEmailStatus === "error" && (
-                          <p style={{ color: TOKENS.red, fontSize: 13, margin: "8px 0 0" }}>
-                            Could not send that — check the address and try again.
-                          </p>
-                        )}
-                      </>
+                    )}
+                  </>
+                ) : (
+                  <div style={{ marginBottom: 24, padding: 20, background: TOKENS.paper, border: `1px solid ${TOKENS.accent}`, borderRadius: 8, textAlign: "center" }}>
+                    <p style={{ fontSize: 14.5, fontWeight: 600, color: TOKENS.ink, margin: "0 0 12px" }}>
+                      Enter your email to unlock your ATS Score, Keyword Score, Formatting Score, weak bullet points, and missing skills
+                    </p>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+                      <input
+                        type="email"
+                        value={resumeScoreEmailInput}
+                        onChange={(e) => setResumeScoreEmailInput(e.target.value)}
+                        placeholder="you@example.com"
+                        style={{ ...inputStyle, flex: "1 1 220px" }}
+                      />
+                      <Button
+                        variant="primary"
+                        disabled={!resumeScoreEmailInput || resumeScoreEmailStatus === "sending"}
+                        onClick={sendResumeScoreEmail}
+                      >
+                        {resumeScoreEmailStatus === "sending" ? "Sending..." : "Unlock My Full Results"}
+                      </Button>
+                    </div>
+                    {resumeScoreEmailStatus === "error" && (
+                      <p style={{ color: TOKENS.red, fontSize: 13, margin: "8px 0 0" }}>
+                        Could not send that — check the address and try again.
+                      </p>
                     )}
                   </div>
                 )}
@@ -4190,6 +4190,18 @@ async function runJobCardMatch(job, key) {
                 <Button variant="primary" onClick={() => { trackEvent("builder_entered", { source: "resume_score", mode: "resume" }); setMode("resume"); setStep(1); setView("wizard"); }} style={{ width: "100%", justifyContent: "center" }}>
                   Fix These Issues With Resume Builder
                 </Button>
+
+                <div style={{ marginTop: 20, padding: 16, background: TOKENS.ink, borderRadius: 8, textAlign: "center" }}>
+                  <p style={{ fontSize: 13.5, color: "#fff", margin: "0 0 10px" }}>
+                    Applying to a specific job? See exactly how this resume matches that posting.
+                  </p>
+                  <a
+                    href="/resume-job-match"
+                    style={{ display: "inline-block", background: TOKENS.accent, color: "#fff", fontWeight: 600, fontSize: 13.5, padding: "9px 18px", borderRadius: 8, textDecoration: "none" }}
+                  >
+                    Check My Job Match Score →
+                  </a>
+                </div>
               </div>
             )}
           </Card>
