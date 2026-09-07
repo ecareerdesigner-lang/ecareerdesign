@@ -163,13 +163,13 @@ export default function ATSCheckerTool() {
     <div style={styles.page}>
       <a href="/" style={styles.back}>&larr; Back to eCareer Design</a>
 
-      <p style={styles.eyebrow}>Free ATS Resume Checker</p>
-      <h1 style={styles.h1}>See Exactly How Applicant Tracking Systems Score Your Resume</h1>
+      <p style={styles.eyebrow}>Free ATS Score Checker</p>
+      <h1 style={styles.h1}>Check Your Resume's ATS Score Free in 30 Seconds</h1>
       <p style={styles.sub}>
-        Upload your resume and get an instant Overall Score, ATS Score, Keyword Score, and Formatting Score —
-        plus the specific bullet points and missing skills holding you back.
+        Calculate your resume's ATS score instantly — upload your resume to get an Overall Score, ATS Score,
+        Keyword Score, and Formatting Score, plus the specific bullet points and missing skills holding you back.
       </p>
-      <p style={styles.trustLine}>Free. No account required. Takes about 30 seconds.</p>
+      <p style={styles.trustLine}>Free ATS score checker. No account required. Takes about 30 seconds.</p>
 
       <div style={styles.card}>
         {!result && (
