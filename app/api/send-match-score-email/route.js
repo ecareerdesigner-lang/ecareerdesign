@@ -74,6 +74,20 @@ This is an independent tool, not an official product of any employer, agency, or
       }
     }
 
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+      );
+      await supabaseAdmin
+        .from("email_nurture_leads")
+        .insert({ email, source_tool: "resume_job_match" })
+        .select();
+    } catch (e) {
+      console.error("email_nurture_leads insert failed (non-fatal):", e);
+    }
+
     return Response.json({ success: true });
   } catch (e) {
     console.error("send-match-score-email route failed:", e);
