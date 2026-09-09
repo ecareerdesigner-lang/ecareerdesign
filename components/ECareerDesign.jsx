@@ -3772,6 +3772,15 @@ async function runJobCardMatch(job, key) {
               <Link href="/blog/how-to-tailor-your-resume-to-a-job-description" style={{ fontSize: 14.5, color: TOKENS.ink, textDecoration: "underline" }}>
                 Tailor Your Resume to a Job Description in 10 Minutes
               </Link>
+              <Link href="/blog/resume-match-score-explained" style={{ fontSize: 14.5, color: TOKENS.ink, textDecoration: "underline" }}>
+                What Is a Resume Match Score? (And How to Raise It)
+              </Link>
+              <Link href="/blog/how-to-beat-applicant-tracking-systems" style={{ fontSize: 14.5, color: TOKENS.ink, textDecoration: "underline" }}>
+                How to Beat Applicant Tracking Systems (ATS Guide)
+              </Link>
+              <Link href="/blog/how-to-write-resume-accomplishments" style={{ fontSize: 14.5, color: TOKENS.ink, textDecoration: "underline" }}>
+                How to Write Resume Accomplishments (With Examples)
+              </Link>
             </div>
           </Card>
         </div>
