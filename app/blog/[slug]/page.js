@@ -121,8 +121,23 @@ export default async function BlogPost({ params }) {
       }
     : null;
 
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    datePublished: post.published_at,
+    dateModified: post.published_at,
+    author: { "@type": "Organization", name: "eCareer Design" },
+    publisher: { "@type": "Organization", name: "eCareer Design" },
+    mainEntityOfPage: `https://www.ecareerdesign.net/blog/${params.slug}`,
+  };
+
   return (
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px", fontFamily: "system-ui, sans-serif" }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
       {faqSchema && (
         <script
           type="application/ld+json"
