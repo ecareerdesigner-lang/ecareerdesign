@@ -263,9 +263,31 @@ export default function ATSCheckerTool() {
         )}
       </div>
 
+      <h2 style={styles.h2}>Frequently Asked Questions</h2>
+      <div style={styles.faqItem}>
+        <p style={styles.faqQ}>What is an ATS score?</p>
+        <p style={styles.faqA}>An ATS score is a number that reflects how well your resume matches a job description and how cleanly it can be read by Applicant Tracking System software. This free ATS score checker calculates it instantly from your resume.</p>
+      </div>
+      <div style={styles.faqItem}>
+        <p style={styles.faqQ}>How do I calculate my ATS score?</p>
+        <p style={styles.faqA}>Upload your resume above and click "Check My Resume Score." The tool analyzes your formatting, keywords, and structure and gives you an Overall Score, ATS Score, Keyword Score, and Formatting Score in about 30 seconds.</p>
+      </div>
+      <div style={styles.faqItem}>
+        <p style={styles.faqQ}>Is an ATS score checker the same as an ATS tracker?</p>
+        <p style={styles.faqA}>They're related but not identical. An ATS tracker generally refers to the software employers use to manage applications. An ATS score checker, like this one, checks your resume against that kind of system before you apply, so you can fix issues in advance.</p>
+      </div>
+      <div style={styles.faqItem}>
+        <p style={styles.faqQ}>Why did I get a low ATS score if I'm qualified for the job?</p>
+        <p style={styles.faqA}>A low score usually means formatting or keyword issues, not a lack of qualifications. Tables, text boxes, and non-standard section headings can confuse ATS parsing, and missing the exact terms from a job posting can lower your keyword score even when your real experience is a strong fit.</p>
+      </div>
+      <div style={styles.faqItem}>
+        <p style={styles.faqQ}>Is this ATS score checker really free?</p>
+        <p style={styles.faqA}>Yes. Checking your resume's ATS score is free and doesn't require an account.</p>
+      </div>
+
       <div style={styles.ctaCard}>
         <p style={styles.ctaEyebrow}>Want Us To Fix These For You?</p>
-        <h2 style={styles.ctaHeading}>eCareer Design tailors your resume to any job posting — free to start.</h2>
+        <h2 style={styles.ctaHeading}>eCareer Design tailors your resume to any job posting, free to start.</h2>
         <a href="/" style={styles.ctaButton}>Explore eCareer Design &rarr;</a>
       </div>
     </div>
