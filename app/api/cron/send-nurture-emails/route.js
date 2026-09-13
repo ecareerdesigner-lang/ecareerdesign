@@ -52,6 +52,19 @@ async function sendNurtureEmail(resend, email, content) {
   });
 }
 
+async function selectWithRetry(buildQuery, retries = 2) {
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const { data, error } = await buildQuery();
+    if (!error) return data;
+    lastError = error;
+    if (attempt < retries) {
+      await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+    }
+  }
+  throw lastError;
+}
+
 export async function GET(request) {
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -69,13 +82,13 @@ export async function GET(request) {
   let day5Sent = 0;
 
   try {
-    const { data: day2Leads, error: day2Error } = await supabaseAdmin
-      .from("email_nurture_leads")
-      .select("id, email")
-      .is("day2_sent_at", null)
-      .lte("captured_at", new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString());
-
-    if (day2Error) throw day2Error;
+    const day2Leads = await selectWithRetry(() =>
+      supabaseAdmin
+        .from("email_nurture_leads")
+        .select("id, email")
+        .is("day2_sent_at", null)
+        .lte("captured_at", new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString())
+    );
 
     for (const lead of day2Leads || []) {
       try {
@@ -91,13 +104,13 @@ export async function GET(request) {
       }
     }
 
-    const { data: day5Leads, error: day5Error } = await supabaseAdmin
-      .from("email_nurture_leads")
-      .select("id, email")
-      .is("day5_sent_at", null)
-      .lte("captured_at", new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString());
-
-    if (day5Error) throw day5Error;
+    const day5Leads = await selectWithRetry(() =>
+      supabaseAdmin
+        .from("email_nurture_leads")
+        .select("id, email")
+        .is("day5_sent_at", null)
+        .lte("captured_at", new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString())
+    );
 
     for (const lead of day5Leads || []) {
       try {
