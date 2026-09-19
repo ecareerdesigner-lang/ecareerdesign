@@ -203,9 +203,45 @@ export default function ATSCheckerTool() {
               <p style={styles.scoreNum}>{result.overallScore}<span style={styles.scoreOf}>/100</span></p>
             </div>
 
+            <div style={styles.metricsGrid}>
+              <div style={styles.metricCard}>
+                <p style={styles.metricNum}>{result.atsScore}</p>
+                <p style={styles.metricLabel}>ATS Score</p>
+              </div>
+              <div style={styles.metricCard}>
+                <p style={styles.metricNum}>{result.keywordScore}</p>
+                <p style={styles.metricLabel}>Keyword Score</p>
+              </div>
+              <div style={styles.metricCard}>
+                <p style={styles.metricNum}>{result.formattingScore}</p>
+                <p style={styles.metricLabel}>Formatting Score</p>
+              </div>
+            </div>
+
+            {(result.weakBulletPoints || []).length > 0 && (
+              <>
+                <h2 style={styles.h2}>Weak Bullet Points</h2>
+                <ul style={styles.list}>
+                  {result.weakBulletPoints.map((b, i) => <li key={i}>{b}</li>)}
+                </ul>
+              </>
+            )}
+
+            {(result.missingSkills || []).length > 0 && (
+              <>
+                <h2 style={styles.h2}>Missing Skills</h2>
+                <ul style={styles.list}>
+                  {result.missingSkills.map((s, i) => <li key={i}>{s}</li>)}
+                </ul>
+              </>
+            )}
+
+            <h2 style={styles.h2}>Employer Readiness</h2>
+            <p style={styles.readiness}>{result.employerReadiness}</p>
+
             {!unlocked ? (
               <div style={styles.gateBox}>
-                <p style={styles.gateText}>Enter your email to unlock your full ATS, Keyword &amp; Formatting breakdown</p>
+                <p style={styles.gateText}>Want a copy of this report for later? We'll email it to you.</p>
                 <form onSubmit={unlockResults} style={styles.emailRow}>
                   <input
                     type="email"
@@ -215,48 +251,15 @@ export default function ATSCheckerTool() {
                     style={styles.emailInput}
                     required
                   />
-                  <button type="submit" style={styles.button}>Unlock My Full Results</button>
+                  <button type="submit" style={styles.button}>Email Me This Report</button>
                 </form>
                 {emailError && <p style={styles.errorText}>{emailError}</p>}
               </div>
             ) : (
-              <div>
-                <div style={styles.metricsGrid}>
-                  <div style={styles.metricCard}>
-                    <p style={styles.metricNum}>{result.atsScore}</p>
-                    <p style={styles.metricLabel}>ATS Score</p>
-                  </div>
-                  <div style={styles.metricCard}>
-                    <p style={styles.metricNum}>{result.keywordScore}</p>
-                    <p style={styles.metricLabel}>Keyword Score</p>
-                  </div>
-                  <div style={styles.metricCard}>
-                    <p style={styles.metricNum}>{result.formattingScore}</p>
-                    <p style={styles.metricLabel}>Formatting Score</p>
-                  </div>
-                </div>
-
-                {(result.weakBulletPoints || []).length > 0 && (
-                  <>
-                    <h2 style={styles.h2}>Weak Bullet Points</h2>
-                    <ul style={styles.list}>
-                      {result.weakBulletPoints.map((b, i) => <li key={i}>{b}</li>)}
-                    </ul>
-                  </>
-                )}
-
-                {(result.missingSkills || []).length > 0 && (
-                  <>
-                    <h2 style={styles.h2}>Missing Skills</h2>
-                    <ul style={styles.list}>
-                      {result.missingSkills.map((s, i) => <li key={i}>{s}</li>)}
-                    </ul>
-                  </>
-                )}
-
-                <h2 style={styles.h2}>Employer Readiness</h2>
-                <p style={styles.readiness}>{result.employerReadiness}</p>
-                {emailSending && <p style={styles.uploadSubtext}>Emailing your full results to {email}...</p>}
+              <div style={styles.gateBox}>
+                <p style={styles.gateText}>
+                  {emailSending ? `Sending your report to ${email}...` : `Sent! Check ${email} for your full report.`}
+                </p>
               </div>
             )}
           </div>

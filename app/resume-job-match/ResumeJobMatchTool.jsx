@@ -231,9 +231,39 @@ export default function ResumeJobMatchTool() {
               <p style={styles.scoreNum}>{result.score}<span style={styles.scoreOf}>/100</span></p>
             </div>
 
+            {(result.matchedSkills || []).length > 0 && (
+              <>
+                <h2 style={styles.h2}>What Matches</h2>
+                <div>
+                  {result.matchedSkills.map((s, i) => <span key={i} style={styles.matchedTag}>{s}</span>)}
+                </div>
+              </>
+            )}
+
+            {(result.missingSkills || []).length > 0 && (
+              <>
+                <h2 style={styles.h2}>Missing Skills</h2>
+                <div>
+                  {result.missingSkills.map((s, i) => <span key={i} style={styles.missingTag}>{s}</span>)}
+                </div>
+              </>
+            )}
+
+            {(result.keywordGaps || []).length > 0 && (
+              <>
+                <h2 style={styles.h2}>Keywords to Add for ATS</h2>
+                <ul style={styles.list}>
+                  {result.keywordGaps.map((k, i) => <li key={i}>{k}</li>)}
+                </ul>
+              </>
+            )}
+
+            <h2 style={styles.h2}>Recruiter Take</h2>
+            <p style={styles.readiness}>{result.summary}</p>
+
             {!unlocked ? (
               <div style={styles.gateBox}>
-                <p style={styles.gateText}>Enter your email to unlock your matched skills, keyword gaps &amp; full breakdown</p>
+                <p style={styles.gateText}>Want a copy of this report for later? We'll email it to you.</p>
                 <form onSubmit={unlockResults} style={styles.emailRow}>
                   <input
                     type="email"
@@ -243,42 +273,15 @@ export default function ResumeJobMatchTool() {
                     style={styles.emailInput}
                     required
                   />
-                  <button type="submit" style={styles.button}>Unlock My Full Results</button>
+                  <button type="submit" style={styles.button}>Email Me This Report</button>
                 </form>
                 {emailError && <p style={styles.errorText}>{emailError}</p>}
               </div>
             ) : (
-              <div>
-                {(result.matchedSkills || []).length > 0 && (
-                  <>
-                    <h2 style={styles.h2}>What Matches</h2>
-                    <div>
-                      {result.matchedSkills.map((s, i) => <span key={i} style={styles.matchedTag}>{s}</span>)}
-                    </div>
-                  </>
-                )}
-
-                {(result.missingSkills || []).length > 0 && (
-                  <>
-                    <h2 style={styles.h2}>Missing Skills</h2>
-                    <div>
-                      {result.missingSkills.map((s, i) => <span key={i} style={styles.missingTag}>{s}</span>)}
-                    </div>
-                  </>
-                )}
-
-                {(result.keywordGaps || []).length > 0 && (
-                  <>
-                    <h2 style={styles.h2}>Keywords to Add for ATS</h2>
-                    <ul style={styles.list}>
-                      {result.keywordGaps.map((k, i) => <li key={i}>{k}</li>)}
-                    </ul>
-                  </>
-                )}
-
-                <h2 style={styles.h2}>Recruiter Take</h2>
-                <p style={styles.readiness}>{result.summary}</p>
-                {emailSending && <p style={styles.uploadSubtext}>Emailing your full results to {email}...</p>}
+              <div style={styles.gateBox}>
+                <p style={styles.gateText}>
+                  {emailSending ? `Sending your report to ${email}...` : `Sent! Check ${email} for your full report.`}
+                </p>
               </div>
             )}
             <a href="#" onClick={(e) => { e.preventDefault(); startOver(); }} style={styles.startOverLink}>
