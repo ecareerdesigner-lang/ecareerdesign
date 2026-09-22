@@ -93,7 +93,7 @@ function extractFaqPairs(rawContent) {
 export default async function BlogPost({ params }) {
   const { data: post } = await supabase
     .from("blog_posts")
-    .select("title, content, published_at")
+    .select("title, content, published_at, updated_at")
     .eq("slug", params.slug)
     .eq("published", true)
     .maybeSingle();
@@ -126,7 +126,7 @@ export default async function BlogPost({ params }) {
     "@type": "BlogPosting",
     headline: post.title,
     datePublished: post.published_at,
-    dateModified: post.published_at,
+    dateModified: post.updated_at || post.published_at,
     author: { "@type": "Organization", name: "eCareer Design" },
     publisher: { "@type": "Organization", name: "eCareer Design" },
     mainEntityOfPage: `https://www.ecareerdesign.net/blog/${params.slug}`,

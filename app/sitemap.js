@@ -60,13 +60,15 @@ export default async function sitemap() {
   try {
     const { data: posts, error } = await supabase
       .from('blog_posts')
-      .select('slug, published_at, created_at')
+      .select('slug, published_at, updated_at, created_at')
       .eq('published', true)
 
     if (!error && posts) {
       blogPages = posts.map((post) => ({
         url: `${baseUrl}/blog/${post.slug}`,
-        lastModified: post.published_at
+        lastModified: post.updated_at
+          ? new Date(post.updated_at)
+          : post.published_at
           ? new Date(post.published_at)
           : post.created_at
           ? new Date(post.created_at)
