@@ -1626,6 +1626,10 @@ const [resumeScoreFile, setResumeScoreFile] = useState(null);
   const [returnToMode, setReturnToMode] = useState(null);
   const [returnToStep, setReturnToStep] = useState(null);
 
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("view") === "pricing") setView("pricing");
+  }, []);
+
   function requireLogin() {
     if (currentUser) return true;
     setReturnToView(view);
