@@ -5726,6 +5726,7 @@ careerBackground={buildBackground()}
         eCareer Design AI Resume Studio · {APP_VERSION}
         <br />
         <Link href="/blog" style={{ color: "#9AA3A0", marginRight: 12 }}>Blog</Link>
+<Link href="/pricing" style={{ color: "#9AA3A0", marginRight: 12 }}>Pricing</Link>
 <Link href="/privacy" style={{ color: "#9AA3A0", marginRight: 12 }}>Privacy Notice</Link>
 <Link href="/terms" style={{ color: "#9AA3A0", marginRight: 12 }}>Terms of Use</Link>
 <a href="mailto:hello@ecareerdesign.net" style={{ color: "#9AA3A0", marginRight: 12 }}>Contact Us</a>
