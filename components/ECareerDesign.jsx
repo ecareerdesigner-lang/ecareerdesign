@@ -1627,7 +1627,14 @@ const [resumeScoreFile, setResumeScoreFile] = useState(null);
   const [returnToStep, setReturnToStep] = useState(null);
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("view") === "pricing") setView("pricing");
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("view") === "pricing") setView("pricing");
+    if (params.get("tool") === "coverletter") {
+      trackEvent("builder_entered", { source: "deep_link", mode: "coverletter" });
+      setMode("coverletter");
+      setStep(0);
+      setView("wizard");
+    }
   }, []);
 
   function requireLogin() {
