@@ -1675,6 +1675,7 @@ async function handleAuthSubmit() {
         if (error) throw error;
         if (data.user) {
           await supabase.from("profiles").insert({ id: data.user.id, is_premium: false });
+          trackEvent("sign_up", { method: "email" });
         }
         setCurrentUser(data.user);
       } else {
