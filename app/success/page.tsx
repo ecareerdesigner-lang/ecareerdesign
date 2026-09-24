@@ -1,9 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
 import { CheckCircle } from 'lucide-react';
 
 export default function SuccessPage() {
+  useEffect(() => {
+    const w = window as unknown as { gtag?: (...args: unknown[]) => void };
+    if (typeof w.gtag === 'function') {
+      w.gtag('event', 'purchase', { value: 9.99, currency: 'USD' });
+    }
+  }, []);
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-neutral-50">
       <div className="text-center p-8 max-w-md">
