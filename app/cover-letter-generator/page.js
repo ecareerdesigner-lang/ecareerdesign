@@ -69,7 +69,7 @@ export default function CoverLetterGeneratorPage() {
         actually is &mdash; matched to the exact job posting, built from your resume, ready in about a minute.
       </p>
       <div style={styles.ctaRow}>
-        <a href="/" style={styles.button}>See My Cover Letter in 60 Seconds</a>
+        <a href="/?tool=coverletter" style={styles.button}>See My Cover Letter in 60 Seconds</a>
       </div>
       <p style={styles.trustLine}>No account required &mdash; ready in about 60 seconds.</p>
 
@@ -138,7 +138,7 @@ export default function CoverLetterGeneratorPage() {
       <div style={styles.ctaCard}>
         <p style={styles.ctaEyebrow}>Ready when you are</p>
         <h2 style={styles.ctaHeading}>Write Your Next Cover Letter in a Minute, Not an Hour</h2>
-        <a href="/" style={styles.button}>See My Cover Letter in 60 Seconds</a>
+        <a href="/?tool=coverletter" style={styles.button}>See My Cover Letter in 60 Seconds</a>
       </div>
 
       <p style={styles.relatedLine}>
