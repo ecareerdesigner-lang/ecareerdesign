@@ -51,6 +51,12 @@ const styles = {
   ctaEyebrow: { fontSize: 12.5, fontWeight: 700, letterSpacing: 0.6, color: TOKENS.accentSoft, textTransform: "uppercase", margin: "0 0 10px" },
   ctaHeading: { fontFamily: "'Fraunces', Georgia, serif", fontSize: 24, color: "#fff", margin: "0 0 20px", lineHeight: 1.25 },
   ctaButton: { display: "inline-block", background: "#fff", color: TOKENS.accent, fontWeight: 700, fontSize: 15, padding: "13px 26px", borderRadius: 10, textDecoration: "none" },
+  trustRow: { fontSize: 13.5, fontWeight: 700, color: "#2F6F4E", margin: "0 0 14px" },
+  sampleScoreCard: { background: TOKENS.paper, border: `1px dashed ${TOKENS.line}`, borderRadius: 12, padding: "14px 16px", marginBottom: 18 },
+  sampleScoreLabel: { fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: TOKENS.inkSoft, margin: "0 0 8px" },
+  sampleMetricsRow: { display: "flex", gap: 14, flexWrap: "wrap" },
+  sampleMetric: { fontSize: 13.5, color: TOKENS.ink },
+  crossLink: { fontSize: 13, color: TOKENS.inkSoft, textAlign: "center", marginTop: 14 },
 };
 
 function resumeScorePrompt(resumeText) {
@@ -164,35 +170,49 @@ export default function ATSCheckerTool() {
       <a href="/" style={styles.back}>&larr; Back to eCareer Design</a>
 
       <p style={styles.eyebrow}>Free ATS Score Checker</p>
-      <h1 style={styles.h1}>Check Your Resume's ATS Score Free in 30 Seconds</h1>
+      <h1 style={styles.h1}>Get Your Resume's ATS Score in 30 Seconds — No Email, No Login</h1>
+      <p style={styles.trustRow}>✓ No email required &nbsp;&nbsp; ✓ No account needed &nbsp;&nbsp; ✓ Results in ~15 seconds</p>
       <p style={styles.sub}>
         Calculate your resume's ATS score instantly — upload your resume to get an Overall Score, ATS Score,
         Keyword Score, and Formatting Score, plus the specific bullet points and missing skills holding you back.
       </p>
-      <p style={styles.trustLine}>Free ATS score checker. No account required. Takes about 30 seconds.</p>
 
       <div style={styles.card}>
         {!result && (
-          <div style={styles.uploadBox}>
-            <input
-              type="file"
-              id="atsFileInput"
-              accept=".pdf,.doc,.docx"
-              style={{ display: "none" }}
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-            />
-            <label htmlFor="atsFileInput" style={styles.uploadLabel}>
-              <p style={styles.uploadText}>{file ? file.name : "Click to upload your resume"}</p>
-              <p style={styles.uploadSubtext}>PDF or Word (.docx)</p>
-            </label>
-            <button
-              onClick={runCheck}
-              disabled={!file || loading}
-              style={{ ...styles.button, ...((!file || loading) ? styles.buttonDisabled : {}) }}
-            >
-              {loading ? "Analyzing your resume..." : "Check My Resume Score"}
-            </button>
-            {error && <p style={styles.errorText}>{error}</p>}
+          <div>
+            <div style={styles.sampleScoreCard}>
+              <p style={styles.sampleScoreLabel}>Example result</p>
+              <div style={styles.sampleMetricsRow}>
+                <span style={styles.sampleMetric}>Overall <strong>74</strong></span>
+                <span style={styles.sampleMetric}>ATS <strong>81</strong></span>
+                <span style={styles.sampleMetric}>Keyword <strong>62</strong></span>
+                <span style={styles.sampleMetric}>Formatting <strong>78</strong></span>
+              </div>
+            </div>
+            <div style={styles.uploadBox}>
+              <input
+                type="file"
+                id="atsFileInput"
+                accept=".pdf,.doc,.docx"
+                style={{ display: "none" }}
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+              />
+              <label htmlFor="atsFileInput" style={styles.uploadLabel}>
+                <p style={styles.uploadText}>{file ? file.name : "Upload Resume — Get My Free Score"}</p>
+                <p style={styles.uploadSubtext}>PDF or Word (.docx) · Private — never stored or shared.</p>
+              </label>
+              <button
+                onClick={runCheck}
+                disabled={!file || loading}
+                style={{ ...styles.button, ...((!file || loading) ? styles.buttonDisabled : {}) }}
+              >
+                {loading ? "Analyzing your resume..." : "Check My Resume Score"}
+              </button>
+              {error && <p style={styles.errorText}>{error}</p>}
+            </div>
+            <p style={styles.crossLink}>
+              In our own <a href="/blog/we-tested-7-ats-checkers-on-the-same-resume" style={{ color: TOKENS.accent }}>test against 6 other ATS checkers</a>, we're one of only two that need zero signup.
+            </p>
           </div>
         )}
 

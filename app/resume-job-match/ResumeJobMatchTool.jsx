@@ -54,6 +54,11 @@ const styles = {
   ctaHeading: { fontFamily: "'Fraunces', Georgia, serif", fontSize: 24, color: "#fff", margin: "0 0 20px", lineHeight: 1.25 },
   ctaButton: { display: "inline-block", background: "#fff", color: TOKENS.accent, fontWeight: 700, fontSize: 15, padding: "13px 26px", borderRadius: 10, textDecoration: "none" },
   startOverLink: { fontSize: 13.5, color: TOKENS.accent, textDecoration: "none", display: "inline-block", marginTop: 20 },
+  trustRow: { fontSize: 13.5, fontWeight: 700, color: TOKENS.green, margin: "0 0 10px" },
+  stepIndicator: { fontSize: 13.5, color: TOKENS.inkSoft, fontWeight: 600, margin: "0 0 14px" },
+  sampleScoreCard: { background: TOKENS.paper, border: `1px dashed ${TOKENS.line}`, borderRadius: 12, padding: "14px 16px", marginBottom: 20 },
+  sampleScoreLabel: { fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: TOKENS.inkSoft, margin: "0 0 8px" },
+  sampleExampleText: { fontSize: 13.5, color: TOKENS.ink, margin: 0 },
 };
 
 function matchScorePrompt(resumeText, jobDescription) {
@@ -180,11 +185,17 @@ export default function ResumeJobMatchTool() {
         Paste a job posting and upload your resume to get an instant match score, the keywords you're
         missing, and the skills gaps standing between you and an interview.
       </p>
-      <p style={styles.trustLine}>Free. No account required. Takes about 30 seconds.</p>
+      <p style={styles.trustRow}>&#10003; No email required &nbsp;&nbsp; &#10003; No account needed &nbsp;&nbsp; &#10003; Results in ~30 seconds</p>
+      <p style={styles.stepIndicator}>Step 1: Paste the job posting &rarr; Step 2: Upload your resume</p>
 
       <div style={styles.card}>
         {!result && (
           <div>
+            <div style={styles.sampleScoreCard}>
+              <p style={styles.sampleScoreLabel}>Example Output</p>
+              <p style={styles.sampleExampleText}>Match Score: 74% &mdash; Missing keywords: stakeholder management, Salesforce, budget forecasting</p>
+            </div>
+
             <div style={styles.fieldBlock}>
               <label style={styles.fieldLabel} htmlFor="jobDescInput">Paste the job description</label>
               <textarea
@@ -207,8 +218,8 @@ export default function ResumeJobMatchTool() {
                   onChange={(e) => setFile(e.target.files?.[0] || null)}
                 />
                 <label htmlFor="matchFileInput" style={styles.uploadLabel}>
-                  <p style={styles.uploadText}>{file ? file.name : "Click to upload your resume"}</p>
-                  <p style={styles.uploadSubtext}>PDF or Word (.docx)</p>
+                  <p style={styles.uploadText}>{file ? file.name : "Upload Resume — Get My Match Score"}</p>
+                  <p style={styles.uploadSubtext}>PDF or Word (.docx) &middot; Private &mdash; never stored or shared.</p>
                 </label>
               </div>
             </div>
