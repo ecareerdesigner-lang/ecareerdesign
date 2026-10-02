@@ -66,7 +66,16 @@ export default function RootLayout({ children }) {
         </Script>
         <Script id="error-capture-init" strategy="afterInteractive">
           {`
+            // Known third-party noise, not our own bugs: gtag.js's internal
+            // beacon transport calls response.body.getReader() and throws
+            // when a blocked/bodyless response comes back (ad blockers,
+            // bots, headless crawlers) -- happens inside Google's minified
+            // code, not ours, so there's nothing in this repo to fix.
+            function isIgnorableError(message) {
+              return /reading 'getReader'/.test(message || '');
+            }
             function reportClientError(message, stack, feature) {
+              if (isIgnorableError(message)) return;
               try {
                 fetch('/api/log-error', {
                   method: 'POST',
