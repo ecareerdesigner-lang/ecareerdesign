@@ -78,6 +78,12 @@ Output STRICT, VALID JSON in exactly this shape:
 Every string value must be valid JSON: escape any internal double quotes as \\", and do not include literal line breaks inside any string value. Return ONLY the JSON object, no markdown fences, no commentary.`;
 }
 
+function trackEvent(name, params) {
+  if (typeof window !== "undefined" && typeof window.gtag === "function") {
+    window.gtag("event", name, params || {});
+  }
+}
+
 async function callClaude(prompt, maxTokens = 1200) {
   const response = await fetch("/api/claude", {
     method: "POST",
@@ -110,6 +116,7 @@ export default function ResumeJobMatchTool() {
     setError("");
     setResult(null);
     setUnlocked(false);
+    trackEvent("assessment_started", { tool: "resume_job_match" });
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -128,6 +135,7 @@ export default function ResumeJobMatchTool() {
         parsed = JSON.parse(text2.replace(/```json|```/g, "").trim());
       }
       setResult(parsed);
+      trackEvent("assessment_completed", { tool: "resume_job_match", score: parsed.score });
     } catch (e) {
       setError(e.message || "Something went wrong comparing your resume to this job.");
     } finally {

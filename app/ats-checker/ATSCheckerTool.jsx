@@ -72,6 +72,12 @@ Output STRICT, VALID JSON in exactly this shape:
 Every string value must be valid JSON: escape any internal double quotes as \\", and do not include literal line breaks inside any string value. Return ONLY the JSON object, no markdown fences, no commentary.`;
 }
 
+function trackEvent(name, params) {
+  if (typeof window !== "undefined" && typeof window.gtag === "function") {
+    window.gtag("event", name, params || {});
+  }
+}
+
 async function callClaude(prompt, maxTokens = 1200) {
   const response = await fetch("/api/claude", {
     method: "POST",
@@ -103,6 +109,7 @@ export default function ATSCheckerTool() {
     setError("");
     setResult(null);
     setUnlocked(false);
+    trackEvent("assessment_started", { tool: "ats_checker" });
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -121,6 +128,7 @@ export default function ATSCheckerTool() {
         parsed = JSON.parse(text2.replace(/```json|```/g, "").trim());
       }
       setResult(parsed);
+      trackEvent("assessment_completed", { tool: "ats_checker", overall_score: parsed.overallScore });
     } catch (e) {
       setError(e.message || "Something went wrong analyzing your resume.");
     } finally {
