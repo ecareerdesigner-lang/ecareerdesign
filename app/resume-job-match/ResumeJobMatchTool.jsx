@@ -21,7 +21,7 @@ const styles = {
   eyebrow: { fontSize: 12.5, fontWeight: 700, letterSpacing: 0.6, color: TOKENS.accent, textTransform: "uppercase", margin: "28px 0 10px" },
   h1: { fontFamily: "'Fraunces', Georgia, serif", fontSize: 38, fontWeight: 600, lineHeight: 1.18, margin: "0 0 16px", color: TOKENS.ink },
   sub: { fontSize: 18, color: TOKENS.inkSoft, maxWidth: 660, margin: "0 0 28px" },
-  trustLine: { fontSize: 13.5, color: TOKENS.inkSoft, margin: "0 0 40px" },
+  trustLine: { fontSize: 14, fontWeight: 700, color: TOKENS.ink, margin: "0 0 40px", display: "inline-block", background: TOKENS.accentSoft, padding: "8px 14px", borderRadius: 999 },
   card: { background: TOKENS.surface, border: `1px solid ${TOKENS.line}`, borderRadius: 18, padding: "2rem", boxShadow: TOKENS.shadow, marginBottom: 32 },
   fieldLabel: { fontSize: 13.5, fontWeight: 700, color: TOKENS.ink, margin: "0 0 8px", display: "block" },
   textarea: { width: "100%", minHeight: 160, padding: "12px 14px", borderRadius: 10, border: `1px solid ${TOKENS.line}`, fontSize: 14.5, fontFamily: "'Inter', Arial, sans-serif", color: TOKENS.ink, resize: "vertical", boxSizing: "border-box" },
@@ -180,7 +180,7 @@ export default function ResumeJobMatchTool() {
         Paste a job posting and upload your resume to get an instant match score, the keywords you're
         missing, and the skills gaps standing between you and an interview.
       </p>
-      <p style={styles.trustLine}>Free. No account required. Takes about 30 seconds.</p>
+      <p style={styles.trustLine}>No account required &middot; Your resume isn&rsquo;t stored &middot; Results in about 30 seconds</p>
 
       <div style={styles.card}>
         {!result && (

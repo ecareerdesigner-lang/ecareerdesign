@@ -20,7 +20,7 @@ const styles = {
   eyebrow: { fontSize: 12.5, fontWeight: 700, letterSpacing: 0.6, color: TOKENS.accent, textTransform: "uppercase", margin: "28px 0 10px" },
   h1: { fontFamily: "'Fraunces', Georgia, serif", fontSize: 38, fontWeight: 600, lineHeight: 1.18, margin: "0 0 16px", color: TOKENS.ink },
   sub: { fontSize: 18, color: TOKENS.inkSoft, maxWidth: 660, margin: "0 0 28px" },
-  trustLine: { fontSize: 13.5, color: TOKENS.inkSoft, margin: "0 0 40px" },
+  trustLine: { fontSize: 14, fontWeight: 700, color: TOKENS.ink, margin: "0 0 40px", display: "inline-block", background: TOKENS.accentSoft, padding: "8px 14px", borderRadius: 999 },
   card: { background: TOKENS.surface, border: `1px solid ${TOKENS.line}`, borderRadius: 18, padding: "2rem", boxShadow: TOKENS.shadow, marginBottom: 32 },
   uploadBox: { border: `2px dashed ${TOKENS.line}`, borderRadius: 14, padding: "2.5rem 1.5rem", textAlign: "center", background: TOKENS.paper },
   uploadLabel: { cursor: "pointer", display: "block" },
@@ -169,7 +169,7 @@ export default function ATSCheckerTool() {
         Calculate your resume's ATS score instantly — upload your resume to get an Overall Score, ATS Score,
         Keyword Score, and Formatting Score, plus the specific bullet points and missing skills holding you back.
       </p>
-      <p style={styles.trustLine}>Free ATS score checker. No account required. Takes about 30 seconds.</p>
+      <p style={styles.trustLine}>No account required &middot; Your resume isn&rsquo;t stored &middot; Results in about 30 seconds</p>
 
       <div style={styles.card}>
         {!result && (
