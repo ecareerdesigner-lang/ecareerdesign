@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { marked } from "marked";
 import { supabase } from "../../../lib/supabase";
+import { pageMeta } from "../../../lib/seo";
 
 export const revalidate = 60;
 
@@ -17,10 +18,14 @@ export async function generateMetadata({ params }) {
     return { title: "Post Not Found | eCareer Design" };
   }
 
-  return {
+  return pageMeta({
     title: post.meta_title || post.title,
+    // Share cards use the post's own title, not the (often longer) SEO title.
+    ogTitle: post.title,
     description: post.meta_description || undefined,
-  };
+    path: `/blog/${params.slug}`,
+    ogType: "article",
+  });
 }
 
 // Blog posts don't share one consistent FAQ markdown format (plain

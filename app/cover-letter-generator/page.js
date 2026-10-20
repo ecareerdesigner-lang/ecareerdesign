@@ -1,7 +1,10 @@
-export const metadata = {
+import { pageMeta } from "../../lib/seo";
+
+export const metadata = pageMeta({
   title: "AI Cover Letter Generator | eCareer Design",
   description: "Generate a cover letter matched to any job posting in about a minute. Free, no templates, no rewriting from scratch — built from your resume with AI.",
-};
+  path: "/cover-letter-generator",
+});
 
 const TOKENS = {
   ink: "#16283D",

@@ -1,7 +1,11 @@
-export const metadata = {
+import { pageMeta } from "../../lib/seo";
+
+export const metadata = pageMeta({
   title: "Federal Resume Builder | eCareer Design",
   description: "Stop getting marked \"eligible but not referred.\" Build a federal resume that explicitly matches the qualifications USAJOBS reviewers score against.",
-};
+  path: "/federal-resume-builder",
+  ogTitle: "Stop Getting Marked \"Eligible But Not Referred\"",
+});
 
 const TOKENS = {
   ink: "#16283D",

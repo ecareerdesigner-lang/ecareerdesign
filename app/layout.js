@@ -33,7 +33,8 @@ export const metadata = {
     description: "Tailored resumes, cover letters, and mock interviews, all built from the exact job you're applying for, using one background you enter just once.",
     siteName: "eCareer Design",
     type: "website",
-    url: "https://www.ecareerdesign.net",
+    // No `url` here: it would be inherited by every page that doesn't set its
+    // own openGraph block, telling social platforms every page is the homepage.
   },
   twitter: {
     card: "summary_large_image",
