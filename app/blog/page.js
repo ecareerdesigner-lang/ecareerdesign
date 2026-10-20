@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 
-export const metadata = {
+import { pageMeta } from "../../lib/seo";
+
+export const metadata = pageMeta({
   title: "Career Advice Blog | eCareer Design",
   description: "Practical resume tips, ATS insights, and job search strategies from eCareer Design to help you write stronger applications and land more interviews.",
-};
+  path: "/blog",
+});
 
 export const revalidate = 60;
 
