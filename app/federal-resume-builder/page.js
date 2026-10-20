@@ -63,7 +63,7 @@ export default function FederalResumeBuilderPage() {
         &mdash; before you submit, not after you get the notice.
       </p>
       <div style={styles.ctaRow}>
-        <a href="/" style={styles.button}>Check My Resume Free</a>
+        <a href="/resume-job-match" style={styles.button}>Check My Resume Free</a>
       </div>
       <p style={styles.trustLine}>No account required to start.</p>
 
@@ -122,7 +122,7 @@ export default function FederalResumeBuilderPage() {
       <div style={styles.ctaCard}>
         <p style={styles.ctaEyebrow}>Before you submit</p>
         <h2 style={styles.ctaHeading}>Check Whether Your Resume Actually Matches the Announcement</h2>
-        <a href="/" style={styles.button}>Check My Resume Free</a>
+        <a href="/resume-job-match" style={styles.button}>Check My Resume Free</a>
       </div>
 
       <p style={styles.relatedLine}>
