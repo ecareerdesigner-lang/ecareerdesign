@@ -138,15 +138,26 @@ export default function PricingPage() {
             >
               Subscribe - $9.99/mo
             </Link>
-                        <Link
-              href="/?view=pricing"
-              style={{ display: "block", textAlign: "center", marginTop: 12, padding: "12px 20px", borderRadius: 10, border: "1.5px solid rgba(255,255,255,0.35)", color: "#fff", fontWeight: 600, fontSize: 15, textDecoration: "none" }}
-            >
-              Or a 30-day pass: $15.99 one time
-            </Link>
-            <p style={{ fontSize: 13, color: "#C9D2DD", textAlign: "center", margin: "10px 0 0", lineHeight: 1.5 }}>
-              No subscription. Full Premium for 30 days, nothing to cancel.
+                                   <p style={{ fontSize: 13, color: "#C9D2DD", textAlign: "center", margin: "10px 0 0", lineHeight: 1.5 }}>
+              Renews every month until you cancel.
             </p>
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.15)", marginTop: 24, paddingTop: 24 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: TOKENS.accentSoft, margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                Or pay once
+              </p>
+              <p style={{ fontSize: 22, fontWeight: 600, color: "#fff", margin: "0 0 6px" }}>
+                30-day pass: $15.99 <span style={{ fontSize: 14, fontWeight: 400, color: "#C9D2DD" }}>one time</span>
+              </p>
+              <p style={{ fontSize: 14, color: "#C9D2DD", margin: "0 0 16px", lineHeight: 1.55 }}>
+                Everything in Premium for 30 days. It doesn't renew, so there's nothing to cancel and you aren't charged again. Good if you're focused on one job search and don't want a subscription. Buy another any time to add 30 more days.
+              </p>
+              <Link
+                href="/?view=pricing"
+                style={{ display: "block", textAlign: "center", padding: "12px 20px", borderRadius: 10, border: "1.5px solid rgba(255,255,255,0.35)", color: "#fff", fontWeight: 600, fontSize: 15, textDecoration: "none" }}
+              >
+                Get the 30-day pass: $15.99
+              </Link>
+            </div>
           </div>
         </div>
 
