@@ -152,6 +152,7 @@ export default function ResumeJobMatchTool() {
     setEmailError("");
     setEmailSending(true);
     setUnlocked(true);
+        trackEvent("email_captured", { tool: "resume_job_match" });
     try {
       await fetch("/api/send-match-score-email", {
         method: "POST",

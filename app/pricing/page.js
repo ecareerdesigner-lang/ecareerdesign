@@ -138,6 +138,15 @@ export default function PricingPage() {
             >
               Subscribe - $9.99/mo
             </Link>
+                        <Link
+              href="/?view=pricing"
+              style={{ display: "block", textAlign: "center", marginTop: 12, padding: "12px 20px", borderRadius: 10, border: "1.5px solid rgba(255,255,255,0.35)", color: "#fff", fontWeight: 600, fontSize: 15, textDecoration: "none" }}
+            >
+              Or a 30-day pass: $15.99 one time
+            </Link>
+            <p style={{ fontSize: 13, color: "#C9D2DD", textAlign: "center", margin: "10px 0 0", lineHeight: 1.5 }}>
+              No subscription. Full Premium for 30 days, nothing to cancel.
+            </p>
           </div>
         </div>
 

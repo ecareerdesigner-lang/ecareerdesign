@@ -48,6 +48,8 @@ ${"=".repeat(40)}
 
 Want help fixing these gaps? eCareer Design's Resume Builder, Job Tailoring, and premium Interview Coach can help you land more interviews. Log back in anytime at ecareerdesign.net.
 
+Next step, free: check this resume against a specific job posting to see exactly what to add: https://www.ecareerdesign.net/resume-job-match?utm_source=email&utm_medium=report&utm_campaign=ats_report
+
 This is an independent tool, not an official product of any employer, agency, or job platform.
 
 — eCareer Design`;
