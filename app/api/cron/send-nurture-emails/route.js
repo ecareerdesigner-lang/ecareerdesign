@@ -20,7 +20,7 @@ Premium unlocks:
 - Resume Match Scoring - check your resume against any job posting, not just one
 - Performance Review Writer - polished mid-year, end-of-year, or end-of-position reviews
 
-It's $9.99/month, no long-term contract. Prefer not to subscribe? A one-time 30-day pass is $15.99. Most people
+It's $9.99/month, no long-term contract. Prefer not to subscribe? A one-time 30-day pass is $15.99. Most people use it to stop guessing whether an application is worth sending before they send it.
 
 See the plans: https://www.ecareerdesign.net/pricing?utm_source=email&utm_medium=nurture&utm_campaign=day2
 

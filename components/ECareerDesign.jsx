@@ -3991,17 +3991,33 @@ async function runJobCardMatch(job, key) {
               >
                 {checkoutLoading ? "Redirecting to checkout..." : !currentUser ? "Sign up first — $9.99/mo" : "Subscribe — $9.99/mo"}
               </Button>
-                            <Button
-                variant="secondary"
-                disabled={checkoutLoading}
-                onClick={() => { trackEvent("checkout_started", { logged_in: !!currentUser, plan: "pass" }); currentUser ? handleCheckout("pass") : setView("auth"); }}
-                style={{ width: "100%", justifyContent: "center", fontSize: 15, padding: "12px 20px", marginTop: 12 }}
-              >
-                {!currentUser ? "Sign up first — 30-day pass $15.99" : "Or a 30-day pass — $15.99 one time"}
-              </Button>
-              <p style={{ fontSize: 13, color: "#C9D2DD", textAlign: "center", margin: "10px 0 0", lineHeight: 1.5 }}>
-                No subscription. Full Premium for 30 days, nothing to cancel.
+                           <p style={{ fontSize: 13, color: "#C9D2DD", textAlign: "center", margin: "10px 0 0", lineHeight: 1.5 }}>
+                Renews every month until you cancel.
               </p>
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.15)", marginTop: 24, paddingTop: 24 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: TOKENS.accentSoft, margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  Or pay once
+                </p>
+                <p style={{ fontSize: 22, fontWeight: 700, color: "#fff", margin: "0 0 6px" }}>
+                  30-day pass: $15.99 <span style={{ fontSize: 14, fontWeight: 400, color: "#C9D2DD" }}>one time</span>
+                </p>
+                <p style={{ fontSize: 14, color: "#C9D2DD", margin: "0 0 16px", lineHeight: 1.55 }}>
+                  Everything in Premium for 30 days. It doesn't renew, so there's nothing to cancel and you aren't charged again. Good if you're focused on one job search and don't want a subscription. Buy another any time to add 30 more days.
+                </p>
+                <Button
+                  variant="secondary"
+                  disabled={checkoutLoading}
+                  onClick={() => { trackEvent("checkout_started", { logged_in: !!currentUser, plan: "pass" }); currentUser ? handleCheckout("pass") : setView("auth"); }}
+                  style={{ width: "100%", justifyContent: "center", fontSize: 15, padding: "12px 20px" }}
+                >
+                  Get the 30-day pass — $15.99
+                </Button>
+                {!currentUser && (
+                  <p style={{ fontSize: 13, color: "#C9D2DD", textAlign: "center", margin: "10px 0 0", lineHeight: 1.5 }}>
+                    You'll create a free account first.
+                  </p>
+                )}
+              </div>
             </Card>
 
           </div>
