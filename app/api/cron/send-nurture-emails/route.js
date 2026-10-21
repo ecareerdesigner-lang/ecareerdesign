@@ -20,9 +20,9 @@ Premium unlocks:
 - Resume Match Scoring - check your resume against any job posting, not just one
 - Performance Review Writer - polished mid-year, end-of-year, or end-of-position reviews
 
-It's $9.99/month, no long-term contract. Most people use it to stop guessing whether an application is worth sending before they send it.
+It's $9.99/month, no long-term contract. Prefer not to subscribe? A one-time 30-day pass is $15.99. Most people
 
-See the plans: https://www.ecareerdesign.net/
+See the plans: https://www.ecareerdesign.net/pricing?utm_source=email&utm_medium=nurture&utm_campaign=day2
 
 - eCareerDesign`,
   };
@@ -35,9 +35,9 @@ function day5Email() {
 
 If checking your score answered one question, it probably raised another: what do I actually change? That's the part eCareerDesign Premium is built for - matching your resume to a specific job, practicing the interview that follows, and tracking the whole search in one place instead of scattered tabs and guesswork.
 
-$9.99/month. Cancel anytime.
+$9.99/month, cancel anytime. Or skip the subscription: a one-time 30-day pass is $15.99.
 
-Pick up where you left off: https://www.ecareerdesign.net/
+Pick up where you left off: https://www.ecareerdesign.net/pricing?utm_source=email&utm_medium=nurture&utm_campaign=day5
 
 - eCareerDesign`,
   };

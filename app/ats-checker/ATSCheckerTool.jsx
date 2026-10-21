@@ -145,6 +145,7 @@ export default function ATSCheckerTool() {
     setEmailError("");
     setEmailSending(true);
     setUnlocked(true);
+        trackEvent("email_captured", { tool: "ats_checker" });
     try {
       await fetch("/api/send-resume-score-email", {
         method: "POST",

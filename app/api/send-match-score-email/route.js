@@ -45,6 +45,8 @@ ${"=".repeat(40)}
 
 Want help closing these gaps? eCareer Design's Resume Builder and Job Tailoring can rewrite your resume around this exact posting. Log back in anytime at ecareerdesign.net.
 
+Also free: see how well this resume's formatting reads to applicant tracking systems: https://www.ecareerdesign.net/ats-checker?utm_source=email&utm_medium=report&utm_campaign=match_report
+
 This is an independent tool, not an official product of any employer, agency, or job platform.
 
 — eCareer Design`;

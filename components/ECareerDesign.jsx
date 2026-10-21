@@ -1722,14 +1722,14 @@ async function handleAuthSubmit() {
       setAuthError(e?.message || "Could not sign in with Google. Please try again.");
     }
   }
-  async function handleCheckout() {
+   async function handleCheckout(plan = "subscription") {
     if (!currentUser) return;
     setCheckoutLoading(true);
     try {
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: currentUser.id, email: currentUser.email }),
+             body: JSON.stringify({ userId: currentUser.id, email: currentUser.email, plan }),
       });
       const data = await res.json();
       if (data.url) {
@@ -3986,11 +3986,22 @@ async function runJobCardMatch(job, key) {
                 variant="primary"
                 icon={checkoutLoading ? <Loader2 size={16} className="cf-spin" /> : null}
                 disabled={checkoutLoading}
-                onClick={() => { trackEvent("checkout_started", { logged_in: !!currentUser }); currentUser ? handleCheckout() : setView("auth"); }}
+                                onClick={() => { trackEvent("checkout_started", { logged_in: !!currentUser, plan: "subscription" }); currentUser ? handleCheckout("subscription") : setView("auth"); }}
                 style={{ width: "100%", justifyContent: "center", fontSize: 16, padding: "14px 20px" }}
               >
                 {checkoutLoading ? "Redirecting to checkout..." : !currentUser ? "Sign up first — $9.99/mo" : "Subscribe — $9.99/mo"}
               </Button>
+                            <Button
+                variant="secondary"
+                disabled={checkoutLoading}
+                onClick={() => { trackEvent("checkout_started", { logged_in: !!currentUser, plan: "pass" }); currentUser ? handleCheckout("pass") : setView("auth"); }}
+                style={{ width: "100%", justifyContent: "center", fontSize: 15, padding: "12px 20px", marginTop: 12 }}
+              >
+                {!currentUser ? "Sign up first — 30-day pass $15.99" : "Or a 30-day pass — $15.99 one time"}
+              </Button>
+              <p style={{ fontSize: 13, color: "#C9D2DD", textAlign: "center", margin: "10px 0 0", lineHeight: 1.5 }}>
+                No subscription. Full Premium for 30 days, nothing to cancel.
+              </p>
             </Card>
 
           </div>
