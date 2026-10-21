@@ -8,6 +8,25 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+const SITE_URL = "https://www.ecareerdesign.net";
+const MAILING_ADDRESS = "eCareer Design, 110 Kingshall Rd, Mooresville, NC 28117";
+
+function unsubscribeUrl(token) {
+  return `${SITE_URL}/api/unsubscribe?token=${token}`;
+}
+
+// Every marketing email must carry a working opt-out link and the sender's
+// postal address, so the footer is added here rather than in each template.
+function withFooter(text, token) {
+  return `${text}
+
+--
+You're getting this because you requested a free resume report at ecareerdesign.net.
+Unsubscribe: ${unsubscribeUrl(token)}
+
+${MAILING_ADDRESS}`;
+}
+
 function day2Email() {
   return {
     subject: "Here's what eCareerDesign Premium actually does",
@@ -43,12 +62,16 @@ Pick up where you left off: https://www.ecareerdesign.net/pricing?utm_source=ema
   };
 }
 
-async function sendNurtureEmail(resend, email, content) {
+async function sendNurtureEmail(resend, lead, content) {
   return resend.emails.send({
     from: process.env.RESEND_FROM_EMAIL,
-    to: email,
+    to: lead.email,
     subject: content.subject,
-    text: content.text,
+    text: withFooter(content.text, lead.unsubscribe_token),
+    headers: {
+      "List-Unsubscribe": `<${unsubscribeUrl(lead.unsubscribe_token)}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    },
   });
 }
 
@@ -85,14 +108,16 @@ export async function GET(request) {
     const day2Leads = await selectWithRetry(() =>
       supabaseAdmin
         .from("email_nurture_leads")
-        .select("id, email")
+        .select("id, email, unsubscribe_token")
+        .is("unsubscribed_at", null)
         .is("day2_sent_at", null)
         .lte("captured_at", new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString())
     );
 
     for (const lead of day2Leads || []) {
       try {
-        await sendNurtureEmail(resend, lead.email, day2Email());
+        if (!lead.unsubscribe_token) continue; // never send without an opt-out link
+        await sendNurtureEmail(resend, lead, day2Email());
         await supabaseAdmin
           .from("email_nurture_leads")
           .update({ day2_sent_at: new Date().toISOString() })
@@ -107,14 +132,16 @@ export async function GET(request) {
     const day5Leads = await selectWithRetry(() =>
       supabaseAdmin
         .from("email_nurture_leads")
-        .select("id, email")
+        .select("id, email, unsubscribe_token")
+        .is("unsubscribed_at", null)
         .is("day5_sent_at", null)
         .lte("captured_at", new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString())
     );
 
     for (const lead of day5Leads || []) {
       try {
-        await sendNurtureEmail(resend, lead.email, day5Email());
+        if (!lead.unsubscribe_token) continue; // never send without an opt-out link
+        await sendNurtureEmail(resend, lead, day5Email());
         await supabaseAdmin
           .from("email_nurture_leads")
           .update({ day5_sent_at: new Date().toISOString() })
