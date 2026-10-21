@@ -49,7 +49,8 @@ Also free: see how well this resume's formatting reads to applicant tracking sys
 
 This is an independent tool, not an official product of any employer, agency, or job platform.
 
-— eCareer Design`;
+— eCareer Design
+110 Kingshall Rd, Mooresville, NC 28117`;
 
     const sendResult = await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL,
