@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import NewLanding from "./landing/NewLanding";
 import { supabase } from "../lib/supabase";
 import {
   Search, FileText, Check, RefreshCw, Copy, Download,
@@ -51,6 +52,10 @@ async function ocrImagesInBrowser(base64Images) {
 }
 
 const APP_VERSION = "v2.0";
+
+// Redesigned homepage switch. OFF unless NEXT_PUBLIC_NEW_LANDING=1 is set at build time.
+// Per-visit override for testing: /?newhome=1 shows the new page, /?newhome=0 shows the old one.
+const NEW_LANDING_DEFAULT = process.env.NEXT_PUBLIC_NEW_LANDING === "1";
 
 const TOTAL_BUDGET = 6000;   // Summary of Accomplishments (requirement responses), combined
 const SKILLS_BUDGET = 2000;  // Special Skills & Associations, independent cap
@@ -1625,6 +1630,13 @@ const [resumeScoreFile, setResumeScoreFile] = useState(null);
   const [returnToView, setReturnToView] = useState("landing");
   const [returnToMode, setReturnToMode] = useState(null);
   const [returnToStep, setReturnToStep] = useState(null);
+  const [newHomeOverride, setNewHomeOverride] = useState(null); // null | true | false
+
+  useEffect(() => {
+    const flag = new URLSearchParams(window.location.search).get("newhome");
+    if (flag === "1") setNewHomeOverride(true);
+    if (flag === "0") setNewHomeOverride(false);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -3636,6 +3648,50 @@ async function runJobCardMatch(job, key) {
           </div>
         )}
       </Card>
+    );
+  }
+
+  const showNewLanding = view === "landing" && (newHomeOverride ?? NEW_LANDING_DEFAULT);
+  if (showNewLanding) {
+    return (
+      <>
+      <NewLanding
+        authChecked={authChecked}
+        currentUser={currentUser}
+        isPremium={isPremium}
+        onLogin={() => setView("auth")}
+        onLogout={async () => { await supabase.auth.signOut(); }}
+        onManageSubscription={async () => {
+          try {
+            const res = await fetch("/api/create-portal-session", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: currentUser.email }),
+            });
+            const data = await res.json();
+            if (data.url) {
+              window.location.href = data.url;
+            } else {
+              alert(data.error || "Unable to open subscription management");
+            }
+          } catch (err) {
+            console.error(err);
+            alert("Something went wrong. Please try again.");
+          }
+        }}
+        onScan={() => setView("resumescore")}
+        onBuilder={(m) => {
+          trackEvent("builder_entered", { source: "homepage", mode: m });
+          setMode(m);
+          setStep(m === "resume" ? 1 : 0);
+          setView("wizard");
+        }}
+        onJobSearch={() => setView("jobsearch")}
+        onPricing={() => setView("pricing")}
+        onPremiumCta={() => setView(currentUser && isPremium ? "dashboard" : "pricing")}
+      />
+      <VirtualAssistant />
+      </>
     );
   }
 
