@@ -3761,7 +3761,7 @@ async function runJobCardMatch(job, key) {
           dashboardStatsLoaded={dashboardStatsLoaded}
           onPracticeInterview={() => { setMode("coach"); setStep(2); setView("wizard"); }}
           careerBackground={buildBackground()}
-          onHome={() => setView("landing")}
+          onHome={() => { setView("dashboard"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
           onLogout={async () => { await supabase.auth.signOut(); }}
           onManageSubscription={async () => {
             try {
