@@ -221,13 +221,13 @@ export default function NewLanding({
                 {isPremium && (
                   <button type="button" className="nl-navlink nl-navhide" onClick={onManageSubscription}>Manage subscription</button>
                 )}
-                <button type="button" className="nl-navlink nl-navhide" onClick={onLogout}>Log out</button>
+                <button type="button" className="nl-navlink" onClick={onLogout}>Log out</button>
               </>
             ) : (
-              <button type="button" className="nl-navlink nl-navhide" onClick={onLogin}>Log in</button>
+              <button type="button" className="nl-navlink" onClick={onLogin}>Log in</button>
             ))}
             <button type="button" className="nl-btn nl-btn-or" style={{ minHeight: 40, padding: "8px 20px" }} onClick={onScan}>
-              Free resume scan
+              Free <span className="nl-sm-hide">resume </span>scan
             </button>
           </nav>
         </div>
