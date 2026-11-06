@@ -55,12 +55,12 @@ export default function NewDashboardView({
 
       <header className="nd-nav">
         <div className="nd-nav-in">
-          <button type="button" className="nd-brand" onClick={onHome} aria-label="eCareer Design home">
+          <button type="button" className="nd-brand" onClick={onHome} aria-label="eCareer Design dashboard">
             <span className="nd-mark" aria-hidden="true">e</span>
             <span className="nd-brand-name">eCareer Design</span>
           </button>
           <nav className="nd-nav-links" aria-label="Account">
-            <button type="button" className="nd-navlink" onClick={onHome}>Home</button>
+            <button type="button" className="nd-navlink" onClick={onHome}>Dashboard</button>
             <button type="button" className="nd-navlink" onClick={onManageSubscription}>Manage subscription</button>
             <button type="button" className="nd-navlink" onClick={onLogout}>Log out</button>
           </nav>
