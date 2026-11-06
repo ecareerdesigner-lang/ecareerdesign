@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import NewLanding from "./landing/NewLanding";
+import NewDashboardView from "./dashboard/NewDashboardView";
 import { supabase } from "../lib/supabase";
 import {
   Search, FileText, Check, RefreshCw, Copy, Download,
@@ -56,6 +57,10 @@ const APP_VERSION = "v2.0";
 // Redesigned homepage switch. OFF unless NEXT_PUBLIC_NEW_LANDING=1 is set at build time.
 // Per-visit override for testing: /?newhome=1 shows the new page, /?newhome=0 shows the old one.
 const NEW_LANDING_DEFAULT = process.env.NEXT_PUBLIC_NEW_LANDING === "1";
+
+// Redesigned dashboard switch. OFF unless NEXT_PUBLIC_NEW_DASHBOARD=1 is set at build time.
+// Per-visit override for testing: ?newdash=1 shows the new page, ?newdash=0 shows the old one.
+const NEW_DASHBOARD_DEFAULT = process.env.NEXT_PUBLIC_NEW_DASHBOARD === "1";
 
 const TOTAL_BUDGET = 6000;   // Summary of Accomplishments (requirement responses), combined
 const SKILLS_BUDGET = 2000;  // Special Skills & Associations, independent cap
@@ -1317,7 +1322,7 @@ function VirtualAssistant() {
   );
 }
 
-function Dashboard({ contactInfo, recentProjects, onResumeBuilder, onJobTailoring, onCoverLetter, onInterviewPrep, onInterviewCoach, onRemoveProject, weeklyAppCount, nextInterview, dashboardStatsLoaded, onPracticeInterview, newJobMatchCount, careerBackground }) {
+function Dashboard({ contactInfo, recentProjects, onResumeBuilder, onJobTailoring, onCoverLetter, onInterviewPrep, onInterviewCoach, onRemoveProject, weeklyAppCount, nextInterview, dashboardStatsLoaded, onPracticeInterview, newJobMatchCount, careerBackground, newLook, onHome, onLogout, onManageSubscription }) {
   const [matchJobTitle, setMatchJobTitle] = useState("");
   const [matchCompanyName, setMatchCompanyName] = useState("");
   const [matchJobDescription, setMatchJobDescription] = useState("");
@@ -1384,6 +1389,40 @@ const [showJobMatches, setShowJobMatches] = useState(false);
     } finally {
       setMatchLoading(false);
     }
+  }
+  if (newLook) {
+    return (
+      <NewDashboardView
+        greeting={timeGreeting()}
+        firstName={contactInfo?.name ? contactInfo.name.split(" ")[0] : ""}
+        statsLoaded={dashboardStatsLoaded}
+        weeklyAppCount={weeklyAppCount}
+        newJobMatchCount={newJobMatchCount}
+        nextInterview={nextInterview}
+        onPracticeInterview={onPracticeInterview}
+        showJobMatches={showJobMatches}
+        jobMatchesList={jobMatchesList}
+        jobMatchesLoading={jobMatchesLoading}
+        onToggleJobMatches={toggleJobMatches}
+        onResumeBuilder={onResumeBuilder}
+        onJobTailoring={onJobTailoring}
+        onCoverLetter={onCoverLetter}
+        onInterviewPrep={onInterviewPrep}
+        onInterviewCoach={onInterviewCoach}
+        match={{
+          title: matchJobTitle, setTitle: setMatchJobTitle,
+          company: matchCompanyName, setCompany: setMatchCompanyName,
+          description: matchJobDescription, setDescription: setMatchJobDescription,
+          result: matchResult, loading: matchLoading, error: matchError, onRun: runMatchScore,
+        }}
+        recentProjects={recentProjects}
+        onRemoveProject={onRemoveProject}
+        relativeDate={relativeDate}
+        onHome={onHome}
+        onLogout={onLogout}
+        onManageSubscription={onManageSubscription}
+      />
+    );
   }
 return (
     <div>
@@ -1631,11 +1670,16 @@ const [resumeScoreFile, setResumeScoreFile] = useState(null);
   const [returnToMode, setReturnToMode] = useState(null);
   const [returnToStep, setReturnToStep] = useState(null);
   const [newHomeOverride, setNewHomeOverride] = useState(null); // null | true | false
+  const [newDashOverride, setNewDashOverride] = useState(null); // null | true | false
 
   useEffect(() => {
-    const flag = new URLSearchParams(window.location.search).get("newhome");
+    const qs = new URLSearchParams(window.location.search);
+    const flag = qs.get("newhome");
     if (flag === "1") setNewHomeOverride(true);
     if (flag === "0") setNewHomeOverride(false);
+    const dash = qs.get("newdash");
+    if (dash === "1") setNewDashOverride(true);
+    if (dash === "0") setNewDashOverride(false);
   }, []);
 
   useEffect(() => {
@@ -3691,6 +3735,54 @@ async function runJobCardMatch(job, key) {
         onPremiumCta={() => setView(currentUser && isPremium ? "dashboard" : "pricing")}
       />
       <VirtualAssistant />
+      </>
+    );
+  }
+
+  // Redesigned dashboard (premium users only, same as the old one). Same Dashboard component and
+  // props; `newLook` swaps only what it draws. Free users still get the old upgrade prompt below.
+  const showNewDashboard = view === "dashboard" && isPremium && (newDashOverride ?? NEW_DASHBOARD_DEFAULT);
+  if (showNewDashboard) {
+    return (
+      <>
+        <Dashboard
+          newLook
+          contactInfo={contactInfo}
+          recentProjects={recentProjects}
+          onResumeBuilder={() => { trackEvent("builder_entered", { source: "dashboard", mode: "resume" }); setMode("resume"); setStep(1); setView("wizard"); }}
+          onJobTailoring={() => { trackEvent("builder_entered", { source: "dashboard", mode: "application" }); setMode("application"); setStep(0); setView("wizard"); }}
+          onCoverLetter={() => { trackEvent("builder_entered", { source: "dashboard", mode: "coverletter" }); setMode("coverletter"); setStep(0); setView("wizard"); }}
+          onInterviewPrep={() => { setMode("interview"); setStep(0); setView("wizard"); }}
+          onInterviewCoach={() => { setMode("coach"); setStep(0); setView("wizard"); }}
+          onRemoveProject={removeRecentProject}
+          weeklyAppCount={weeklyAppCount}
+          newJobMatchCount={newJobMatchCount}
+          nextInterview={nextInterview}
+          dashboardStatsLoaded={dashboardStatsLoaded}
+          onPracticeInterview={() => { setMode("coach"); setStep(2); setView("wizard"); }}
+          careerBackground={buildBackground()}
+          onHome={() => setView("landing")}
+          onLogout={async () => { await supabase.auth.signOut(); }}
+          onManageSubscription={async () => {
+            try {
+              const res = await fetch("/api/create-portal-session", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: currentUser.email }),
+              });
+              const data = await res.json();
+              if (data.url) {
+                window.location.href = data.url;
+              } else {
+                alert(data.error || "Unable to open subscription management");
+              }
+            } catch (err) {
+              console.error(err);
+              alert("Something went wrong. Please try again.");
+            }
+          }}
+        />
+        <VirtualAssistant />
       </>
     );
   }
