@@ -1678,6 +1678,13 @@ const [resumeScoreFile, setResumeScoreFile] = useState(null);
   const [newHomeOverride, setNewHomeOverride] = useState(null); // null | true | false
   const [newDashOverride, setNewDashOverride] = useState(null); // null | true | false
   const [newToolsOverride, setNewToolsOverride] = useState(null); // null | true | false
+  const [wantDashboard, setWantDashboard] = useState(false);
+
+  useEffect(() => {
+    if (!wantDashboard || !authChecked) return;
+    if (isPremium) setView("dashboard");
+    setWantDashboard(false);
+  }, [wantDashboard, authChecked, isPremium]);
 
   useEffect(() => {
     const qs = new URLSearchParams(window.location.search);
@@ -1695,6 +1702,10 @@ const [resumeScoreFile, setResumeScoreFile] = useState(null);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("view") === "pricing") setView("pricing");
+    // Deep link from other pages (e.g. the Performance Review Writer): /?view=dashboard opens the
+    // dashboard for a signed-in premium user, once we know who they are. Anyone else gets the
+    // normal landing page.
+    if (params.get("view") === "dashboard") setWantDashboard(true);
     if (params.get("tool") === "coverletter") {
       trackEvent("builder_entered", { source: "deep_link", mode: "coverletter" });
       setMode("coverletter");
@@ -3703,6 +3714,11 @@ async function runJobCardMatch(job, key) {
         )}
       </Card>
     );
+  }
+
+  // Arriving from /?view=dashboard: show a blank page (not the landing page) until we know who the user is.
+  if (wantDashboard) {
+    return <div style={{ minHeight: "100vh", background: TOKENS.paper }} aria-busy="true" />;
   }
 
   const showNewLanding = view === "landing" && (newHomeOverride ?? NEW_LANDING_DEFAULT);

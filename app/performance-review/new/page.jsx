@@ -6,9 +6,19 @@ import Link from "next/link";
 import { ReviewPeriodSelect } from "@/components/performance-review/ReviewPeriodSelect.jsx";
 import { supabase } from "@/lib/supabase";
 import { TOKENS } from "@/lib/design-tokens.js";
+import ToolsPage from "@/components/tools/ToolsPage";
+import { useNewTools } from "@/components/tools/useNewTools";
+
+const BAND = {
+  eyebrow: "Performance Review Writer",
+  title: "Say what you actually did.",
+  sub: "Goals, accomplishments and an export-ready review, saved as you go.",
+  img: "/landing/stones.jpg",
+};
 
 export default function NewPerformanceReviewPage() {
   const router = useRouter();
+  const newLook = useNewTools();
   const [period, setPeriod] = useState("mid_year");
   const [loading, setLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -51,22 +61,8 @@ export default function NewPerformanceReviewPage() {
     return <p style={{ maxWidth: 560, margin: "40px auto", padding: "0 16px", color: TOKENS.inkSoft }}>Loading...</p>;
   }
 
-  return (
-    <div style={{ maxWidth: 560, margin: "0 auto", padding: "40px 16px" }}>
-      <Link
-        href="/"
-        style={{
-          fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
-          padding: "4px 8px", borderRadius: 10, display: "inline-flex",
-          alignItems: "center", gap: 8, color: TOKENS.inkSoft,
-          textDecoration: "none", marginBottom: 10,
-        }}
-      >
-        ← Home
-      </Link>
-      <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 32, fontWeight: 700, margin: "0 0 8px", color: TOKENS.ink }}>
-        Performance Review Writer
-      </h1>
+  const form = (
+    <>
       <p style={{ fontSize: 15, color: TOKENS.inkSoft, margin: "0 0 20px" }}>Which review is this for?</p>
 
       <ReviewPeriodSelect value={period} onChange={setPeriod} />
@@ -75,6 +71,7 @@ export default function NewPerformanceReviewPage() {
 
       <button
         type="button"
+        className="cf-btn cf-btn-primary"
         onClick={start}
         disabled={loading}
         style={{
@@ -92,6 +89,39 @@ export default function NewPerformanceReviewPage() {
       >
         {loading ? "Starting..." : "Start Review →"}
       </button>
+    </>
+  );
+
+  if (newLook) {
+    return (
+      <ToolsPage
+        band={BAND}
+        maxWidth={560}
+        onHome={() => router.push("/?view=dashboard")}
+        onLogout={async () => { await supabase.auth.signOut(); router.push("/"); }}
+      >
+        {form}
+      </ToolsPage>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: 560, margin: "0 auto", padding: "40px 16px" }}>
+      <Link
+        href="/"
+        style={{
+          fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
+          padding: "4px 8px", borderRadius: 10, display: "inline-flex",
+          alignItems: "center", gap: 8, color: TOKENS.inkSoft,
+          textDecoration: "none", marginBottom: 10,
+        }}
+      >
+        ← Home
+      </Link>
+      <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 32, fontWeight: 700, margin: "0 0 8px", color: TOKENS.ink }}>
+        Performance Review Writer
+      </h1>
+      {form}
     </div>
   );
 }

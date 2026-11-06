@@ -168,6 +168,7 @@ export function ExportSection({ review }) {
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
         <button
           type="button"
+          className="cf-btn cf-btn-primary"
           onClick={downloadPdf}
           disabled={pdfGenerating}
           style={{
@@ -183,6 +184,7 @@ export function ExportSection({ review }) {
 
         <button
           type="button"
+          className="cf-btn cf-btn-secondary"
           onClick={copyAsText}
           style={{
             display: "flex", alignItems: "center", gap: 8,
@@ -232,6 +234,7 @@ export function ExportSection({ review }) {
               />
               <button
                 type="button"
+                className="cf-btn cf-btn-primary"
                 onClick={emailMeACopy}
                 disabled={emailSending || !email.trim()}
                 style={{

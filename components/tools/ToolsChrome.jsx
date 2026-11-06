@@ -33,8 +33,8 @@ const BANDS = {
 };
 
 // Presentation only. Navigation and sign-out are the same actions the rest of the app already uses.
-export default function ToolsChrome({ mode, homeLabel, onHome, onLogout, showLogout }) {
-  const band = BANDS[mode || "none"] || BANDS.none;
+export default function ToolsChrome({ mode, band: bandOverride, homeLabel, onHome, onLogout, showLogout }) {
+  const band = bandOverride || BANDS[mode || "none"] || BANDS.none;
   // Opening a tool (or switching tool) starts at the top, so the band and bar are in view.
   useEffect(() => { window.scrollTo(0, 0); }, [mode]);
   const homeText = homeLabel.replace("← ", "");

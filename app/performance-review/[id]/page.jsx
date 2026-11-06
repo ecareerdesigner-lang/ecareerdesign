@@ -10,9 +10,19 @@ import { ExportSection } from "@/components/performance-review/ExportSection.jsx
 import { useAutosave } from "@/components/performance-review/useAutosave.js";
 import { supabase } from "@/lib/supabase";
 import { TOKENS } from "@/lib/design-tokens.js";
+import ToolsPage from "@/components/tools/ToolsPage";
+import { useNewTools } from "@/components/tools/useNewTools";
+
+const BAND = {
+  eyebrow: "Performance Review Writer",
+  title: "Say what you actually did.",
+  sub: "Goals, accomplishments and an export-ready review, saved as you go.",
+  img: "/landing/stones.jpg",
+};
 
 export default function PerformanceReviewPage({ params }) {
   const router = useRouter();
+  const newLook = useNewTools();
   const [review, setReview] = useState(null);
   const [userId, setUserId] = useState(null);
   const [loadError, setLoadError] = useState(null);
@@ -49,32 +59,8 @@ export default function PerformanceReviewPage({ params }) {
 
   const sectionHeader = { fontSize: 12, fontWeight: 600, color: TOKENS.inkSoft, textTransform: "uppercase", letterSpacing: "0.04em", margin: "0 0 10px" };
 
-  return (
-    <div style={{ maxWidth: 760, margin: "0 auto", padding: "40px 16px", display: "flex", flexDirection: "column", gap: 32 }}>
-      <div>
-        <Link
-          href="/"
-          style={{
-            fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
-            padding: "4px 8px", borderRadius: 10, display: "inline-flex",
-            alignItems: "center", gap: 8, color: TOKENS.inkSoft,
-            textDecoration: "none", marginBottom: 10,
-          }}
-        >
-          ← Home
-        </Link>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 32, fontWeight: 700, margin: 0, color: TOKENS.ink }}>
-            Performance Review Writer
-          </h1>
-          <span style={{ fontSize: 12, color: TOKENS.inkSoft }}>
-            {saveStatus === "saving" && "Saving..."}
-            {saveStatus === "saved" && "Saved"}
-            {saveStatus === "error" && <span style={{ color: TOKENS.red }}>Save failed</span>}
-          </span>
-        </div>
-      </div>
-
+  const sections = (
+    <>
       <section>
         <p style={sectionHeader}>1. Review period</p>
         <ReviewPeriodSelect
@@ -113,6 +99,57 @@ export default function PerformanceReviewPage({ params }) {
         <p style={sectionHeader}>4. Export</p>
         <ExportSection review={review} />
       </section>
+    </>
+  );
+
+  if (newLook) {
+    return (
+      <ToolsPage
+        band={BAND}
+        onHome={() => router.push("/?view=dashboard")}
+        onLogout={async () => { await supabase.auth.signOut(); router.push("/"); }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+          <div style={{ textAlign: "right", minHeight: 18 }}>
+            <span style={{ fontSize: 12, color: TOKENS.inkSoft }} aria-live="polite">
+              {saveStatus === "saving" && "Saving..."}
+            {saveStatus === "saved" && "Saved"}
+            {saveStatus === "error" && <span style={{ color: TOKENS.red }}>Save failed</span>}
+            </span>
+          </div>
+          {sections}
+        </div>
+      </ToolsPage>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: 760, margin: "0 auto", padding: "40px 16px", display: "flex", flexDirection: "column", gap: 32 }}>
+      <div>
+        <Link
+          href="/"
+          style={{
+            fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
+            padding: "4px 8px", borderRadius: 10, display: "inline-flex",
+            alignItems: "center", gap: 8, color: TOKENS.inkSoft,
+            textDecoration: "none", marginBottom: 10,
+          }}
+        >
+          ← Home
+        </Link>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 32, fontWeight: 700, margin: 0, color: TOKENS.ink }}>
+            Performance Review Writer
+          </h1>
+          <span style={{ fontSize: 12, color: TOKENS.inkSoft }}>
+            {saveStatus === "saving" && "Saving..."}
+            {saveStatus === "saved" && "Saved"}
+            {saveStatus === "error" && <span style={{ color: TOKENS.red }}>Save failed</span>}
+          </span>
+        </div>
+      </div>
+
+      {sections}
     </div>
   );
 }

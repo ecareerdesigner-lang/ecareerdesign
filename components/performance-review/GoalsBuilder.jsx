@@ -55,6 +55,7 @@ function GoalEnhanceBlock({ reviewId, userId, goal, onUpdate }) {
     <div style={{ marginTop: 16 }}>
       <button
         type="button"
+        className="cf-btn cf-btn-primary"
         onClick={enhance}
         disabled={loading || !goal.goal_text}
         style={{
