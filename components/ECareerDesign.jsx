@@ -3741,7 +3741,12 @@ async function runJobCardMatch(job, key) {
 
   // Redesigned dashboard (premium users only, same as the old one). Same Dashboard component and
   // props; `newLook` swaps only what it draws. Free users still get the old upgrade prompt below.
-  const showNewDashboard = view === "dashboard" && isPremium && (newDashOverride ?? NEW_DASHBOARD_DEFAULT);
+  // With the new dashboard on, a premium user's "Home" inside the tools means their dashboard.
+  // Everyone else (and the old look) keeps going to the landing page, exactly as before.
+  const newDashOn = newDashOverride ?? NEW_DASHBOARD_DEFAULT;
+  const homeView = isPremium && currentUser && newDashOn ? "dashboard" : "landing";
+  const homeLabel = homeView === "dashboard" ? "← Dashboard" : "← Home";
+  const showNewDashboard = view === "dashboard" && isPremium && newDashOn;
   if (showNewDashboard) {
     return (
       <>
@@ -4013,7 +4018,7 @@ async function runJobCardMatch(job, key) {
       )}
 {view === "pricing" && (
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
-          <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => setView("landing")}>← Home</Button>
+          <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => setView(homeView)}>{homeLabel}</Button>
 
           <div style={{ textAlign: "center", marginBottom: 40 }}>
             <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 40, margin: "0 0 10px", letterSpacing: "-0.01em" }}>
@@ -4182,7 +4187,7 @@ async function runJobCardMatch(job, key) {
       )}
 {view === "jobsearch" && (
         <div>
-          <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => setView("landing")}>← Home</Button>
+          <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => setView(homeView)}>{homeLabel}</Button>
           <Card>
             <SectionHeading icon={<Search size={18} color={TOKENS.accent} />} title="Find matching jobs" subtitle="Searches real, live postings and links you straight to the original listing to apply." />
             <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr auto", gap: 10, marginBottom: 16, alignItems: "center" }}>
@@ -4276,7 +4281,7 @@ async function runJobCardMatch(job, key) {
       )}
 {view === "resumescore" && (
         <div style={{ maxWidth: 720, margin: "0 auto" }}>
-          <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => setView("landing")}>← Home</Button>
+          <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => setView(homeView)}>{homeLabel}</Button>
 
           <div style={{ marginBottom: 28 }}>
             <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 34, margin: "0 0 8px", letterSpacing: "-0.01em" }}>
@@ -4445,7 +4450,7 @@ async function runJobCardMatch(job, key) {
             <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
               <h1
                 className="cf-brand"
-                onClick={() => setView("landing")}
+                onClick={() => setView(homeView)}
                 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 40, margin: 0, letterSpacing: "-0.01em" }}
               >
                 eCareer Design
@@ -4462,7 +4467,7 @@ async function runJobCardMatch(job, key) {
               <strong>Disclaimer</strong> — AI-generated content should always be reviewed before submission.
             </p>
           </div>
-<Button variant="ghost" style={{ marginBottom: 14, padding: "4px 8px" }} onClick={() => { setMode(null); setStep(0); setView("landing"); }}>← Home</Button>
+<Button variant="ghost" style={{ marginBottom: 14, padding: "4px 8px" }} onClick={() => { setMode(null); setStep(0); setView(homeView); }}>{homeLabel}</Button>
           <Stepper step={step} labels={mode === "resume" ? STEPS_RESUME : mode === "coverletter" ? STEPS_COVERLETTER : mode === "interview" ? STEPS_INTERVIEW : mode === "coach" ? STEPS_COACH : STEPS_APPLICATION} />
 
       {step === 0 && mode === null && (
@@ -4498,7 +4503,7 @@ async function runJobCardMatch(job, key) {
 
       {step === 0 && mode === "application" && (
         <Card>
-          <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => { setMode(null); setView("landing"); }}>← Home</Button>
+          <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => { setMode(null); setView(homeView); }}>{homeLabel}</Button>
           <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, margin: "0 0 4px" }}>Job title and requirements</h2>
           <p style={{ fontSize: 16, color: TOKENS.inkSoft, margin: "0 0 24px" }}>
             Search the sample requirement library first. If your title isn't listed, paste the qualifications straight from the posting.
