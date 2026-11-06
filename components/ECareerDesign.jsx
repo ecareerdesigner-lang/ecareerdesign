@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import NewLanding from "./landing/NewLanding";
 import NewDashboardView from "./dashboard/NewDashboardView";
+import ToolsChrome, { TOOLS_FONT_CLASS } from "./tools/ToolsChrome";
 import { supabase } from "../lib/supabase";
 import {
   Search, FileText, Check, RefreshCw, Copy, Download,
@@ -61,6 +62,10 @@ const NEW_LANDING_DEFAULT = process.env.NEXT_PUBLIC_NEW_LANDING === "1";
 // Redesigned dashboard switch. OFF unless NEXT_PUBLIC_NEW_DASHBOARD=1 is set at build time.
 // Per-visit override for testing: ?newdash=1 shows the new page, ?newdash=0 shows the old one.
 const NEW_DASHBOARD_DEFAULT = process.env.NEXT_PUBLIC_NEW_DASHBOARD === "1";
+
+// Redesigned tool screens (the builder wizard). OFF unless NEXT_PUBLIC_NEW_TOOLS=1 is set at build
+// time. Per-visit override for testing: ?newtools=1 shows the new look, ?newtools=0 the old one.
+const NEW_TOOLS_DEFAULT = process.env.NEXT_PUBLIC_NEW_TOOLS === "1";
 
 const TOTAL_BUDGET = 6000;   // Summary of Accomplishments (requirement responses), combined
 const SKILLS_BUDGET = 2000;  // Special Skills & Associations, independent cap
@@ -476,6 +481,7 @@ function Stepper({ step, labels }) {
         {Array.from({ length: totalSegments }).map((_, i) => (
           <div
             key={i}
+            className={i < filledSegments ? "cf-seg cf-seg-on" : "cf-seg"}
             style={{
               flex: 1, height: 8, borderRadius: 4,
               background: i < filledSegments ? TOKENS.ink : "repeating-linear-gradient(45deg, #E4E7E3, #E4E7E3 3px, #F4F5F2 3px, #F4F5F2 6px)",
@@ -491,7 +497,7 @@ function Stepper({ step, labels }) {
 function Card({ children, style, interactive, selected, onClick }) {
   return (
     <div
-      className={interactive ? "cf-card-interactive" : ""}
+      className={interactive ? "cf-card cf-card-interactive" : "cf-card"}
       onClick={onClick}
       style={{
         background: TOKENS.surface,
@@ -524,7 +530,7 @@ function Button({ children, onClick, variant = "secondary", disabled, icon, styl
     dangerGhost: { background: "transparent", color: TOKENS.red, borderColor: "transparent" },
   };
   return (
-    <button onClick={disabled ? undefined : onClick} style={{ ...base, ...variants[variant], ...style }}>
+    <button className={`cf-btn cf-btn-${variant}`} onClick={disabled ? undefined : onClick} style={{ ...base, ...variants[variant], ...style }}>
       {icon}{children}
     </button>
   );
@@ -1671,6 +1677,7 @@ const [resumeScoreFile, setResumeScoreFile] = useState(null);
   const [returnToStep, setReturnToStep] = useState(null);
   const [newHomeOverride, setNewHomeOverride] = useState(null); // null | true | false
   const [newDashOverride, setNewDashOverride] = useState(null); // null | true | false
+  const [newToolsOverride, setNewToolsOverride] = useState(null); // null | true | false
 
   useEffect(() => {
     const qs = new URLSearchParams(window.location.search);
@@ -1680,6 +1687,9 @@ const [resumeScoreFile, setResumeScoreFile] = useState(null);
     const dash = qs.get("newdash");
     if (dash === "1") setNewDashOverride(true);
     if (dash === "0") setNewDashOverride(false);
+    const tools = qs.get("newtools");
+    if (tools === "1") setNewToolsOverride(true);
+    if (tools === "0") setNewToolsOverride(false);
   }, []);
 
   useEffect(() => {
@@ -3747,6 +3757,10 @@ async function runJobCardMatch(job, key) {
   const homeView = isPremium && currentUser && newDashOn ? "dashboard" : "landing";
   const homeLabel = homeView === "dashboard" ? "← Dashboard" : "← Home";
   const showNewDashboard = view === "dashboard" && isPremium && newDashOn;
+  // New look for the builder screens: sticky bar + photo band + restyled cards, buttons and inputs.
+  const toolsOn = view === "wizard" && (newToolsOverride ?? NEW_TOOLS_DEFAULT);
+  const Inner = toolsOn ? "div" : React.Fragment;
+  const innerProps = toolsOn ? { style: { maxWidth: 880, margin: "0 auto", padding: "2rem 1.5rem 3.5rem" } } : {};
   if (showNewDashboard) {
     return (
       <>
@@ -3793,7 +3807,22 @@ async function runJobCardMatch(job, key) {
   }
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", color: TOKENS.ink, maxWidth: 880, margin: "0 auto", padding: "2rem 1.5rem" }}>
+    <div
+      className={toolsOn ? `nt ${TOOLS_FONT_CLASS}` : undefined}
+      style={toolsOn
+        ? { fontFamily: "'Inter', sans-serif", color: TOKENS.ink }
+        : { fontFamily: "'Inter', sans-serif", color: TOKENS.ink, maxWidth: 880, margin: "0 auto", padding: "2rem 1.5rem" }}
+    >
+      {toolsOn && (
+        <ToolsChrome
+          mode={mode}
+          homeLabel={homeLabel}
+          onHome={() => { setMode(null); setStep(0); setView(homeView); }}
+          onLogout={async () => { await supabase.auth.signOut(); }}
+          showLogout={!!currentUser}
+        />
+      )}
+      <Inner {...innerProps}>
       <style suppressHydrationWarning>{`
         input:focus, textarea:focus, select:focus { border-color: ${TOKENS.accent} !important; }
         ::placeholder { color: #9AA39B; }
@@ -4446,7 +4475,7 @@ async function runJobCardMatch(job, key) {
 
 {view === "wizard" && (  
         <>
-          <div style={{ marginBottom: "1.75rem" }}>
+          <div className="cf-wizard-head" style={{ marginBottom: "1.75rem" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
               <h1
                 className="cf-brand"
@@ -4478,6 +4507,7 @@ async function runJobCardMatch(job, key) {
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <div
+              className="cf-choice"
               onClick={() => setMode("application")}
               style={{ border: `1px solid ${TOKENS.line}`, borderRadius: 4, padding: 20, cursor: "pointer", background: TOKENS.paper }}
             >
@@ -4488,6 +4518,7 @@ async function runJobCardMatch(job, key) {
               </p>
             </div>
             <div
+              className="cf-choice"
               onClick={() => setMode("resume")}
               style={{ border: `1px solid ${TOKENS.line}`, borderRadius: 4, padding: 20, cursor: "pointer", background: TOKENS.paper }}
             >
@@ -5926,6 +5957,7 @@ careerBackground={buildBackground()}
       </p>
 
       <VirtualAssistant />
+      </Inner>
     </div>
   );
 }
