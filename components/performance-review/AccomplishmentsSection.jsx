@@ -72,6 +72,7 @@ export function AccomplishmentsSection({
 
       <button
         type="button"
+        className="cf-btn cf-btn-primary"
         onClick={enhance}
         disabled={loading || goalCount < 3}
         style={{
