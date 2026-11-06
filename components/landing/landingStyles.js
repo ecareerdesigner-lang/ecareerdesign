@@ -215,5 +215,26 @@ export const LANDING_CSS = `
   .nl-blog a { transition: none; }
 }
 @media (max-width: 860px) { .nl-tools-side { position: static; } }
-@media (max-width: 760px) { .nl-navhide { display: none !important; } .nl-section { padding: 72px 20px; } .nl-wrap { padding: 0 20px; } }
+@media (max-width: 760px) {
+  .nl-navhide { display: none !important; }
+  .nl-section { padding: 72px 20px; }
+  .nl-wrap { padding: 0 20px; }
+  /* Keep Log in / Log out reachable on phones: one tidy row of brand, Log in and the scan button. */
+  .nl-nav-in { padding: 10px 16px; flex-wrap: nowrap; gap: 10px; }
+  .nl-brand { gap: 8px; flex: none; }
+  .nl-mark { width: 32px; height: 32px; font-size: 20px; border-radius: 9px; }
+  .nl-brand-name { font-size: 18px; }
+  .nl-nav-links { flex-wrap: nowrap; gap: 12px; font-size: 14px; min-width: 0; }
+  .nl-nav-links .nl-btn { white-space: nowrap; padding: 8px 14px !important; font-size: 14px; }
+  .nl-navlink { white-space: nowrap; }
+  .nl-sm-hide { display: none; }
+}
+@media (max-width: 360px) {
+  .nl-nav-in { padding-left: 12px; padding-right: 12px; gap: 8px; }
+  .nl-brand { gap: 6px; }
+  .nl-mark { width: 28px; height: 28px; font-size: 18px; }
+  .nl-brand-name { font-size: 16px; }
+  .nl-nav-links { gap: 8px; font-size: 13px; }
+  .nl-nav-links .nl-btn { padding: 8px 10px !important; font-size: 13px; }
+}
 `;
