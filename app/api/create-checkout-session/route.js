@@ -35,9 +35,9 @@ export async function POST(req) {
       client_reference_id: userId,
       ...(isPass ? { customer_creation: "always" } : {}),
       metadata: { plan: isPass ? "pass" : "subscription", userId },
-      success_url: `${origin}/?checkout=success`,
+      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/?checkout=cancelled`,
-    });
+   });
 
     return Response.json({ url: session.url });
   } catch (e) {
