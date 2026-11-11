@@ -89,7 +89,7 @@ body{font-family:var(--sans);color:var(--navy);min-height:100vh;display:flex;fle
 
 <header class="nav"><div class="nav-in">
   <a class="logo" href="https://ecareerdesign.net" target="_blank" rel="noopener"><div class="mark">e</div><span>eCareer Design</span></a>
-  <a class="pill-sm" id="navCta" href="https://ecareerdesign.net" target="_blank" rel="noopener">Free scan</a>
+  <a class="pill-sm" id="navCta" href="https://ecareerdesign.net" target="_blank" rel="noopener">Free match score</a>
 </div></header>
 
 <main class="wrap">
@@ -100,7 +100,7 @@ body{font-family:var(--sans);color:var(--navy);min-height:100vh;display:flex;fle
     <h1>What's <em>actually</em> holding back your job search?</h1>
     <p class="lead">Answer five quick questions and get a personalized next step: what to fix first and the fastest way to fix it. No signup needed.</p>
     <button class="btn" id="go">Start the quiz</button>
-    <p class="fine">Works for federal, postal, state and private-sector job seekers.</p>
+    <p class="fine">Works for federal, postal, state and private-sector job seekers. Have your resume handy.</p>
   </section>
 
   <!-- QUESTIONS -->
@@ -120,8 +120,7 @@ body{font-family:var(--sans);color:var(--navy);min-height:100vh;display:flex;fle
     <p id="rBody"></p>
     <ul class="steps" id="rSteps"></ul>
     <a class="btn" id="cta" href="#" target="_blank" rel="noopener"></a>
-    <a class="btn ghost" id="cta2" href="#" target="_blank" rel="noopener">Check a job match</a>
-    <p class="nocard">No credit card. Works for any posting from any employer.</p>
+    <p class="nocard">No account required. Your resume isn't stored. Results in about 30 seconds.</p>
     <button class="back" id="restart" style="display:block;margin:12px auto 0">Retake the quiz</button>
   </section>
 
@@ -130,7 +129,8 @@ body{font-family:var(--sans);color:var(--navy);min-height:100vh;display:flex;fle
 
 <script>
 (function(){
-  var SITE = "https://ecareerdesign.net";
+  var SITE = "https://www.ecareerdesign.net";
+  var DEST = "/resume-job-match";
 
   var QUESTIONS = [
     { id:"target", q:"What kind of job are you going after?", opts:[
@@ -171,44 +171,44 @@ body{font-family:var(--sans);color:var(--navy);min-height:100vh;display:flex;fle
       title:"Your resume is the <em>bottleneck</em>, and it's fixable.",
       body:"Screeners and applicant tracking systems decide fast. A resume that doesn't mirror the job's language and show measurable results gets passed over, even when you're qualified.",
       steps:[
-        "Run the free scan to see your overall, ATS, keyword and formatting scores.",
+        "Paste a job posting and upload your resume to get an instant match score.",
         "Rewrite weak bullets into results-focused statements with numbers.",
         "Tailor the final version to each posting so the keywords match."
       ],
-      cta:"Scan my resume free", path:"/"
+      cta:"Get my free match score", path:DEST
     },
     match:{
       badge:"Your focus: Job matching",
       title:"You're qualified. Your applications just don't <em>show it</em> yet.",
       body:"The gap usually isn't experience, it's translation. Each posting lists specific requirements, and your application has to answer them directly.",
       steps:[
-        "Paste the job posting and pull out the key requirements.",
+        "Paste a job posting and upload your resume for an instant match score.",
         "Map your real experience to each requirement.",
         "Get a tailored resume in minutes instead of hours."
       ],
-      cta:"Check a job match", path:"/"
+      cta:"Get my free match score", path:DEST
     },
     cover:{
       badge:"Your focus: Written applications",
       title:"Strong writing is your <em>fastest win</em>.",
       body:"Cover letters and narrative responses are where many applicants lose steam. A clear, specific draft that sounds like you makes a big difference, and it doesn't have to take all evening.",
       steps:[
-        "Start from your background and the job posting.",
+        "Check how well your resume matches the job you want.",
         "Generate a tailored cover letter draft in seconds.",
         "Edit it so it sounds like you, then send."
       ],
-      cta:"Scan my resume free", path:"/"
+      cta:"Get my free match score", path:DEST
     },
     interview:{
       badge:"Your focus: Interview confidence",
       title:"Practice turns nerves into <em>confidence</em>.",
       body:"Interview skill is built with reps. Having your best stories ready and rehearsing out loud changes how you show up.",
       steps:[
-        "Build your STAR stories from your real experience.",
+        "See which keywords and skills your resume is missing for the job.",
         "Practice likely questions in a mock interview.",
         "Go in with answers you've already said out loud."
       ],
-      cta:"Scan my resume free", path:"/"
+      cta:"Get my free match score", path:DEST
     }
   };
 
@@ -291,12 +291,10 @@ body{font-family:var(--sans);color:var(--navy);min-height:100vh;display:flex;fle
     });
 
     var cta = $("cta"); cta.textContent = P.cta + " →"; cta.href = link(P.path);
-    $("cta2").href = link("/");
-    $("cta2").style.display = (P.cta === "Check a job match") ? "none" : "";
     show("result");
   }
 
-  $("navCta").href = link("/");
+  $("navCta").href = link(DEST);
   $("go").onclick = function(){ idx=0; answers={}; show("q"); renderQ(); };
   $("back").onclick = function(){ if(idx>0){ idx--; renderQ(); } };
   $("restart").onclick = function(){ idx=0; answers={}; show("start"); };
