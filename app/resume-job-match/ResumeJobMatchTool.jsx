@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { usePublicRedesign } from "../../components/public/usePublicRedesign";
+import NewResumeJobMatchView from "./NewResumeJobMatchView";
 
 const TOKENS = {
   ink: "#16283D",
@@ -100,6 +102,7 @@ async function callClaude(prompt, maxTokens = 1200) {
 }
 
 export default function ResumeJobMatchTool() {
+  const newLook = usePublicRedesign();
   const [file, setFile] = useState(null);
   const [jobDescription, setJobDescription] = useState("");
   const [loading, setLoading] = useState(false);
@@ -177,6 +180,19 @@ export default function ResumeJobMatchTool() {
     setResult(null);
     setUnlocked(false);
     setError("");
+  }
+
+  if (newLook) {
+    return (
+      <NewResumeJobMatchView
+        file={file} setFile={setFile}
+        jobDescription={jobDescription} setJobDescription={setJobDescription}
+        loading={loading} error={error} result={result}
+        email={email} setEmail={setEmail} unlocked={unlocked}
+        emailSending={emailSending} emailError={emailError}
+        runMatch={runMatch} unlockResults={unlockResults} startOver={startOver}
+      />
+    );
   }
 
   return (
