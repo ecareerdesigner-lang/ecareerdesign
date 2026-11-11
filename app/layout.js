@@ -4,6 +4,23 @@ import { Fraunces, Inter, IBM_Plex_Mono } from "next/font/google";
 import Script from "next/script";
 import HeyCatchInit from "../components/HeyCatchInit";
 
+// Binds the site to the company as one entity. sameAs lists only profiles the
+// company owns (the same ones linked in the site footer).
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "eCareer Design",
+  url: "https://www.ecareerdesign.net",
+  logo: "https://www.ecareerdesign.net/logo.png",
+  sameAs: [
+    "https://www.linkedin.com/in/ecareer-design-874062420/",
+    "https://www.youtube.com/@eCareerdesign",
+    "https://www.facebook.com/profile.php?id=61591358744526",
+    "https://www.instagram.com/ecareerdesign/",
+    "https://www.tiktok.com/@ecareerdesign.net",
+  ],
+};
+
 // Self-hosted via Next.js instead of a runtime @import: these get included
 // directly in the initial HTML response, so there's no separate network
 // round-trip and no text reflow once a late-loading stylesheet arrives —
@@ -51,6 +68,10 @@ export default function RootLayout({ children }) {
         className={`${fraunces.className} ${inter.className} ${ibmPlexMono.className}`}
         style={{ margin: 0, background: "#EEF0EC" }}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema).replace(/</g, "\\u003c") }}
+        />
         {children}
         <HeyCatchInit />
         <Analytics />

@@ -13,7 +13,15 @@ export function PhotoBand({ src, shade, priority, className = "", children }) {
   return (
     <section className={`np-bg np-dark ${className}`}>
       <div className="np-bg-layer" aria-hidden="true">
-        <Image src={src} alt="" fill sizes="100vw" priority={priority} />
+        <Image
+          src={src}
+          alt=""
+          width={src.includes("skyline") ? 1408 : 1376}
+          height={768}
+          sizes="100vw"
+          priority={priority}
+          style={{ width: "100%", height: "100%" }}
+        />
       </div>
       <div className="np-shade" aria-hidden="true" style={{ background: shade }} />
       {children}
@@ -43,6 +51,8 @@ export default function PublicShell({ children }) {
       <footer className="np-foot">
         <a href="/blog">Blog</a>
         <a href="/pricing">Pricing</a>
+        <a href="/jobscan-alternative">Jobscan Alternative</a>
+        <a href="/teal-alternative">Teal Alternative</a>
         <a href="/privacy">Privacy Notice</a>
         <a href="/terms">Terms of Use</a>
         <a href="mailto:hello@ecareerdesign.net">Contact Us</a>

@@ -1,7 +1,10 @@
-export const metadata = {
+import { pageMeta } from "../../lib/seo";
+
+export const metadata = pageMeta({
   title: "Privacy Notice | eCareer Design",
   description: "Learn what personal data eCareer Design collects, why we collect it, how it's used, and the choices you have to control or delete it.",
-};
+  path: "/privacy",
+});
 
 const styles = {
   page: { maxWidth: 760, margin: "0 auto", padding: "3rem 1.5rem", fontFamily: "Georgia, 'Times New Roman', serif", color: "#16283D", lineHeight: 1.7 },

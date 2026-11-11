@@ -1,19 +1,14 @@
 import Link from "next/link";
+import { pageMeta } from "../../lib/seo";
 
-export const metadata = {
+export const metadata = pageMeta({
   title: "Jobscan Alternative: eCareer Design - $9.99/mo vs $49.95/mo",
   description:
-    "Looking for a cheaper Jobscan alternative? eCareer Design gives you an ATS resume score, AI resume builder, job tailoring, cover letters, interview coaching, and job search for $9.99/mo - about 5x less than Jobscan Premium.",
-  alternates: { canonical: "https://www.ecareerdesign.net/jobscan-alternative" },
-  openGraph: {
-    title: "A Jobscan Alternative That Costs 5x Less",
-    description:
-      "Same job: beat the ATS and land interviews. eCareer Design Premium is $9.99/mo. Jobscan Premium is $49.95/mo.",
-    url: "https://www.ecareerdesign.net/jobscan-alternative",
-    siteName: "eCareer Design",
-    type: "website",
-  },
-};
+    "Need a cheaper Jobscan alternative? eCareer Design has an ATS resume score, resume builder and cover letters for $9.99/mo, about 5x less than Jobscan Premium.",
+  path: "/jobscan-alternative",
+  ogTitle: "A Jobscan Alternative That Costs 5x Less",
+  ogDescription: "Same job: beat the ATS and land interviews. eCareer Design Premium is $9.99/mo. Jobscan Premium is $49.95/mo.",
+});
 
 const TOKENS = {
   ink: "#16283D",

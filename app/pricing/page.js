@@ -1,19 +1,14 @@
 import Link from "next/link";
+import { pageMeta } from "../../lib/seo";
 
-export const metadata = {
+export const metadata = pageMeta({
   title: "Pricing: Free & Premium Plans - eCareer Design",
   description:
-    "Start free with eCareer Design's resume builder, job tailoring, cover letters, and job search. Upgrade to Premium for $9.99/mo to unlock the career dashboard, interview coach, resume match scoring, and performance review writer.",
-  alternates: { canonical: "https://www.ecareerdesign.net/pricing" },
-  openGraph: {
-    title: "eCareer Design Pricing",
-    description:
-      "Start free. Upgrade to Premium for $9.99/mo when you're ready to move faster.",
-    url: "https://www.ecareerdesign.net/pricing",
-    siteName: "eCareer Design",
-    type: "website",
-  },
-};
+    "Start free with eCareer Design's resume builder, job tailoring and cover letters. Premium is $9.99/mo and adds the dashboard, interview coach and match scoring.",
+  path: "/pricing",
+  ogTitle: "eCareer Design Pricing",
+  ogDescription: "Start free. Upgrade to Premium for $9.99/mo when you're ready to move faster.",
+});
 
 const TOKENS = {
   ink: "#16283D",

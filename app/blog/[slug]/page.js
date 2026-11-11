@@ -2,14 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { marked } from "marked";
 import { supabase } from "../../../lib/supabase";
-import { pageMeta } from "../../../lib/seo";
+import { SITE_URL, fitDescription, fitTitle, pageMeta } from "../../../lib/seo";
+import { getDefaultAuthor } from "../../../lib/authors";
 
 export const revalidate = 60;
 
 export async function generateMetadata({ params }) {
   const { data: post } = await supabase
     .from("blog_posts")
-    .select("title, meta_title, meta_description")
+    .select("title, meta_title, meta_description, content")
     .eq("slug", params.slug)
     .eq("published", true)
     .maybeSingle();
@@ -19,13 +20,56 @@ export async function generateMetadata({ params }) {
   }
 
   return pageMeta({
-    title: post.meta_title || post.title,
+    // 30-60 characters: the stored SEO title when it fits, otherwise the post
+    // title, otherwise shortened (and logged) rather than cut silently.
+    title: fitTitle(post.meta_title, post.title),
     // Share cards use the post's own title, not the (often longer) SEO title.
     ogTitle: post.title,
-    description: post.meta_description || undefined,
+    // 110-160 characters: the stored description when it fits, otherwise built
+    // from the article's opening paragraph.
+    description: fitDescription(post.meta_description, post.content),
     path: `/blog/${params.slug}`,
     ogType: "article",
   });
+}
+
+const STOP_WORDS = new Set([
+  "resume", "resumes", "your", "with", "from", "that", "this", "what", "when", "into", "about",
+  "gets", "getting", "write", "how", "the", "for", "and", "you", "not", "are", "why",
+]);
+
+function titleWords(title) {
+  return new Set(
+    String(title || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, " ")
+      .split(/[\s-]+/)
+      .filter((w) => w.length > 3 && !STOP_WORDS.has(w))
+  );
+}
+
+// Up to five links under every article: the three posts whose titles share the
+// most topic words, plus the next-older and next-newer post. The neighbours
+// guarantee every post at least one inbound link; the rest are chosen by topic.
+function pickRelated(slug, posts) {
+  const idx = posts.findIndex((p) => p.slug === slug);
+  if (idx < 0) return [];
+  const mine = titleWords(posts[idx].title);
+  const scored = posts
+    .filter((p) => p.slug !== slug)
+    .map((p) => {
+      let shared = 0;
+      titleWords(p.title).forEach((w) => { if (mine.has(w)) shared += 1; });
+      return { p, shared };
+    })
+    .filter((x) => x.shared > 0)
+    .sort((a, b) => b.shared - a.shared || new Date(b.p.published_at) - new Date(a.p.published_at));
+  const picks = [];
+  const add = (p) => { if (p && p.slug !== slug && !picks.some((x) => x.slug === p.slug)) picks.push(p); };
+  scored.slice(0, 3).forEach((x) => add(x.p));
+  add(posts[idx + 1]);
+  add(posts[idx - 1]);
+  return picks.slice(0, 5);
 }
 
 // Blog posts don't share one consistent FAQ markdown format (plain
@@ -113,6 +157,15 @@ export default async function BlogPost({ params }) {
   const rawHtml = marked.parse(post.content || "");
   const html = rawHtml.replace(/<h1(\s|>)/gi, "<h2$1").replace(/<\/h1>/gi, "</h2>");
 
+  const { data: allPosts } = await supabase
+    .from("blog_posts")
+    .select("slug, title, published_at")
+    .eq("published", true)
+    .order("published_at", { ascending: false });
+  const related = pickRelated(params.slug, allPosts || []);
+  const author = getDefaultAuthor();
+  const postUrl = `${SITE_URL}/blog/${params.slug}`;
+
   const faqPairs = extractFaqPairs(post.content);
   const faqSchema = faqPairs.length
     ? {
@@ -132,16 +185,40 @@ export default async function BlogPost({ params }) {
     headline: post.title,
     datePublished: post.published_at,
     dateModified: post.updated_at || post.published_at,
-    author: { "@type": "Organization", name: "eCareer Design" },
-    publisher: { "@type": "Organization", name: "eCareer Design" },
-    mainEntityOfPage: `https://www.ecareerdesign.net/blog/${params.slug}`,
+    // A real person (with an author page and profile links) when one is set in
+    // lib/authors.js; otherwise the organization, as before.
+    author: author
+      ? {
+          "@type": "Person",
+          name: author.name,
+          url: `${SITE_URL}/author/${author.slug}`,
+          ...(author.jobTitle ? { jobTitle: author.jobTitle } : {}),
+          ...(author.sameAs && author.sameAs.length ? { sameAs: author.sameAs } : {}),
+        }
+      : { "@type": "Organization", name: "eCareer Design" },
+    publisher: { "@type": "Organization", name: "eCareer Design", url: SITE_URL },
+    mainEntityOfPage: postUrl,
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE_URL}/blog` },
+      { "@type": "ListItem", position: 3, name: post.title, item: postUrl },
+    ],
   };
 
   return (
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px", fontFamily: "system-ui, sans-serif" }}>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema).replace(/</g, "\\u003c") }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema).replace(/</g, "\\u003c") }}
       />
       {faqSchema && (
         <script
@@ -149,15 +226,38 @@ export default async function BlogPost({ params }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
         />
       )}
-      <Link href="/blog" style={{ color: "#3C5069", fontSize: 14, textDecoration: "none" }}>← All Posts</Link>
+      <nav aria-label="Breadcrumb" style={{ fontSize: 14, color: "#3C5069" }}>
+        <Link href="/" style={{ color: "#3C5069", textDecoration: "none" }}>Home</Link>
+        {" / "}
+        <Link href="/blog" style={{ color: "#3C5069", textDecoration: "none" }}>Blog</Link>
+        {" / "}
+        <span aria-current="page">{post.title}</span>
+      </nav>
       <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 34, color: "#16283D", margin: "20px 0 8px", lineHeight: 1.25 }}>
         {post.title}
       </h1>
+      {author && (
+        <p style={{ margin: "0 0 8px", fontSize: 14, color: "#3C5069" }}>
+          By <Link href={`/author/${author.slug}`} style={{ color: "#F2660A" }}>{author.name}</Link>
+        </p>
+      )}
       <article
         style={{ marginTop: 24, fontSize: 16, lineHeight: 1.7, color: "#16283D" }}
         className="blog-content"
         dangerouslySetInnerHTML={{ __html: html }}
       />
+      {related.length > 0 && (
+        <nav aria-label="Related articles" style={{ marginTop: 48, paddingTop: 24, borderTop: "1px solid #D7DBD6" }}>
+          <h2 style={{ fontFamily: "Fraunces, serif", fontSize: 22, color: "#16283D", margin: "0 0 12px" }}>Keep reading</h2>
+          <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.8 }}>
+            {related.map((r) => (
+              <li key={r.slug}>
+                <Link href={`/blog/${r.slug}`} style={{ color: "#F2660A" }}>{r.title}</Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
       <style>{`
         .blog-content h1, .blog-content h2, .blog-content h3 {
           font-family: Fraunces, serif;

@@ -617,6 +617,8 @@ export default function NewLanding({
             <div className="nl-foot-links">
               <Link href="/blog">Blog</Link>
               <Link href="/pricing">Pricing</Link>
+              <Link href="/jobscan-alternative">Jobscan Alternative</Link>
+              <Link href="/teal-alternative">Teal Alternative</Link>
               <Link href="/privacy">Privacy</Link>
               <Link href="/terms">Terms</Link>
               <a href="mailto:hello@ecareerdesign.net">Contact us</a>

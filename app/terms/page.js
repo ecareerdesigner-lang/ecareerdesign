@@ -1,7 +1,10 @@
-export const metadata = {
+import { pageMeta } from "../../lib/seo";
+
+export const metadata = pageMeta({
   title: "Terms of Use | eCareer Design",
   description: "Read the terms and conditions for using eCareer Design's AI resume, cover letter, and interview preparation tools.",
-};
+  path: "/terms",
+});
 
 const styles = {
   page: { maxWidth: 760, margin: "0 auto", padding: "3rem 1.5rem", fontFamily: "Georgia, 'Times New Roman', serif", color: "#16283D", lineHeight: 1.7 },

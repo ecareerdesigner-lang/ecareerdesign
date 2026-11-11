@@ -1,19 +1,14 @@
 import Link from "next/link";
+import { pageMeta } from "../../lib/seo";
 
-export const metadata = {
+export const metadata = pageMeta({
   title: "Teal Alternative: eCareer Design vs Teal - $9.99/mo",
   description:
-    "Comparing Teal vs eCareer Design? Teal+ runs $13/week (about $56/mo) or $29/mo. eCareer Design Premium is $9.99/mo with an AI resume builder, job tailoring, cover letters, interview coaching, match scoring, and job search.",
-  alternates: { canonical: "https://www.ecareerdesign.net/teal-alternative" },
-  openGraph: {
-    title: "Teal vs eCareer Design: Same Goal, a Third of the Price",
-    description:
-      "Teal+ costs $13/week or $29/mo. eCareer Design Premium is $9.99/mo - resume, tailoring, cover letters, interview prep, and job search included.",
-    url: "https://www.ecareerdesign.net/teal-alternative",
-    siteName: "eCareer Design",
-    type: "website",
-  },
-};
+    "Comparing Teal and eCareer Design? Teal+ costs $13/week or $29/mo. eCareer Design Premium is $9.99/mo with a resume builder, job tailoring and interview prep.",
+  path: "/teal-alternative",
+  ogTitle: "Teal vs eCareer Design: Same Goal, a Third of the Price",
+  ogDescription: "Teal+ costs $13/week or $29/mo. eCareer Design Premium is $9.99/mo - resume, tailoring, cover letters, interview prep, and job search included.",
+});
 
 const TOKENS = {
   ink: "#16283D",
