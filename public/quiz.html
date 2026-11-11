@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Search Snapshot | eCareer Design</title>
+<meta name="description" content="Answer 5 quick questions and find out what's really holding back your job search, plus the fastest next step.">
+<meta property="og:title" content="What's really holding back your job search?">
+<meta property="og:description" content="5 quick questions. Get your personalized next step in under a minute.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy-deep:#0D1A2B; --navy:#16283D; --blue:#2F5D8F; --blue-dk:#1F4268;
+  --orange:#F2660A; --orange-dk:#B34700;
+  --paper:#EEF0EC; --line:#B9C1BC; --mist:#E3ECF5; --muted:#3C5069; --soft:#C9D2DD;
+  --serif:"Fraunces",Georgia,serif; --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--navy-deep)}
+body{font-family:var(--sans);color:var(--navy);min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  background:
+    radial-gradient(900px 500px at 85% 70%,rgba(242,102,10,.14),transparent 60%),
+    radial-gradient(900px 600px at 10% 0%,rgba(47,93,143,.28),transparent 60%),
+    var(--navy-deep);
+  background-attachment:fixed}
+
+/* nav */
+.nav{width:100%;background:rgba(13,26,43,.92);border-bottom:1px solid rgba(255,255,255,.08);backdrop-filter:blur(8px)}
+.nav-in{max-width:1040px;margin:0 auto;padding:0 20px;height:61px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none;color:#fff}
+.mark{width:40px;height:40px;border-radius:10px;background:var(--orange);color:var(--navy-deep);display:grid;place-items:center;font-family:var(--serif);font-weight:600;font-size:22px}
+.logo span{font-family:var(--serif);font-weight:600;font-size:21px}
+.nav a.pill-sm{background:var(--orange);color:var(--navy-deep);text-decoration:none;font-weight:600;font-size:14px;padding:9px 16px;border-radius:999px}
+
+.wrap{width:100%;max-width:600px;padding:44px 20px 40px}
+
+/* buttons */
+.btn{display:inline-block;width:100%;text-align:center;text-decoration:none;cursor:pointer;border:1px solid transparent;
+  background:var(--orange);color:var(--navy-deep);font:600 17px var(--sans);padding:16px 28px;border-radius:999px;transition:background .15s,transform .1s}
+.btn:hover{background:#ff7a1f}
+.btn:active{transform:scale(.98)}
+.btn.ghost{background:transparent;color:var(--navy);border-color:var(--line);margin-top:10px}
+.btn.ghost:hover{background:var(--mist)}
+
+/* hero (start) */
+.hero{color:#fff;padding:8px 0 0}
+.tag{display:inline-block;background:rgba(242,102,10,.12);border:1px solid rgba(242,102,10,.5);color:#FFD2B3;font-weight:600;font-size:14px;padding:8px 16px;border-radius:999px;margin-bottom:22px}
+.hero h1{font-family:var(--serif);font-weight:600;font-size:clamp(36px,9vw,48px);line-height:1.04;letter-spacing:-.6px;margin-bottom:18px}
+.hero h1 em{color:var(--orange);font-style:italic}
+.hero p.lead{font-size:19px;line-height:1.55;color:var(--soft);margin-bottom:28px}
+.hero .btn{width:auto;min-width:240px}
+.hero .fine{font-size:14.5px;color:var(--soft);margin-top:18px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:30px}
+.chips span{font-size:13px;font-weight:600;color:var(--soft);border:1px solid rgba(255,255,255,.18);padding:6px 12px;border-radius:999px}
+
+/* cards */
+.card{background:#fff;border-radius:24px;padding:30px 26px;box-shadow:rgba(0,0,0,.55) 0 30px 70px -20px;animation:in .3s ease}
+@keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.progress{height:6px;background:var(--mist);border-radius:99px;overflow:hidden;margin-bottom:12px}
+.progress i{display:block;height:100%;width:0;background:var(--orange);border-radius:99px;transition:width .35s}
+.step{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:16px;letter-spacing:.3px}
+.card h2{font-family:var(--serif);font-weight:600;font-size:28px;line-height:1.15;letter-spacing:-.3px;margin-bottom:20px;color:var(--navy)}
+.opt{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;font:500 16px var(--sans);color:var(--navy);cursor:pointer;margin-bottom:10px;transition:border-color .15s,background .15s}
+.opt:hover,.opt:focus-visible{border-color:var(--blue);background:#F4F8FC;outline:none}
+.opt.sel{border-color:var(--orange);background:#FFF3EA;box-shadow:0 0 0 1px var(--orange) inset}
+.back{background:none;border:0;color:var(--muted);font:500 14px var(--sans);cursor:pointer;margin-top:8px;padding:6px 0}
+
+/* result */
+.badge{display:inline-block;background:var(--mist);color:var(--blue-dk);font-weight:700;font-size:13px;padding:6px 12px;border-radius:999px;margin-bottom:14px}
+.res h2{font-size:30px;margin-bottom:12px}
+.res h2 em{color:var(--orange-dk);font-style:italic}
+.recap{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.recap span{border:1px solid var(--line);color:var(--muted);font-size:12.5px;font-weight:600;padding:5px 11px;border-radius:999px}
+.res p{color:var(--muted);line-height:1.6;margin-bottom:16px;font-size:16px}
+.steps{list-style:none;margin:4px 0 24px;background:var(--paper);border-radius:18px;padding:6px 18px}
+.steps li{display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-top:1px solid var(--line);font-size:15.5px;line-height:1.45;color:var(--navy)}
+.steps li:first-child{border-top:0}
+.steps .n{flex:none;width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;font:600 14px var(--serif);display:grid;place-items:center}
+.nocard{text-align:center;font-size:13px;color:var(--muted);margin-top:12px}
+
+.hidden{display:none}
+.foot{font-size:12.5px;color:var(--soft);opacity:.75;text-align:center;margin-top:26px}
+@media (max-width:420px){.card{padding:24px 18px}.card h2{font-size:25px}.hero .btn{width:100%}}
+</style>
+</head>
+<body>
+
+<header class="nav"><div class="nav-in">
+  <a class="logo" href="https://ecareerdesign.net" target="_blank" rel="noopener"><div class="mark">e</div><span>eCareer Design</span></a>
+  <a class="pill-sm" id="navCta" href="https://ecareerdesign.net" target="_blank" rel="noopener">Free scan</a>
+</div></header>
+
+<main class="wrap">
+
+  <!-- START -->
+  <section id="start" class="hero">
+    <span class="tag">Free job search snapshot &middot; 60 seconds</span>
+    <h1>What's <em>actually</em> holding back your job search?</h1>
+    <p class="lead">Answer five quick questions and get a personalized next step: what to fix first and the fastest way to fix it. No signup needed.</p>
+    <button class="btn" id="go">Start the quiz</button>
+    <p class="fine">Works for federal, postal, state and private-sector job seekers.</p>
+  </section>
+
+  <!-- QUESTIONS -->
+  <section id="q" class="card hidden">
+    <div class="progress"><i id="bar"></i></div>
+    <div class="step" id="stepLabel"></div>
+    <h2 id="qText"></h2>
+    <div id="opts"></div>
+    <button class="back" id="back">&larr; Back</button>
+  </section>
+
+  <!-- RESULT -->
+  <section id="result" class="card res hidden">
+    <span class="badge" id="rBadge"></span>
+    <h2 id="rTitle"></h2>
+    <div class="recap" id="rRecap"></div>
+    <p id="rBody"></p>
+    <ul class="steps" id="rSteps"></ul>
+    <a class="btn" id="cta" href="#" target="_blank" rel="noopener"></a>
+    <a class="btn ghost" id="cta2" href="#" target="_blank" rel="noopener">Check a job match</a>
+    <p class="nocard">No credit card. Works for any posting from any employer.</p>
+    <button class="back" id="restart" style="display:block;margin:12px auto 0">Retake the quiz</button>
+  </section>
+
+  <p class="foot">&copy; eCareer Design &middot; ecareerdesign.net</p>
+</main>
+
+<script>
+(function(){
+  var SITE = "https://ecareerdesign.net";
+
+  var QUESTIONS = [
+    { id:"target", q:"What kind of job are you going after?", opts:[
+      ["fed","Federal government (USAJOBS)"],
+      ["postal","Postal Service"],
+      ["state","State or local government"],
+      ["private","Private sector"]
+    ]},
+    { id:"stage", q:"Where are you in your search right now?", opts:[
+      ["start","Just getting started"],
+      ["noreply","Applying, but hearing nothing back"],
+      ["interview","Getting interviews, but no offers"],
+      ["switch","Changing careers or fields"]
+    ]},
+    { id:"pain", q:"What's the hardest part for you?", opts:[
+      ["resume","My resume doesn't feel strong enough"],
+      ["match","Matching my experience to each job posting"],
+      ["cover","Writing cover letters and answering questionnaires"],
+      ["interview","Interviews make me nervous"]
+    ]},
+    { id:"time", q:"How much time can you spend on each application?", opts:[
+      ["lt15","Under 15 minutes"],
+      ["30","About 30 minutes"],
+      ["60","An hour or more"],
+      ["none","Honestly, as little as possible"]
+    ]},
+    { id:"goal", q:"What would a win look like in the next 30 days?", opts:[
+      ["apps","Send out more high-quality applications"],
+      ["calls","Land more interview calls"],
+      ["confident","Walk into interviews confident"],
+      ["clarity","Know exactly what to fix"]
+    ]}
+  ];
+
+  var PROFILES = {
+    resume:{
+      badge:"Your focus: Resume strength",
+      title:"Your resume is the <em>bottleneck</em>, and it's fixable.",
+      body:"Screeners and applicant tracking systems decide fast. A resume that doesn't mirror the job's language and show measurable results gets passed over, even when you're qualified.",
+      steps:[
+        "Run the free scan to see your overall, ATS, keyword and formatting scores.",
+        "Rewrite weak bullets into results-focused statements with numbers.",
+        "Tailor the final version to each posting so the keywords match."
+      ],
+      cta:"Scan my resume free", path:"/"
+    },
+    match:{
+      badge:"Your focus: Job matching",
+      title:"You're qualified. Your applications just don't <em>show it</em> yet.",
+      body:"The gap usually isn't experience, it's translation. Each posting lists specific requirements, and your application has to answer them directly.",
+      steps:[
+        "Paste the job posting and pull out the key requirements.",
+        "Map your real experience to each requirement.",
+        "Get a tailored resume in minutes instead of hours."
+      ],
+      cta:"Check a job match", path:"/"
+    },
+    cover:{
+      badge:"Your focus: Written applications",
+      title:"Strong writing is your <em>fastest win</em>.",
+      body:"Cover letters and narrative responses are where many applicants lose steam. A clear, specific draft that sounds like you makes a big difference, and it doesn't have to take all evening.",
+      steps:[
+        "Start from your background and the job posting.",
+        "Generate a tailored cover letter draft in seconds.",
+        "Edit it so it sounds like you, then send."
+      ],
+      cta:"Scan my resume free", path:"/"
+    },
+    interview:{
+      badge:"Your focus: Interview confidence",
+      title:"Practice turns nerves into <em>confidence</em>.",
+      body:"Interview skill is built with reps. Having your best stories ready and rehearsing out loud changes how you show up.",
+      steps:[
+        "Build your STAR stories from your real experience.",
+        "Practice likely questions in a mock interview.",
+        "Go in with answers you've already said out loud."
+      ],
+      cta:"Scan my resume free", path:"/"
+    }
+  };
+
+  var LABELS = {
+    target:{fed:"Federal",postal:"Postal",state:"State/Local",private:"Private sector"},
+    stage:{start:"Just starting",noreply:"No replies yet",interview:"Interviewing",switch:"Career change"}
+  };
+
+  var answers = {}, idx = 0, locked = false;
+  var $ = function(id){return document.getElementById(id)};
+  var secs = {start:$("start"), q:$("q"), result:$("result")};
+
+  function show(name){
+    for(var k in secs){ secs[k].classList.toggle("hidden", k!==name); }
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+
+  function renderQ(){
+    var Q = QUESTIONS[idx];
+    $("stepLabel").textContent = "QUESTION " + (idx+1) + " OF " + QUESTIONS.length;
+    $("bar").style.width = ((idx)/QUESTIONS.length*100) + "%";
+    $("qText").textContent = Q.q;
+    var box = $("opts"); box.innerHTML = "";
+    Q.opts.forEach(function(o){
+      var b = document.createElement("button");
+      b.className = "opt" + (answers[Q.id]===o[0] ? " sel":"");
+      b.textContent = o[1];
+      b.onclick = function(){
+        if(locked) return;
+        locked = true;
+        answers[Q.id] = o[0];
+        b.classList.add("sel");
+        setTimeout(function(){ locked = false; next(); }, 160);
+      };
+      box.appendChild(b);
+    });
+    $("back").style.visibility = idx===0 ? "hidden":"visible";
+  }
+
+  function next(){
+    idx++;
+    if(idx>=QUESTIONS.length){ finish(); } else { renderQ(); }
+  }
+
+  function params(){
+    var p = new URLSearchParams(location.search);
+    return { src: p.get("src") || p.get("utm_source") || "social",
+             camp: p.get("utm_campaign") || "quiz-funnel" };
+  }
+
+  function link(path){
+    var p = params();
+    return SITE + path +
+      "?utm_source=" + encodeURIComponent(p.src) +
+      "&utm_medium=quiz&utm_campaign=" + encodeURIComponent(p.camp) +
+      "&utm_content=" + encodeURIComponent(answers.pain || "x") +
+      "&target=" + encodeURIComponent(answers.target || "") +
+      "&stage=" + encodeURIComponent(answers.stage || "");
+  }
+
+  function finish(){
+    $("bar").style.width = "100%";
+    var P = PROFILES[answers.pain] || PROFILES.resume;
+    $("rBadge").textContent = P.badge;
+    $("rTitle").innerHTML = P.title; // static, trusted strings defined above
+    $("rBody").textContent = P.body;
+
+    var recap = $("rRecap"); recap.innerHTML = "";
+    [LABELS.target[answers.target], LABELS.stage[answers.stage]].forEach(function(t){
+      if(!t) return;
+      var s = document.createElement("span"); s.textContent = t; recap.appendChild(s);
+    });
+
+    var ul = $("rSteps"); ul.innerHTML = "";
+    P.steps.forEach(function(t,i){
+      var li = document.createElement("li");
+      var n = document.createElement("span"); n.className = "n"; n.textContent = i+1;
+      var tx = document.createElement("span"); tx.textContent = t;
+      li.appendChild(n); li.appendChild(tx); ul.appendChild(li);
+    });
+
+    var cta = $("cta"); cta.textContent = P.cta + " →"; cta.href = link(P.path);
+    $("cta2").href = link("/");
+    $("cta2").style.display = (P.cta === "Check a job match") ? "none" : "";
+    show("result");
+  }
+
+  $("navCta").href = link("/");
+  $("go").onclick = function(){ idx=0; answers={}; show("q"); renderQ(); };
+  $("back").onclick = function(){ if(idx>0){ idx--; renderQ(); } };
+  $("restart").onclick = function(){ idx=0; answers={}; show("start"); };
+})();
+</script>
+</body>
+</html>
