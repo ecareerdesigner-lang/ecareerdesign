@@ -3,6 +3,12 @@ const nextConfig = {
   reactStrictMode: true,
   async redirects() {
     return [
+      // HeyCatch short links: /a -> /?utm_source=heycatch&utm_campaign=a
+      {
+        source: '/:l([a-z0-9])',
+        destination: '/?utm_source=heycatch&utm_campaign=:l',
+        permanent: false,
+      },
       {
         source: '/blog/resume-mistakes-costing-you-interviews',
         destination: '/blog/resume-mistakes-hiring-managers-notice',

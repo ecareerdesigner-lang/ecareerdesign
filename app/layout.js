@@ -2,6 +2,9 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Fraunces, Inter, IBM_Plex_Mono } from "next/font/google";
 import Script from "next/script";
+import JsonLd from "../components/JsonLd";
+import HeyCatchInit from "../components/HeyCatchInit";
+import { organizationJsonLd } from "../lib/structuredData";
 
 // Self-hosted via Next.js instead of a runtime @import: these get included
 // directly in the initial HTML response, so there's no separate network
@@ -50,7 +53,9 @@ export default function RootLayout({ children }) {
         className={`${fraunces.className} ${inter.className} ${ibmPlexMono.className}`}
         style={{ margin: 0, background: "#EEF0EC" }}
       >
+        <JsonLd data={organizationJsonLd} />
         {children}
+        <HeyCatchInit />
         <Analytics />
         <SpeedInsights />
         <Script
