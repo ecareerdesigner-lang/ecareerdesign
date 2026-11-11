@@ -238,7 +238,8 @@ export default async function BlogPost({ params }) {
       </h1>
       {author && (
         <p style={{ margin: "0 0 8px", fontSize: 14, color: "#3C5069" }}>
-          By <Link href={`/author/${author.slug}`} style={{ color: "#F2660A" }}>{author.name}</Link>
+          Drafted with AI assistance (Claude), reviewed and edited by{" "}
+          <Link href={`/author/${author.slug}`} style={{ color: "#F2660A" }}>{author.name}</Link>
         </p>
       )}
       <article

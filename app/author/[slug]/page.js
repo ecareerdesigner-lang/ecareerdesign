@@ -51,6 +51,9 @@ export default async function AuthorPage({ params }) {
       <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 34, margin: "20px 0 4px" }}>{author.name}</h1>
       {author.jobTitle && <p style={{ margin: "0 0 20px", color: "#3C5069" }}>{author.jobTitle}</p>}
       <p style={{ fontSize: 16, lineHeight: 1.7 }}>{author.bio}</p>
+      <p style={{ fontSize: 16, lineHeight: 1.7 }}>
+        Articles on eCareer Design are drafted with AI assistance (Claude), then reviewed and edited by {author.name} before they are published.
+      </p>
       {author.experience && author.experience.length > 0 && (
         <>
           <h2 style={{ fontFamily: "Fraunces, serif", fontSize: 22, marginTop: 32 }}>Experience</h2>
