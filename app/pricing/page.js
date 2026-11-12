@@ -82,13 +82,13 @@ export default function PricingPage() {
           <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.line}`, borderRadius: 18, boxShadow: TOKENS.shadow, padding: 32 }}>
             <h2 style={{ fontFamily: serif, fontSize: 28, margin: "0 0 6px", color: TOKENS.ink }}>Free</h2>
             <p style={{ fontSize: 15, color: TOKENS.inkSoft, margin: "0 0 20px", lineHeight: 1.5 }}>
-              Everything you need to build a standout application.
+              Try the core tools free. Includes 2 free generations each of resume, cover letter, and job tailoring.
             </p>
             <p style={{ fontSize: 34, fontWeight: 600, color: TOKENS.ink, margin: "0 0 24px" }}>$0</p>
             <div style={{ borderTop: `1px solid ${TOKENS.line}`, paddingTop: 20, display: "flex", flexDirection: "column", gap: 16, marginBottom: 28 }}>
-              <Feature title="Resume Builder">Build an ATS-friendly resume in minutes.</Feature>
-              <Feature title="Job Tailoring">Tailored STAR responses for any posting.</Feature>
-              <Feature title="Cover Letter">Generate a matching cover letter.</Feature>
+              <Feature title="Resume Builder">Build an ATS-friendly resume in minutes. 2 free generations.</Feature>
+              <Feature title="Job Tailoring">Tailored STAR responses for any posting. 2 free runs.</Feature>
+              <Feature title="Cover Letter">Generate a matching cover letter. 2 free generations.</Feature>
               <Feature title="Job Search">Search real postings across USAJOBS, Adzuna &amp; Jooble.</Feature>
             </div>
             <Link

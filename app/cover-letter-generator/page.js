@@ -2,7 +2,7 @@ import { pageMeta } from "../../lib/seo";
 
 export const metadata = pageMeta({
   title: "AI Cover Letter Generator | eCareer Design",
-  description: "Generate a cover letter matched to any job posting in about a minute. Free, no templates, no rewriting from scratch — built from your resume with AI.",
+  description: "Generate a cover letter matched to any job posting in about a minute. Free to start, no templates, no rewriting from scratch — built from your resume with AI.",
   path: "/cover-letter-generator",
 });
 
@@ -65,7 +65,7 @@ export default function CoverLetterGeneratorPage() {
     <div style={styles.page}>
       <a href="/" style={styles.back}>&larr; Back to eCareer Design</a>
 
-      <p style={styles.eyebrow}>Free &middot; Ready in about a minute</p>
+      <p style={styles.eyebrow}>Free to start &middot; Ready in about a minute</p>
       <h1 style={styles.h1}>Stop Sending the Same Cover Letter to Every Job</h1>
       <p style={styles.sub}>
         Every recruiter can tell when a cover letter wasn&rsquo;t written for the role. eCareer Design writes one that
@@ -74,7 +74,7 @@ export default function CoverLetterGeneratorPage() {
       <div style={styles.ctaRow}>
         <a href="/?tool=coverletter" style={styles.button}>See My Cover Letter in 60 Seconds</a>
       </div>
-      <p style={styles.trustLine}>No account required &mdash; ready in about 60 seconds.</p>
+      <p style={styles.trustLine}>Free account &middot; 2 free cover letters &middot; ready in about 60 seconds.</p>
 
       <div style={styles.heroSample}>
         <p style={styles.heroSampleLabel}>What you&rsquo;ll get &mdash; matched to the job</p>
@@ -131,7 +131,7 @@ export default function CoverLetterGeneratorPage() {
       </div>
       <div style={styles.faqItem}>
         <p style={styles.faqQ}>Is it really free?</p>
-        <p style={styles.faqA}>Yes. Generating a cover letter is free, and you don&rsquo;t need an account to start.</p>
+        <p style={styles.faqA}>Yes, to start. A free account includes 2 cover letter generations. If you need more, you can upgrade to Premium or buy a 30-day pass.</p>
       </div>
       <div style={styles.faqItem}>
         <p style={styles.faqQ}>Can I use it for every application?</p>

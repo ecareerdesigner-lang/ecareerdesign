@@ -23,7 +23,7 @@ export default function TermsPage() {
     <div style={styles.page}>
       <a href="/" style={styles.back}>&larr; Back to eCareer Design</a>
       <h1 style={styles.h1}>Terms of Use</h1>
-      <p style={styles.updated}>Last updated: July 2026</p>
+      <p style={styles.updated}>Last updated: November 2026</p>
 
       <p style={styles.p}>
         These terms cover your use of eCareer Design. By using the app, you agree to them. They're written in plain language on
@@ -69,10 +69,15 @@ export default function TermsPage() {
 
       <h2 style={styles.h2}>Cost and availability</h2>
       <p style={styles.p}>
-        eCareer Design is currently provided free of charge. We may introduce paid features in the future; if we do, this page
-        will be updated before any payment is required. We don't guarantee the service will always be available or error-free —
+        eCareer Design offers a free plan with usage limits and paid plans (a monthly subscription and a one-time 30-day pass).
+        Prices are shown on the Pricing page before you pay. We don't guarantee the service will always be available or error-free —
         it depends on third-party services (including Anthropic's API and, optionally, job search providers) that are outside
         our control.
+      </p>
+
+      <h2 style={styles.h2}>Free plan limits</h2>
+      <p style={styles.p}>
+        A free account includes a limited number of AI generations for the resume builder, job tailoring, and cover letter tools. We may change those limits over time. The free resume score and job search tools are offered with fair-use limits, and we may slow or block automated or excessive use. Paid plans (the monthly subscription and the 30-day pass) remove the free plan limits.
       </p>
 
       <h2 style={styles.h2}>Your content</h2>
