@@ -1766,6 +1766,11 @@ const [resumeScoreFile, setResumeScoreFile] = useState(null);
     setWantDashboard(false);
   }, [wantDashboard, authChecked, isPremium]);
 
+  // Always start the dashboard at the top, even if the page was scrolled down on the previous screen.
+  useEffect(() => {
+    if (view === "dashboard" && typeof window !== "undefined") window.scrollTo(0, 0);
+  }, [view]);
+
   useEffect(() => {
     const qs = new URLSearchParams(window.location.search);
     const flag = qs.get("newhome");
