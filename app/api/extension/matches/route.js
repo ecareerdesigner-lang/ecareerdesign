@@ -50,7 +50,7 @@ export const POST = safe("matches", async (req) => {
       "Do not invent experience. Keep each reason under 12 words and never use double-quote characters. " +
       "Return {\"scores\":[{\"id\":string,\"score\":number,\"reasons\":[string,string]}]}.",
     user:
-      `RESUME:\n${p.resumeText.slice(0, 14000)}\n\nJOBS:\n` +
+      `RESUME:\n${p.resumeText.slice(0, 20000)}\n\nJOBS:\n` +
       jobs.map((j) => `ID ${j.id}: ${j.title} at ${j.company}\n${(j.description || "").slice(0, 600)}`).join("\n---\n"),
     maxTokens: 3000,
   });

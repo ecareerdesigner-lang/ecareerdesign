@@ -46,7 +46,7 @@ export const POST = safe("prepare", async (req) => {
       'Under EXPERIENCE write each role as one line "Job Title | Employer | City, ST | Start - End" followed by achievement lines that each start with "- ". ' +
       'Under EDUCATION write one line per entry "Degree | School | Year". Under SKILLS write one comma-separated line. No tables, columns, or special symbols. ' +
       'Return {"score":0-100,"strengths":[string],"gaps":[string],"tailoredResume":string,"coverLetter":string (under 250 words)}.',
-    user: `RESUME:\n${p.resumeText.slice(0, 14000)}\n\nJOB POSTING:\nTitle: ${title}\nCompany: ${company}\n${posting}`,
+    user: `RESUME:\n${p.resumeText.slice(0, 20000)}\n\nJOB POSTING:\nTitle: ${title}\nCompany: ${company}\n${posting}`,
     maxTokens: 4000,
   });
 
