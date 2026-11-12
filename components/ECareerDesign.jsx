@@ -5,6 +5,8 @@ import NewLanding from "./landing/NewLanding";
 import NewDashboardView from "./dashboard/NewDashboardView";
 import ToolsChrome, { TOOLS_FONT_CLASS } from "./tools/ToolsChrome";
 import { supabase } from "../lib/supabase";
+import ExtensionConnect from "./ExtensionConnect";
+import { hasPremium } from "../lib/premium";
 import {
   Search, FileText, Check, RefreshCw, Copy, Download,
   ChevronRight, ChevronLeft, Sparkles, AlertCircle, Save, Plus, Trash2,
@@ -1704,6 +1706,9 @@ return (
                 <Clock size={14} color={TOKENS.inkSoft} />
                 <span style={{ fontSize: 14, fontWeight: 500, flex: 1, color: TOKENS.ink }}>{p.title}</span>
                 <span style={{ fontSize: 12, color: TOKENS.inkSoft }}>{p.type}</span>
+            <div style={{ marginBottom: 40 }}>
+  <ExtensionConnect />
+</div>
                 <span style={{ fontSize: 12, color: "#9AA3A0" }}>{relativeDate(p.date)}</span>
                 <button
                   onClick={() => onRemoveProject(p.id)}
@@ -1803,13 +1808,13 @@ useEffect(() => {
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("is_premium")
+          .select("is_premium, premium_until")
           .eq("id", user.id)
           .maybeSingle();
         if (!profile) {
           await supabase.from("profiles").insert({ id: user.id, is_premium: false });
         }
-        setIsPremium(!!profile?.is_premium);
+        setIsPremium(hasPremium(profile));
       }
       setAuthChecked(true);
     }
@@ -1882,10 +1887,10 @@ async function handleAuthSubmit() {
         setCurrentUser(data.user);
         const { data: profile } = await supabase
           .from("profiles")
-          .select("is_premium")
+          .select("is_premium, premium_until")
           .eq("id", data.user.id)
           .maybeSingle();
-        setIsPremium(!!profile?.is_premium);
+        setIsPremium(hasPremium(profile));
       }
       setAuthEmail("");
       setAuthPassword("");
@@ -4433,6 +4438,17 @@ async function runJobCardMatch(job, key) {
 
                     {jobMatchResults[i]?.result && (
                       <div style={{ marginTop: 10, padding: 10, borderRadius: 6, background: TOKENS.surface, border: `1px solid ${TOKENS.line}` }}>
+                {process.env.NEXT_PUBLIC_EXTENSION_URL && (
+                  <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <Check size={18} color={TOKENS.accent} style={{ flexShrink: 0, marginTop: 2 }} />
+                    <div>
+                      <p style={{ fontSize: 15, fontWeight: 600, margin: "0 0 2px", color: "#fff" }}>Apply Assistant (Chrome extension)</p>
+                      <p style={{ fontSize: 13.5, color: "#C9D2DD", margin: 0, lineHeight: 1.5 }}>
+                        Find roles that fit your resume, get a tailored resume and cover letter for each, and have application forms filled in. You review and approve every send.
+                      </p>
+                    </div>
+                  </div>
+                )}
                         <p style={{ fontSize: 20, fontWeight: 700, margin: "0 0 4px", color: TOKENS.ink }}>
                           {jobMatchResults[i].result.score}% match
                         </p>

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>eCareer Design Apply Assistant</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <header class="top">
+    <img src="../icons/icon48.png" alt="" width="28" height="28">
+    <div class="brand"><strong>eCareer Design</strong><span>Apply Assistant</span></div>
+    <span id="devbadge" class="devbadge hidden" title="Pointing at a local server">DEV</span>
+  </header>
+
+  <nav id="tabs" class="tabs hidden" role="tablist" aria-label="Sections">
+    <button id="tab-find" class="tab" role="tab" aria-selected="true">Find jobs</button>
+    <button id="tab-history" class="tab" role="tab" aria-selected="false">History</button>
+  </nav>
+
+  <main>
+    <div id="status" class="status hidden" role="status" aria-live="polite"></div>
+
+    <section id="view-loading" class="view">
+      <div class="skeleton" style="height:64px"></div>
+      <div class="skeleton" style="height:40px;margin-top:12px"></div>
+      <div class="skeleton" style="height:120px;margin-top:12px"></div>
+      <div id="retry" class="hidden center"><button id="retry-btn" class="btn primary">Try again</button></div>
+    </section>
+
+    <section id="view-connect" class="view hidden">
+      <h1>Connect your account</h1>
+      <p class="muted">Link this browser to your eCareer Design account. It takes about a minute.</p>
+      <ol class="steps">
+        <li>Sign in to eCareer Design and open your <b>Dashboard</b>.</li>
+        <li>Find <b>Connect the browser extension</b> and click <b>Get a pairing code</b>.</li>
+        <li>Paste the code below.</li>
+      </ol>
+      <label for="code" class="label">Pairing code</label>
+      <input id="code" class="input code" placeholder="XXXXX-XXXXX" autocomplete="off" spellcheck="false" maxlength="11" inputmode="text">
+      <div class="row">
+        <button id="connect" class="btn primary" disabled>Connect</button>
+        <button id="open-site" class="btn ghost">Open eCareer Design</button>
+      </div>
+    </section>
+
+    <section id="view-upgrade" class="view hidden">
+      <div class="card hero">
+        <p class="eyebrow">Premium feature</p>
+        <h1>Apply faster, with your approval on every send</h1>
+        <ul class="ticks">
+          <li>Roles ranked against your resume from USAJOBS and job boards</li>
+          <li>A tailored resume and cover letter for each job</li>
+          <li>Application forms filled in, nothing sent until you approve</li>
+        </ul>
+        <button id="see-plans" class="btn primary block">See Premium plans</button>
+        <button id="recheck" class="btn ghost block">I've upgraded, check again</button>
+      </div>
+    </section>
+
+    <section id="view-noresume" class="view hidden">
+      <div class="card hero">
+        <h1>Build your resume first</h1>
+        <p class="muted">The assistant works from the resume saved in your eCareer Design account. Create one, then come back here.</p>
+        <button id="open-builder" class="btn primary block">Open eCareer Design</button>
+        <button id="recheck2" class="btn ghost block">I've added it, check again</button>
+      </div>
+    </section>
+
+    <section id="view-find" class="view hidden" role="tabpanel" aria-labelledby="tab-find">
+      <div class="card who">
+        <div id="who" class="who-name"></div>
+        <div class="muted small">Resume on file</div>
+      </div>
+      <div class="row">
+        <button id="find" class="btn primary grow">Find roles that fit me</button>
+        <button id="score-page" class="btn grow">Score this page</button>
+      </div>
+      <p id="usage" class="muted small center"></p>
+      <div id="matches"></div>
+    </section>
+
+    <section id="view-prepared" class="view hidden">
+      <button id="p-back" class="link">&larr; Back to results</button>
+      <div class="card">
+        <div class="row between top-align">
+          <div>
+            <h2 id="p-title" class="title"></h2>
+            <div id="p-company" class="muted"></div>
+          </div>
+          <div id="p-score" class="score"></div>
+        </div>
+        <div id="p-tag" class="tag"></div>
+        <div id="p-strengths"></div>
+        <div id="p-gaps"></div>
+      </div>
+      <label for="p-cover" class="label">Cover letter <span class="muted">(edit before you send)</span></label>
+      <textarea id="p-cover" class="input" rows="10"></textarea>
+      <div class="row wrap">
+        <button id="p-fill" class="btn primary grow">Open &amp; fill application</button>
+        <button id="p-open" class="btn primary grow hidden">Open posting to apply</button>
+      </div>
+      <div class="row wrap">
+        <button id="p-download" class="btn grow">Download resume (PDF)</button>
+        <button id="p-copy" class="btn grow">Copy cover letter</button>
+      </div>
+      <p id="p-note" class="muted small"></p>
+    </section>
+
+    <section id="view-history" class="view hidden" role="tabpanel" aria-labelledby="tab-history">
+      <div id="history"></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span id="ver"></span>
+    <a id="link-privacy" href="#">Privacy</a>
+    <a id="link-help" href="#">Help</a>
+    <button id="disconnect" class="link hidden">Disconnect</button>
+  </footer>
+
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>

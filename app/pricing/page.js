@@ -281,6 +281,11 @@ function OldPricingPage() {
               <Feature dark title="Performance Review Writer">
                 Write polished, first-person federal performance reviews for mid-year, end-of-year, or end-of-position evaluations, with AI enhancement built around the actual Exceeds Fully Successful rating standard.
               </Feature>
+              {process.env.NEXT_PUBLIC_EXTENSION_URL && (
+                <Feature dark title="Apply Assistant (Chrome extension)">
+                  Find roles that fit your resume, get a tailored resume and cover letter for each, and have application forms filled in. You review and approve every send.
+                </Feature>
+              )}
             </div>
             <Link
               href="/?view=pricing"
@@ -416,6 +421,11 @@ function NewPricing() {
               <Feature dark title="Performance Review Writer">
                 Write polished, first-person federal performance reviews for mid-year, end-of-year, or end-of-position evaluations, with AI enhancement built around the actual Exceeds Fully Successful rating standard.
               </Feature>
+              {process.env.NEXT_PUBLIC_EXTENSION_URL && (
+                <Feature dark title="Apply Assistant (Chrome extension)">
+                  Find roles that fit your resume, get a tailored resume and cover letter for each, and have application forms filled in. You review and approve every send.
+                </Feature>
+              )}
             </div>
             <Link href="/?view=pricing" className="np-btn np-btn-or np-btn-block">Subscribe - $9.99/mo</Link>
             <p style={{ fontSize: 13, color: "#C9D2DD", textAlign: "center", margin: "10px 0 0", lineHeight: 1.5 }}>
