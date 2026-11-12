@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { pageMeta } from "../../lib/seo";
+import { NEW_PAGES } from "../../components/public/Blocks";
+import CompareView from "../../components/public/CompareView";
 
 export const metadata = pageMeta({
   title: "Jobscan Alternative: eCareer Design - $9.99/mo vs $49.95/mo",
@@ -74,7 +76,43 @@ function Row({ label, ecareer, jobscan }) {
   );
 }
 
+
+const newView = (
+  <CompareView
+    eyebrow="Jobscan alternative"
+    title="The Jobscan alternative that costs 5x less"
+    lead="Jobscan Premium is $49.95/mo. eCareer Design Premium is $9.99/mo - with an ATS resume score, AI resume builder, job tailoring, cover letters, interview coaching, and job search in one place."
+    checked="Competitor prices checked September 24, 2026 on Jobscan's plan page and current reviews."
+    them="Jobscan"
+    rows={[
+    { label: "Price", us: "$9.99/mo", them: "$49.95/mo (or $89.95/quarter)" },
+    { label: "Free plan", us: "Resume builder, job tailoring, and cover letter (2 free generations each), job search, plus a free ATS score with no account", them: "About 5 resume scans/month" },
+    { label: "ATS resume score", us: "Free score plus Premium match scoring against any posting", them: "Match Rate report (deepest in category)" },
+    { label: "AI resume builder", us: "2 free generations, then Premium", them: "Premium" },
+    { label: "Cover letters", us: "2 free generations, then Premium", them: "Premium" },
+    { label: "Interview coaching", us: "Included in Premium - mock interviews with AI scoring", them: "Not offered" },
+    { label: "Job search", us: "Built in - real postings from USAJOBS, Adzuna & Jooble", them: "Job tracker only" },
+  ]}
+    winsTitle="Where Jobscan still wins"
+    winsText="To be straight with you: Jobscan's per-job Match Rate report and its ATS-specific advice (Workday, Greenhouse, Taleo and friends) are the deepest in the category, and it adds LinkedIn profile optimization. If that one report is all you need and $49.95/mo fits your budget, it's a strong tool. But most job seekers need the whole search - resume, cover letter, tailoring, interview prep, and finding postings - and that is exactly what eCareer Design bundles for $9.99/mo."
+    alsoText="Also comparing Teal?"
+    alsoHref="/teal-alternative"
+    alsoLabel="See the Teal alternative page"
+    tryTitle="Try the free part first"
+    tryText="You don't have to take our word for any of this. Score your resume free in about 30 seconds - no account, no card. If the score helps, your 2 free generations each of the builder, tailoring, and cover letter, plus job search, are waiting."
+    faq={faqSchema.mainEntity.map((q) => ({ q: q.name, a: q.acceptedAnswer.text }))}
+  />
+);
+
 export default function JobscanAlternativePage() {
+  if (NEW_PAGES) {
+    return (
+      <>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+        {newView}
+      </>
+    );
+  }
   return (
     <div style={{ fontFamily: sans, background: TOKENS.paper, minHeight: "100vh", color: TOKENS.ink }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />

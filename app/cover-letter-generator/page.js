@@ -1,4 +1,6 @@
 import { pageMeta } from "../../lib/seo";
+import { NEW_PAGES, PageHero, Page, CtaBand, PublicShell } from "../../components/public/Blocks";
+import { landStyles } from "../../components/public/landStyles";
 
 export const metadata = pageMeta({
   title: "AI Cover Letter Generator | eCareer Design",
@@ -60,7 +62,103 @@ const styles = {
   relatedLink: { color: TOKENS.accent, textDecoration: "underline" },
 };
 
+
+function NewBody() {
+  return (
+    <>
+      <div style={landStyles.heroSample}>
+        <p style={landStyles.heroSampleLabel}>What you&rsquo;ll get &mdash; matched to the job</p>
+        <p style={landStyles.heroSampleText}>
+          &ldquo;Your team is scaling lifecycle campaigns ahead of a Q4 launch &mdash; I spent the last two years doing
+          exactly that, growing email-driven revenue 34% while cutting send volume. Here&rsquo;s how I&rsquo;d apply that here.&rdquo;
+        </p>
+        <p style={landStyles.heroSampleCaption}>Generated from your resume + the job posting &mdash; not a template with blanks.</p>
+      </div>
+
+      <h2 style={landStyles.h2}>How It Works</h2>
+      <div style={landStyles.stepsGrid}>
+        <div style={landStyles.card}>
+          <p style={landStyles.stepNum}>Step 1</p>
+          <h3 style={landStyles.cardTitle}>Start with your resume</h3>
+          <p style={landStyles.cardBody}>Enter your background once &mdash; the same info powers your resume, cover letter, and interview prep.</p>
+        </div>
+        <div style={landStyles.card}>
+          <p style={landStyles.stepNum}>Step 2</p>
+          <h3 style={landStyles.cardTitle}>Add the job posting</h3>
+          <p style={landStyles.cardBody}>Paste in the job description you&rsquo;re applying to. eCareer Design reads what the employer is actually asking for.</p>
+        </div>
+        <div style={landStyles.card}>
+          <p style={landStyles.stepNum}>Step 3</p>
+          <h3 style={landStyles.cardTitle}>Get a matched cover letter</h3>
+          <p style={landStyles.cardBody}>In under a minute, get a letter written around this specific role &mdash; not a template with your name swapped in.</p>
+        </div>
+      </div>
+
+      <h2 style={landStyles.h2}>The Cover Letter Difference</h2>
+      <div style={landStyles.compareGrid}>
+        <div style={landStyles.compareCardWeak}>
+          <p style={{ ...landStyles.compareLabel, ...landStyles.compareLabelWeak }}>Generic (what most people send)</p>
+          <p style={landStyles.compareText}>
+            &ldquo;I am writing to express my interest in the Marketing Coordinator position. I believe my skills and experience make me a strong candidate for this role.&rdquo;
+          </p>
+        </div>
+        <div style={landStyles.compareCardStrong}>
+          <p style={{ ...landStyles.compareLabel, ...landStyles.compareLabelStrong }}>Matched to the job</p>
+          <p style={landStyles.compareText}>
+            &ldquo;Your team is scaling lifecycle campaigns ahead of a Q4 launch &mdash; I spent the last two years doing exactly that, growing email-driven revenue 34% while cutting send volume. Here&rsquo;s how I&rsquo;d apply that here.&rdquo;
+          </p>
+        </div>
+      </div>
+
+      <h2 style={landStyles.h2}>Frequently Asked Questions</h2>
+      <div style={landStyles.faqItem}>
+        <p style={landStyles.faqQ}>Do I have to write it myself?</p>
+        <p style={landStyles.faqA}>No. You provide your background and the job posting; eCareer Design writes the draft. You can edit anything before you send it.</p>
+      </div>
+      <div style={landStyles.faqItem}>
+        <p style={landStyles.faqQ}>Will it sound like a generic template?</p>
+        <p style={landStyles.faqA}>No &mdash; it&rsquo;s generated fresh from the actual job posting every time, not filled into a fixed template with blanks.</p>
+      </div>
+      <div style={landStyles.faqItem}>
+        <p style={landStyles.faqQ}>Is it really free?</p>
+        <p style={landStyles.faqA}>Yes, to start. A free account includes 2 cover letter generations. If you need more, you can upgrade to Premium or buy a 30-day pass.</p>
+      </div>
+      <div style={landStyles.faqItem}>
+        <p style={landStyles.faqQ}>Can I use it for every application?</p>
+        <p style={landStyles.faqA}>Yes &mdash; that&rsquo;s the point. A new job posting means a new, matched cover letter in about a minute, not another hour rewriting from scratch.</p>
+      </div>
+
+      <p style={landStyles.relatedLine}>
+        Want writing tips first? Read{" "}
+        <a href="/blog/how-to-write-a-cover-letter-that-gets-read" style={landStyles.relatedLink}>
+          How to Write a Cover Letter That Actually Gets Read
+        </a>.
+      </p>
+    </>
+  );
+}
+
+function NewPage() {
+  return (
+    <PublicShell>
+      <PageHero back={["/", "Back to eCareer Design"]} eyebrow={<>Free to start &middot; Ready in about a minute</>} title={<>Stop Sending the Same Cover Letter to Every Job</>} lead={<>Every recruiter can tell when a cover letter wasn&rsquo;t written for the role. eCareer Design writes one that actually is &mdash; matched to the exact job posting, built from your resume, ready in about a minute.</>} img="/landing/desk.jpg">
+        <div className="np-ph-actions">
+          <a href="/?tool=coverletter" className="np-btn np-btn-or">See My Cover Letter in 60 Seconds</a>
+        </div>
+        <p className="np-small">Free account &middot; 2 free cover letters &middot; ready in about 60 seconds.</p>
+      </PageHero>
+      <Page narrow>
+        <NewBody />
+      </Page>
+      <CtaBand eyebrow={<>Ready when you are</>} title={<>Write Your Next Cover Letter in a Minute, Not an Hour</>}>
+        <a href="/?tool=coverletter" className="np-btn np-btn-or">See My Cover Letter in 60 Seconds</a>
+      </CtaBand>
+    </PublicShell>
+  );
+}
+
 export default function CoverLetterGeneratorPage() {
+  if (NEW_PAGES) return <NewPage />;
   return (
     <div style={styles.page}>
       <a href="/" style={styles.back}>&larr; Back to eCareer Design</a>

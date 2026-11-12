@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { usePublicRedesign } from "../../components/public/usePublicRedesign";
+import NewATSCheckerView from "./NewATSCheckerView";
 
 const TOKENS = {
   ink: "#16283D",
@@ -94,6 +96,7 @@ async function callClaude(prompt, maxTokens = 1200) {
 }
 
 export default function ATSCheckerTool() {
+  const newLook = usePublicRedesign();
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -166,6 +169,24 @@ export default function ATSCheckerTool() {
     } finally {
       setEmailSending(false);
     }
+  }
+
+  function startOver() {
+    setFile(null);
+    setResult(null);
+    setUnlocked(false);
+    setError("");
+  }
+
+  if (newLook) {
+    return (
+      <NewATSCheckerView
+        file={file} setFile={setFile} loading={loading} error={error} result={result}
+        email={email} setEmail={setEmail} unlocked={unlocked}
+        emailSending={emailSending} emailError={emailError}
+        runCheck={runCheck} unlockResults={unlockResults} startOver={startOver}
+      />
+    );
   }
 
   return (

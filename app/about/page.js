@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SITE_PROOF } from "../../lib/siteProof";
+import { NEW_PAGES, PublicShell, PageHero, Page } from "../../components/public/Blocks";
 
 // /about renders only once the founder block in lib/siteProof.js is filled in.
 // Until then it 404s on purpose: no placeholder copy ships to production.
@@ -13,6 +14,31 @@ export const metadata = {
 export default function AboutPage() {
   const f = SITE_PROOF.founder;
   if (!f) notFound();
+  if (NEW_PAGES) {
+    return (
+      <PublicShell>
+        <PageHero eyebrow="About" title="Why I built eCareer Design" img="/landing/stones.jpg" />
+        <Page narrow>
+          <div className="np-paper">
+            <div style={{ display: "flex", gap: 18, alignItems: "center", marginBottom: 24 }}>
+              {f.photo && <img src={f.photo} alt={f.name} width={88} height={88} style={{ borderRadius: "50%", objectFit: "cover" }} />}
+              <p style={{ margin: 0, fontSize: 17 }}>
+                <b>{f.name}</b>{f.role ? `, ${f.role}` : ""}
+                {f.linkedin && <><br /><a href={f.linkedin} rel="noopener noreferrer" className="np-lnk">LinkedIn</a></>}
+              </p>
+            </div>
+            <p style={{ fontSize: 17, lineHeight: 1.75, color: "#3C5069", whiteSpace: "pre-line" }}>{f.story}</p>
+            <p style={{ marginTop: 32 }}>
+              <Link href="/ats-checker" className="np-btn np-btn-or">Scan my resume free</Link>
+              {" "}
+              <a href="mailto:hello@ecareerdesign.net" className="np-lnk" style={{ marginLeft: 12 }}>hello@ecareerdesign.net</a>
+            </p>
+          </div>
+        </Page>
+        <div style={{ height: 64 }} />
+      </PublicShell>
+    );
+  }
   return (
     <div style={{ fontFamily: "'Inter', -apple-system, Segoe UI, Roboto, sans-serif", background: "#EEF0EC", minHeight: "100vh", color: "#16283D" }}>
       <header style={{ maxWidth: 760, margin: "0 auto", padding: "18px 20px" }}>
