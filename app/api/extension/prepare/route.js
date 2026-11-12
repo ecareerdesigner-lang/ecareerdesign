@@ -41,8 +41,12 @@ export const POST = safe("prepare", async (req) => {
       "degrees, or skills; if the posting wants something the resume lacks, list it as a gap instead of claiming it. " +
       "Write in the candidate's plain first-person voice, no filler or clichés. " +
       (partial ? "The posting text below is short or partial: score only on what is given and add a gap saying the full posting should be reviewed. " : "") +
-      'Return {"score":0-100,"strengths":[string],"gaps":[string],"tailoredResume":string (plain-text, single column, ATS-friendly),"coverLetter":string (under 250 words)}.',
-    user: `RESUME:\n${p.resumeText.slice(0, 9000)}\n\nJOB POSTING:\nTitle: ${title}\nCompany: ${company}\n${posting}`,
+      'tailoredResume must be plain text in this exact layout: do NOT write the name or any contact details (they are added automatically). ' +
+      'Start with a line PROFESSIONAL SUMMARY, then a short paragraph. Section headings are ALL CAPS on their own line: PROFESSIONAL SUMMARY, EXPERIENCE, EDUCATION, SKILLS, and CERTIFICATIONS only if the resume has them. ' +
+      'Under EXPERIENCE write each role as one line "Job Title | Employer | City, ST | Start - End" followed by achievement lines that each start with "- ". ' +
+      'Under EDUCATION write one line per entry "Degree | School | Year". Under SKILLS write one comma-separated line. No tables, columns, or special symbols. ' +
+      'Return {"score":0-100,"strengths":[string],"gaps":[string],"tailoredResume":string,"coverLetter":string (under 250 words)}.',
+    user: `RESUME:\n${p.resumeText.slice(0, 14000)}\n\nJOB POSTING:\nTitle: ${title}\nCompany: ${company}\n${posting}`,
     maxTokens: 4000,
   });
 
