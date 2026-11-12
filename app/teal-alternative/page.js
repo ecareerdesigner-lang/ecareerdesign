@@ -128,6 +128,11 @@ export default function TealAlternativePage() {
           To be straight with you: Teal's free job tracker and Chrome extension are genuinely excellent, and if organizing applications is all you need, its free tier is hard to beat. The catch is the upgrade price: Teal+ starts at $13/week, which compounds to roughly $56 a month if the renewal keeps running, and even its monthly plan is $29. eCareer Design Premium gives you the whole search - resume, tailoring, cover letters, match scoring, interview prep, and job search - for $9.99/mo.
         </p>
 
+        <p style={{ fontSize: 15.5, color: TOKENS.inkSoft, lineHeight: 1.7, margin: "0 0 32px" }}>
+          Also comparing Jobscan?{" "}
+          <Link href="/jobscan-alternative" style={{ color: TOKENS.accent, fontWeight: 500 }}>See the Jobscan alternative page</Link>.
+        </p>
+
         <h2 style={{ fontFamily: serif, fontSize: 24, margin: "0 0 12px", color: TOKENS.ink }}>
           Try the free part first
         </h2>
@@ -168,6 +173,8 @@ export default function TealAlternativePage() {
           <Link href="/" style={{ color: TOKENS.inkSoft }}>eCareer Design</Link>
           {" · "}
           <Link href="/pricing" style={{ color: TOKENS.inkSoft }}>Pricing</Link>
+          {" · "}
+          <Link href="/jobscan-alternative" style={{ color: TOKENS.inkSoft }}>Jobscan alternative</Link>
           {" · "}
           <Link href="/privacy" style={{ color: TOKENS.inkSoft }}>Privacy Notice</Link>
           {" · "}

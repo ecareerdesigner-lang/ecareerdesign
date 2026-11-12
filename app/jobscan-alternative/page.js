@@ -129,6 +129,11 @@ export default function JobscanAlternativePage() {
           To be straight with you: Jobscan's per-job Match Rate report and its ATS-specific advice (Workday, Greenhouse, Taleo and friends) are the deepest in the category, and it adds LinkedIn profile optimization. If that one report is all you need and $49.95/mo fits your budget, it's a strong tool. But most job seekers need the whole search - resume, cover letter, tailoring, interview prep, and finding postings - and that is exactly what eCareer Design bundles for $9.99/mo.
         </p>
 
+        <p style={{ fontSize: 15.5, color: TOKENS.inkSoft, lineHeight: 1.7, margin: "0 0 32px" }}>
+          Also comparing Teal?{" "}
+          <Link href="/teal-alternative" style={{ color: TOKENS.accent, fontWeight: 500 }}>See the Teal alternative page</Link>.
+        </p>
+
         <h2 style={{ fontFamily: serif, fontSize: 24, margin: "0 0 12px", color: TOKENS.ink }}>
           Try the free part first
         </h2>
@@ -169,6 +174,8 @@ export default function JobscanAlternativePage() {
           <Link href="/" style={{ color: TOKENS.inkSoft }}>eCareer Design</Link>
           {" · "}
           <Link href="/pricing" style={{ color: TOKENS.inkSoft }}>Pricing</Link>
+          {" · "}
+          <Link href="/teal-alternative" style={{ color: TOKENS.inkSoft }}>Teal alternative</Link>
           {" · "}
           <Link href="/privacy" style={{ color: TOKENS.inkSoft }}>Privacy Notice</Link>
           {" · "}
