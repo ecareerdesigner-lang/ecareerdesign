@@ -4,6 +4,7 @@ import { marked } from "marked";
 import { supabase } from "../../../lib/supabase";
 import { SITE_URL, fitDescription, fitTitle, pageMeta } from "../../../lib/seo";
 import { getDefaultAuthor } from "../../../lib/authors";
+import { NEW_PAGES, PublicShell, PageHero, Page } from "../../../components/public/Blocks";
 
 export const revalidate = 60;
 
@@ -209,6 +210,40 @@ export default async function BlogPost({ params }) {
       { "@type": "ListItem", position: 3, name: post.title, item: postUrl },
     ],
   };
+
+  if (NEW_PAGES) {
+    return (
+      <PublicShell>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema).replace(/</g, "\\u003c") }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema).replace(/</g, "\\u003c") }} />
+        {faqSchema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />}
+        <PageHero back={["/blog", "All posts"]} eyebrow="Career Advice" title={post.title} img="/landing/desk.jpg">
+          {author && (
+            <p className="np-small">
+              Drafted with AI assistance (Claude), reviewed and edited by{" "}
+              <Link href={`/author/${author.slug}`} style={{ color: "#FFB07A", fontWeight: 600 }}>{author.name}</Link>
+            </p>
+          )}
+        </PageHero>
+        <div className="np-narrow" style={{ marginTop: -28, position: "relative" }}>
+          <div className="np-paper">
+            <article className="np-prose" dangerouslySetInnerHTML={{ __html: html }} />
+          </div>
+          {related.length > 0 && (
+            <nav aria-label="Related articles" style={{ marginTop: 32 }}>
+              <h2 className="np-h3">Keep reading</h2>
+              <div className="np-posts">
+                {related.map((r) => (
+                  <Link key={r.slug} href={`/blog/${r.slug}`} className="np-post"><h2 style={{ fontSize: 19, margin: 0 }}>{r.title}</h2></Link>
+                ))}
+              </div>
+            </nav>
+          )}
+        </div>
+        <div style={{ height: 64 }} />
+      </PublicShell>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px", fontFamily: "system-ui, sans-serif" }}>

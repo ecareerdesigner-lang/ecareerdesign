@@ -3,6 +3,9 @@
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { CheckCircle } from 'lucide-react';
+import PublicShell, { PhotoBand } from '../../components/public/PublicShell';
+
+const NEW_PAGES = process.env.NEXT_PUBLIC_NEW_PUBLIC_PAGES === '1';
 
 export default function SuccessPage() {
   useEffect(() => {
@@ -11,6 +14,29 @@ export default function SuccessPage() {
       w.gtag('event', 'purchase', { value: 9.99, currency: 'USD' });
     }
   }, []);
+
+  if (NEW_PAGES) {
+    return (
+      <PublicShell>
+        <PhotoBand
+          src="/landing/skyline.jpg"
+          priority
+          shade="linear-gradient(90deg, rgba(13,26,43,0.92) 0%, rgba(13,26,43,0.74) 60%, rgba(13,26,43,0.5) 100%)"
+        >
+          <div className="np-wrap np-ph" style={{ paddingBottom: 90 }}>
+            <p className="np-eyebrow">Payment received</p>
+            <h1>Welcome to Premium!</h1>
+            <p className="np-lead">
+              Your subscription is now active. You have full access to Interview Coach, Career Dashboard, and Resume Match Scoring.
+            </p>
+            <div className="np-ph-actions">
+              <Link href="/?view=dashboard" className="np-btn np-btn-or">Go to Dashboard</Link>
+            </div>
+          </div>
+        </PhotoBand>
+      </PublicShell>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-neutral-50">

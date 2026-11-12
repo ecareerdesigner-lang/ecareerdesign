@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import { AUTHORS, getAuthor } from "../../../lib/authors";
 import { SITE_URL, pageMeta } from "../../../lib/seo";
+import { NEW_PAGES, PublicShell, PageHero, Page } from "../../../components/public/Blocks";
 
 export const revalidate = 60;
 export const dynamicParams = false;
@@ -40,6 +41,43 @@ export default async function AuthorPage({ params }) {
     url: `${SITE_URL}/author/${author.slug}`,
     ...(author.sameAs && author.sameAs.length ? { sameAs: author.sameAs } : {}),
   };
+
+  if (NEW_PAGES) {
+    return (
+      <PublicShell>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema).replace(/</g, "\\u003c") }} />
+        <PageHero back={["/blog", "All Posts"]} eyebrow="Author" title={author.name} lead={author.jobTitle || undefined} img="/landing/stones.jpg" />
+        <Page narrow>
+          <div className="np-paper">
+            <p style={{ fontSize: 17, lineHeight: 1.75, margin: "0 0 16px" }}>{author.bio}</p>
+            <p style={{ fontSize: 17, lineHeight: 1.75, margin: "0 0 16px" }}>
+              Articles on eCareer Design are drafted with AI assistance (Claude), then reviewed and edited by {author.name} before they are published.
+            </p>
+            {author.experience && author.experience.length > 0 && (
+              <>
+                <h2 className="np-h3">Experience</h2>
+                <ul className="np-list">{author.experience.map((line) => <li key={line}>{line}</li>)}</ul>
+              </>
+            )}
+            {author.sameAs && author.sameAs.length > 0 && (
+              <p style={{ marginTop: 24 }}>
+                {author.sameAs.map((url) => (
+                  <a key={url} href={url} rel="me noopener noreferrer" className="np-lnk" style={{ marginRight: 16 }}>{url.replace(/^https?:\/\/(www\.)?/, "")}</a>
+                ))}
+              </p>
+            )}
+            <h2 className="np-h3">Articles</h2>
+            <ul className="np-list">
+              {(posts || []).map((p) => (
+                <li key={p.slug}><Link href={`/blog/${p.slug}`} className="np-lnk">{p.title}</Link></li>
+              ))}
+            </ul>
+          </div>
+        </Page>
+        <div style={{ height: 64 }} />
+      </PublicShell>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px", fontFamily: "system-ui, sans-serif", color: "#16283D" }}>

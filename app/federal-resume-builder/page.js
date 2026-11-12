@@ -1,4 +1,6 @@
 import { pageMeta } from "../../lib/seo";
+import { NEW_PAGES, PageHero, Page, CtaBand, PublicShell } from "../../components/public/Blocks";
+import { landStyles } from "../../components/public/landStyles";
 
 export const metadata = pageMeta({
   title: "Federal Resume Builder | eCareer Design",
@@ -50,7 +52,93 @@ const styles = {
   relatedLink: { color: TOKENS.accent, textDecoration: "underline" },
 };
 
+
+function NewBody() {
+  return (
+    <>
+      <div style={landStyles.alertCard}>
+        <p style={landStyles.alertLabel}>The most common outcome</p>
+        <p style={landStyles.alertText}>
+          &ldquo;Eligible, Not Referred&rdquo; means HR confirmed you meet the minimum qualifications &mdash; but when your
+          application was scored and ranked, it didn&rsquo;t make the group forwarded to the hiring manager. It&rsquo;s one
+          of the most common, most frustrating outcomes in federal hiring, and it happens to genuinely qualified people
+          constantly.
+        </p>
+      </div>
+
+      <h2 style={landStyles.h2}>Why Federal Resumes Get Screened Out</h2>
+      <ul style={landStyles.list}>
+        <li>The resume doesn&rsquo;t mirror the announcement&rsquo;s exact &ldquo;specialized experience&rdquo; language</li>
+        <li>Missing hours-per-week or duration details needed to prove qualifying experience</li>
+        <li>Self-assessment questionnaire answers don&rsquo;t match what the resume actually demonstrates</li>
+        <li>Required licenses or certifications aren&rsquo;t clearly and explicitly stated</li>
+        <li>The resume is too short &mdash; federal resumes need far more detail than private-sector resumes (2&ndash;4+ pages is normal)</li>
+      </ul>
+
+      <h2 style={landStyles.h2}>How It Works</h2>
+      <div style={landStyles.stepsGrid}>
+        <div style={landStyles.card}>
+          <p style={landStyles.stepNum}>Step 1</p>
+          <h3 style={landStyles.cardTitle}>Paste the announcement</h3>
+          <p style={landStyles.cardBody}>Add the job announcement, including the &ldquo;specialized experience&rdquo; and qualifications section.</p>
+        </div>
+        <div style={landStyles.card}>
+          <p style={landStyles.stepNum}>Step 2</p>
+          <h3 style={landStyles.cardTitle}>Add your resume</h3>
+          <p style={landStyles.cardBody}>Use your existing background &mdash; the same info that powers your resume, cover letter, and interview prep.</p>
+        </div>
+        <div style={landStyles.card}>
+          <p style={landStyles.stepNum}>Step 3</p>
+          <h3 style={landStyles.cardTitle}>See what&rsquo;s missing</h3>
+          <p style={landStyles.cardBody}>Get a match score showing where your real experience isn&rsquo;t stated in the terms a reviewer is scoring against.</p>
+        </div>
+      </div>
+
+      <h2 style={landStyles.h2}>Frequently Asked Questions</h2>
+      <div style={landStyles.faqItem}>
+        <p style={landStyles.faqQ}>Does &ldquo;Not Referred&rdquo; mean I was rejected?</p>
+        <p style={landStyles.faqA}>Not exactly &mdash; it means your application didn&rsquo;t make it past the initial ranking to reach the hiring manager. It&rsquo;s specific and often fixable for your next application.</p>
+      </div>
+      <div style={landStyles.faqItem}>
+        <p style={landStyles.faqQ}>Can eCareer Design write a federal-format resume for me?</p>
+        <p style={landStyles.faqA}>eCareer Design helps you build and tailor your resume content and checks it against a specific job posting&rsquo;s language &mdash; including federal announcements. You should still follow your target agency&rsquo;s formatting guidance for length and structure.</p>
+      </div>
+      <div style={landStyles.faqItem}>
+        <p style={landStyles.faqQ}>Is this only for federal jobs?</p>
+        <p style={landStyles.faqA}>No &mdash; the same resume match/tailoring tool works for any job posting. Federal announcements just tend to reward explicit, detailed matching more heavily than private-sector resumes do.</p>
+      </div>
+
+      <p style={landStyles.relatedLine}>
+        Want the full breakdown first? Read{" "}
+        <a href="/blog/eligible-but-not-referred-federal-jobs" style={landStyles.relatedLink}>
+          Why You Keep Getting &ldquo;Eligible But Not Referred&rdquo; for Federal Jobs
+        </a>.
+      </p>
+    </>
+  );
+}
+
+function NewPage() {
+  return (
+    <PublicShell>
+      <PageHero back={["/", "Back to eCareer Design"]} eyebrow={<>Federal &amp; USAJOBS Resumes</>} title={<>Stop Getting Marked &ldquo;Eligible But Not Referred&rdquo;</>} lead={<>Federal resumes aren&rsquo;t scored like private-sector resumes. eCareer Design checks your resume against the exact qualification language in the job announcement &mdash; the same thing USAJOBS reviewers score against &mdash; before you submit, not after you get the notice.</>} img="/landing/stones.jpg">
+        <div className="np-ph-actions">
+          <a href="/resume-job-match" className="np-btn np-btn-or">Check My Resume Against This Announcement</a>
+        </div>
+        <p className="np-small">No account required to start.</p>
+      </PageHero>
+      <Page narrow>
+        <NewBody />
+      </Page>
+      <CtaBand eyebrow={<>Before you submit</>} title={<>Check Whether Your Resume Actually Matches the Announcement</>}>
+        <a href="/resume-job-match" className="np-btn np-btn-or">Check My Resume Against This Announcement</a>
+      </CtaBand>
+    </PublicShell>
+  );
+}
+
 export default function FederalResumeBuilderPage() {
+  if (NEW_PAGES) return <NewPage />;
   return (
     <div style={styles.page}>
       <a href="/" style={styles.back}>&larr; Back to eCareer Design</a>

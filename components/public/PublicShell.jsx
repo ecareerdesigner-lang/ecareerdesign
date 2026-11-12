@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { Fraunces, Inter } from "next/font/google";
-import { PUBLIC_CSS } from "./publicStyles";
+import { PUBLIC_CSS, PAGES_CSS } from "./publicStyles";
 
 // Same families, weights and styles as app/layout.js, so Next reuses the font files that are
 // already loaded. `variable` just exposes them to the scoped styles.
@@ -33,7 +33,7 @@ export function PhotoBand({ src, shade, priority, className = "", children }) {
 export default function PublicShell({ children }) {
   return (
     <div className={`np ${display.variable} ${body.variable}`}>
-      <style dangerouslySetInnerHTML={{ __html: PUBLIC_CSS }} />
+      <style dangerouslySetInnerHTML={{ __html: PUBLIC_CSS + PAGES_CSS }} />
       <header className="np-nav">
         <div className="np-nav-in">
           <a href="/" className="np-brand" aria-label="eCareer Design home">

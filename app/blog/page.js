@@ -2,6 +2,7 @@ import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 
 import { pageMeta } from "../../lib/seo";
+import { NEW_PAGES, PublicShell, PageHero, Page } from "../../components/public/Blocks";
 
 export const metadata = pageMeta({
   title: "Career Advice Blog | eCareer Design",
@@ -22,6 +23,40 @@ export default async function BlogIndex() {
 
   const featured = (posts || []).find((post) => post.slug === FEATURED_SLUG);
   const rest = (posts || []).filter((post) => post.slug !== FEATURED_SLUG);
+
+  if (NEW_PAGES) {
+    return (
+      <PublicShell>
+        <PageHero eyebrow="Blog" title="Career Advice" lead="Resume tips, ATS insights, and job search advice." img="/landing/desk.jpg" />
+        <Page narrow>
+          <div className="np-card np-card-dark" style={{ marginBottom: 24 }}>
+            <p className="np-eyebrow" style={{ color: "#FDE3CC" }}>Free tool</p>
+            <p style={{ fontFamily: "var(--np-display), Georgia, serif", fontSize: 22, lineHeight: 1.3, margin: "8px 0 18px" }}>
+              See how well your resume matches any job description — free, no account required.
+            </p>
+            <a href="/resume-job-match" className="np-btn np-btn-or">Get My Match Score</a>
+          </div>
+          <div className="np-posts">
+            {featured && (
+              <Link href={`/blog/${featured.slug}`} className="np-post np-post-feat">
+                <span className="np-eyebrow">Reader Favorite</span>
+                <h2>{featured.title}</h2>
+                <p>{featured.meta_description}</p>
+              </Link>
+            )}
+            {(!posts || posts.length === 0) && <p style={{ color: "#3C5069" }}>No posts yet — check back soon.</p>}
+            {rest.map((post) => (
+              <Link key={post.slug} href={`/blog/${post.slug}`} className="np-post">
+                <h2>{post.title}</h2>
+                <p>{post.meta_description}</p>
+              </Link>
+            ))}
+          </div>
+        </Page>
+        <div style={{ height: 64 }} />
+      </PublicShell>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px", fontFamily: "system-ui, sans-serif" }}>

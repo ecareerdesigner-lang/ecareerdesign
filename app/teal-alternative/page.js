@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { pageMeta } from "../../lib/seo";
+import { NEW_PAGES } from "../../components/public/Blocks";
+import CompareView from "../../components/public/CompareView";
 
 export const metadata = pageMeta({
   title: "Teal Alternative: eCareer Design vs Teal - $9.99/mo",
@@ -74,7 +76,42 @@ function Row({ label, ecareer, teal }) {
   );
 }
 
+
+const newView = (
+  <CompareView
+    eyebrow="Teal alternative"
+    title="Teal vs eCareer Design: same goal, a third of the price"
+    lead="Teal+ costs $13/week (about $56/mo if it keeps renewing) or $29/mo. eCareer Design Premium is $9.99/mo - resume building, job tailoring, cover letters, match scoring, interview coaching, and job search in one place."
+    checked="Competitor prices checked September 24, 2026 on Teal's pricing page and current reviews."
+    them="Teal"
+    rows={[
+    { label: "Paid price", us: "$9.99/mo", them: "$13/week (~$56/mo), $29/mo, or $79/quarter" },
+    { label: "Free plan", us: "Resume builder, job tailoring, and cover letter (2 free generations each), job search, plus a free ATS score with no account", them: "Unlimited job tracker and resume versions; AI features limited" },
+    { label: "AI resume content", us: "2 free generations, then Premium", them: "Teal+ (unlimited AI bullets and summaries)" },
+    { label: "Resume match scoring", us: "Premium - full breakdown of what is missing against any posting", them: "Top-5 keywords free; full analysis on Teal+" },
+    { label: "Interview coaching", us: "Premium - mock interviews with voice and AI scoring", them: "Not offered" },
+    { label: "Job tracking", us: "Career Dashboard with weekly goals and daily match alerts", them: "Excellent free tracker plus Chrome extension" },
+  ]}
+    winsTitle="Where Teal still wins"
+    winsText="To be straight with you: Teal's free job tracker and Chrome extension are genuinely excellent, and if organizing applications is all you need, its free tier is hard to beat. The catch is the upgrade price: Teal+ starts at $13/week, which compounds to roughly $56 a month if the renewal keeps running, and even its monthly plan is $29. eCareer Design Premium gives you the whole search - resume, tailoring, cover letters, match scoring, interview prep, and job search - for $9.99/mo."
+    alsoText="Also comparing Jobscan?"
+    alsoHref="/jobscan-alternative"
+    alsoLabel="See the Jobscan alternative page"
+    tryTitle="Try the free part first"
+    tryText="Score your resume free in about 30 seconds - no account, no card. If the score helps, your 2 free generations each of the builder, tailoring, and cover letter, plus job search, are waiting."
+    faq={faqSchema.mainEntity.map((q) => ({ q: q.name, a: q.acceptedAnswer.text }))}
+  />
+);
+
 export default function TealAlternativePage() {
+  if (NEW_PAGES) {
+    return (
+      <>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+        {newView}
+      </>
+    );
+  }
   return (
     <div style={{ fontFamily: sans, background: TOKENS.paper, minHeight: "100vh", color: TOKENS.ink }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />

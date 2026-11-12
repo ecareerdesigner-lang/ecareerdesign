@@ -4,6 +4,7 @@ import JsonLd from "../../components/JsonLd";
 import PremiumDemos from "../../components/landing/PremiumDemos";
 import { SITE_PROOF } from "../../lib/siteProof";
 import { productJsonLd } from "../../lib/structuredData";
+import { NEW_PAGES, PublicShell, PageHero, CtaBand } from "../../components/public/Blocks";
 
 export const metadata = pageMeta({
   title: "Pricing: Free & Premium Plans - eCareer Design",
@@ -198,7 +199,7 @@ function ComparisonMatrix() {
   );
 }
 
-export default function PricingPage() {
+function OldPricingPage() {
   return (
     <div style={{ fontFamily: sans, background: TOKENS.paper, minHeight: "100vh", color: TOKENS.ink }}>
       <JsonLd data={productJsonLd} />
@@ -349,3 +350,121 @@ export default function PricingPage() {
     </div>
   );
 }
+
+// ---- New look (only when NEXT_PUBLIC_NEW_PUBLIC_PAGES=1). Same copy, prices and links as below. ----
+function NewPricing() {
+  return (
+    <PublicShell>
+      <JsonLd data={productJsonLd} />
+      <PageHero
+        eyebrow="Pricing"
+        title="Choose your plan"
+        lead="Start free. Upgrade whenever you're ready to move faster."
+        img="/landing/compass.jpg"
+      >
+        <p className="np-small" style={{ fontSize: 15.5 }}>
+          Full toolkit at $9.99/mo. Jobscan Premium is $49.95/mo.{" "}
+          <a href="/jobscan-alternative" style={{ color: "#FFB07A", fontWeight: 600 }}>See the comparison</a>
+        </p>
+        <div style={{ height: 70 }} />
+      </PageHero>
+
+      <div className="np-wrap">
+        <div className="np-price">
+          <div className="np-card">
+            <h2 style={{ fontSize: 28, margin: "0 0 6px" }}>Free</h2>
+            <p style={{ fontSize: 15, color: TOKENS.inkSoft, margin: "0 0 20px", lineHeight: 1.5 }}>
+              Try the core tools free. Includes 2 free generations each of resume, cover letter, and job tailoring.
+            </p>
+            <p className="np-big" style={{ margin: "0 0 24px" }}>$0</p>
+            <div style={{ borderTop: `1px solid ${TOKENS.line}`, paddingTop: 20, display: "flex", flexDirection: "column", gap: 16, marginBottom: 28 }}>
+              <Feature title="Resume Builder">Build an ATS-friendly resume in minutes. 2 free generations.</Feature>
+              <Feature title="Job Tailoring">Tailored STAR responses for any posting. 2 free runs.</Feature>
+              <Feature title="Cover Letter">Generate a matching cover letter. 2 free generations.</Feature>
+              <Feature title="Job Search">Search real postings across USAJOBS, Adzuna &amp; Jooble.</Feature>
+            </div>
+            <Link href="/?view=auth" className="np-btn np-btn-gh np-btn-block">Get Started Free</Link>
+          </div>
+
+          <div className="np-card np-card-dark">
+            <p className="np-eyebrow" style={{ color: TOKENS.accentSoft, margin: "0 0 8px" }}>
+              Premium
+              <span className="np-chip-pop">Most popular</span>
+            </p>
+            <h2 style={{ fontSize: 28, margin: "0 0 6px", color: "#fff" }}>Everything you need to land the offer</h2>
+            <p style={{ fontSize: 15, color: "#C9D2DD", margin: "0 0 20px", lineHeight: 1.5 }}>
+              Prep smarter, track everything, and know exactly where you stand.
+            </p>
+            <p className="np-big" style={{ margin: "0 0 24px" }}>
+              $9.99<span style={{ fontSize: 16, fontWeight: 400, color: "#C9D2DD", fontFamily: "var(--np-body), system-ui, sans-serif" }}> /mo</span>
+            </p>
+            <p style={{ fontSize: 14, color: "#C9D2DD", margin: "-14px 0 24px", lineHeight: 1.5 }}>
+              About 5x less than Jobscan Premium ($49.95/mo, checked Sept 24, 2026).{" "}
+              <Link href="/jobscan-alternative" style={{ color: TOKENS.accentSoft }}>See the comparison</Link>
+            </p>
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 20, display: "flex", flexDirection: "column", gap: 16, marginBottom: 28 }}>
+              <p className="np-eyebrow" style={{ color: TOKENS.accentSoft, margin: 0 }}>Everything in Free, plus:</p>
+              <Feature dark title="Career Dashboard">
+                Track applications, set weekly goals, and get notified of new job matches automatically, every day.
+              </Feature>
+              <Feature dark title="Interview Coach">
+                Extract your best career stories, practice job-specific questions, and run full adaptive mock interviews with voice and AI scoring.
+              </Feature>
+              <Feature dark title="Resume Match Scoring">
+                See exactly how well your resume matches any job posting, with a breakdown of what&apos;s missing.
+              </Feature>
+              <Feature dark title="Performance Review Writer">
+                Write polished, first-person federal performance reviews for mid-year, end-of-year, or end-of-position evaluations, with AI enhancement built around the actual Exceeds Fully Successful rating standard.
+              </Feature>
+            </div>
+            <Link href="/?view=pricing" className="np-btn np-btn-or np-btn-block">Subscribe - $9.99/mo</Link>
+            <p style={{ fontSize: 13, color: "#C9D2DD", textAlign: "center", margin: "10px 0 0", lineHeight: 1.5 }}>
+              Renews every month until you cancel.
+            </p>
+            {SITE_PROOF.guaranteeDays && (
+              <p style={{ fontSize: 13, color: "#C9D2DD", textAlign: "center", margin: "6px 0 0", lineHeight: 1.5 }}>
+                {SITE_PROOF.guaranteeDays}-day money-back, no questions asked.
+              </p>
+            )}
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.15)", marginTop: 24, paddingTop: 24 }}>
+              <p className="np-eyebrow" style={{ color: TOKENS.accentSoft, margin: "0 0 8px" }}>Or pay once</p>
+              <p style={{ fontSize: 22, fontWeight: 600, color: "#fff", margin: "0 0 6px" }}>
+                30-day pass: $15.99 <span style={{ fontSize: 14, fontWeight: 400, color: "#C9D2DD" }}>one time</span>
+              </p>
+              <p style={{ fontSize: 14, color: "#C9D2DD", margin: "0 0 16px", lineHeight: 1.55 }}>
+                Everything in Premium for 30 days. It doesn&apos;t renew, so there&apos;s nothing to cancel and you aren&apos;t charged again. Good if you&apos;re focused on one job search and don&apos;t want a subscription. Buy another any time to add 30 more days.
+              </p>
+              <Link href="/?view=pricing" className="np-btn np-btn-line np-btn-block">Get the 30-day pass: $15.99</Link>
+            </div>
+            <p style={{ fontSize: 13, color: "#C9D2DD", textAlign: "center", margin: "20px 0 0", lineHeight: 1.5 }}>
+              Payments are handled by Stripe. We never see your card details.
+            </p>
+          </div>
+        </div>
+
+        <div className="np-narrow" style={{ padding: 0, maxWidth: 960 }}>
+          <PlansAtAGlance />
+          <ComparisonMatrix />
+        </div>
+
+        <section style={{ margin: "56px 0 8px" }} aria-labelledby="demo-heading">
+          <h2 id="demo-heading" className="np-h2" style={{ textAlign: "center", marginBottom: 20 }}>
+            See the Premium tools in action
+          </h2>
+          <PremiumDemos />
+        </section>
+      </div>
+
+      <CtaBand eyebrow="Not ready yet?" title="Score your resume free first. No account needed.">
+        <Link href="/ats-checker" className="np-btn np-btn-or">Check My Score Free</Link>
+        <Link href="/?view=auth" className="np-btn np-btn-line">Sign up free</Link>
+      </CtaBand>
+    </PublicShell>
+  );
+}
+
+export default function PricingPage() {
+  if (NEW_PAGES) return <NewPricing />;
+  return <OldPricingPage />;
+}
+
