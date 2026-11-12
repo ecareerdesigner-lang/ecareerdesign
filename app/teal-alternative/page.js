@@ -58,7 +58,7 @@ const faqSchema = {
       name: "Does eCareer Design have a free plan?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. The free plan includes the AI resume builder, job tailoring, cover letter generation, and job search. You can also check your resume's ATS score free in about 30 seconds with no account.",
+        text: "Yes. The free plan includes 2 generations each of the AI resume builder, job tailoring, and cover letter, plus job search. You can also check your resume's ATS score free in about 30 seconds with no account.",
       },
     },
   ],
@@ -112,8 +112,8 @@ export default function TealAlternativePage() {
             </thead>
             <tbody>
               <Row label="Paid price" ecareer="$9.99/mo" teal="$13/week (~$56/mo), $29/mo, or $79/quarter" />
-              <Row label="Free plan" ecareer="Resume builder, job tailoring, cover letter, job search - plus a free ATS score with no account" teal="Unlimited job tracker and resume versions; AI features limited" />
-              <Row label="AI resume content" ecareer="Included free" teal="Teal+ (unlimited AI bullets and summaries)" />
+              <Row label="Free plan" ecareer="Resume builder, job tailoring, and cover letter (2 free generations each), job search, plus a free ATS score with no account" teal="Unlimited job tracker and resume versions; AI features limited" />
+              <Row label="AI resume content" ecareer="2 free generations, then Premium" teal="Teal+ (unlimited AI bullets and summaries)" />
               <Row label="Resume match scoring" ecareer="Premium - full breakdown of what is missing against any posting" teal="Top-5 keywords free; full analysis on Teal+" />
               <Row label="Interview coaching" ecareer="Premium - mock interviews with voice and AI scoring" teal="Not offered" />
               <Row label="Job tracking" ecareer="Career Dashboard with weekly goals and daily match alerts" teal="Excellent free tracker plus Chrome extension" />
@@ -132,7 +132,7 @@ export default function TealAlternativePage() {
           Try the free part first
         </h2>
         <p style={{ fontSize: 15.5, color: TOKENS.inkSoft, lineHeight: 1.7, margin: "0 0 24px" }}>
-          Score your resume free in about 30 seconds - no account, no card. If the score helps, the free builder, tailoring, cover letter, and job search tools are waiting.
+          Score your resume free in about 30 seconds - no account, no card. If the score helps, your 2 free generations each of the builder, tailoring, and cover letter, plus job search, are waiting.
         </p>
 
         <div style={{ background: TOKENS.ink, borderRadius: 20, padding: "2.5rem", margin: "8px 0 48px" }}>

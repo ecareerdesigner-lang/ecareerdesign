@@ -86,14 +86,34 @@ function newId(prefix) {
   return `${prefix}-${Date.now()}-${idCounter}`;
 }
 
-async function callClaude(prompt, maxTokens = 1000) {
+// `action` tells the server which free-tier bucket this call belongs to:
+//   resume | cover_letter | tailoring  -> capped for free accounts
+//   assist                             -> small helper calls inside a builder session
+//   premium                            -> Premium-only features (dashboard, coach, match scoring)
+//   public_tool                        -> the account-free score tools
+async function callClaude(prompt, maxTokens = 1000, action = "assist") {
+  const headers = { "Content-Type": "application/json" };
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+  } catch (e) {
+    // No session available; the server will ask the person to sign in if the action needs one.
+  }
   const response = await fetch("/api/claude", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, maxTokens }),
+    headers,
+    body: JSON.stringify({ prompt, maxTokens, action }),
   });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data?.error || "Generation failed");
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    if (typeof window !== "undefined" && ["limit_reached", "premium_required", "auth_required"].includes(data?.code)) {
+      window.dispatchEvent(new CustomEvent("ecd-gate", { detail: data }));
+    }
+    throw new Error(data?.error || "Generation failed");
+  }
+  if (typeof window !== "undefined" && action !== "public_tool") {
+    window.dispatchEvent(new Event("ecd-usage"));
+  }
   const text = (data.content || [])
     .filter((b) => b.type === "text")
     .map((b) => b.text)
@@ -1328,6 +1348,59 @@ function VirtualAssistant() {
   );
 }
 
+// ---------- Free tier UI ----------
+const GATE_NOUNS = {
+  resume: "resume generations",
+  cover_letter: "cover letter generations",
+  tailoring: "job tailoring runs",
+  assist: "builder helpers",
+};
+
+function UsageNote({ usage, action, noun, onPlans }) {
+  if (!usage || usage.unlimited) return null;
+  const left = Math.max(0, usage.limit - (usage.used?.[action] || 0));
+  return (
+    <p style={{ fontSize: 12.5, color: left === 0 ? TOKENS.red : TOKENS.inkSoft, margin: "10px 0 0", lineHeight: 1.5 }}>
+      Free plan: {left} of {usage.limit} free {noun} left.{" "}
+      <span onClick={onPlans} style={{ color: TOKENS.accent, cursor: "pointer", fontWeight: 500 }}>See plans</span>
+    </p>
+  );
+}
+
+function UpgradeModal({ info, onClose, onPlans }) {
+  const isLimit = info.code === "limit_reached";
+  const noun = GATE_NOUNS[info.action] || "generations";
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+      style={{ position: "fixed", inset: 0, background: "rgba(15,23,32,0.55)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ background: "#fff", borderRadius: 12, maxWidth: 440, width: "100%", padding: 28, boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }}
+      >
+        <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 24, margin: "0 0 10px", color: TOKENS.ink }}>
+          {isLimit ? (info.action === "assist" ? "You've reached your free plan's limit" : `You've used your free ${noun}`) : "This is part of Premium"}
+        </h2>
+        <p style={{ fontSize: 15, color: TOKENS.inkSoft, margin: "0 0 12px", lineHeight: 1.55 }}>
+          {isLimit
+            ? `${info.action === "assist" ? "You've used the AI helper steps included with the free plan." : `Free accounts include ${info.limit} ${noun}.`} Everything you've made so far stays saved in this browser, and you can still use the free resume score.`
+            : "Interview Coach, Resume Match Scoring, and the Career Dashboard are Premium features."}
+        </p>
+        <p style={{ fontSize: 14, color: TOKENS.inkSoft, margin: "0 0 20px", lineHeight: 1.55 }}>
+          A 30-day pass is $15.99 one time and doesn't renew. Premium is $9.99/mo and you can cancel any time.
+        </p>
+        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+          <Button variant="ghost" onClick={onClose}>Not now</Button>
+          <Button variant="primary" onClick={onPlans}>See plans</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Dashboard({ contactInfo, recentProjects, onResumeBuilder, onJobTailoring, onCoverLetter, onInterviewPrep, onInterviewCoach, onRemoveProject, weeklyAppCount, nextInterview, dashboardStatsLoaded, onPracticeInterview, newJobMatchCount, careerBackground, newLook, onHome, onLogout, onManageSubscription }) {
   const [matchJobTitle, setMatchJobTitle] = useState("");
   const [matchCompanyName, setMatchCompanyName] = useState("");
@@ -1370,7 +1443,8 @@ const [showJobMatches, setShowJobMatches] = useState(false);
     try {
       const text = await callClaude(
         matchScorePrompt(careerBackground, matchJobDescription, matchJobTitle, matchCompanyName),
-        tokensForBudget(800)
+        tokensForBudget(800),
+        "premium"
       );
       const cleaned = text.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(cleaned);
@@ -1750,6 +1824,46 @@ useEffect(() => {
     });
     return () => listener?.subscription?.unsubscribe();
   }, []);
+  // ---- Free tier: usage counters + upgrade prompt ----
+  const [gateInfo, setGateInfo] = useState(null);
+  const [usage, setUsage] = useState(null);
+  const requireLoginRef = useRef(null);
+  requireLoginRef.current = requireLogin;
+  const usageTimer = useRef(null);
+
+  const refreshUsage = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) { setUsage(null); return; }
+      const res = await fetch("/api/usage", { cache: "no-store", headers: { Authorization: `Bearer ${session.access_token}` } });
+      if (res.ok) setUsage(await res.json());
+    } catch (e) {
+      // Counters are a convenience; the server still enforces limits.
+    }
+  }, []);
+
+  useEffect(() => { refreshUsage(); }, [currentUser, refreshUsage]);
+
+  useEffect(() => {
+    const onGate = (e) => {
+      const d = e.detail || {};
+      trackEvent("free_gate_hit", { code: d.code, action: d.action || null });
+      if (d.code === "auth_required") requireLoginRef.current && requireLoginRef.current();
+      else setGateInfo(d);
+    };
+    const onUsage = () => {
+      clearTimeout(usageTimer.current);
+      usageTimer.current = setTimeout(refreshUsage, 800);
+    };
+    window.addEventListener("ecd-gate", onGate);
+    window.addEventListener("ecd-usage", onUsage);
+    return () => {
+      window.removeEventListener("ecd-gate", onGate);
+      window.removeEventListener("ecd-usage", onUsage);
+      clearTimeout(usageTimer.current);
+    };
+  }, [refreshUsage]);
+
 async function handleAuthSubmit() {
     setAuthError("");
     setAuthLoading(true);
@@ -1852,7 +1966,7 @@ async function handleAuthSubmit() {
       const MAX_SCORE_ATTEMPTS = 3;
       for (let attempt = 1; attempt <= MAX_SCORE_ATTEMPTS; attempt++) {
         try {
-          const text = await callClaude(resumeScorePrompt(resumeText), tokensForBudget(1200));
+          const text = await callClaude(resumeScorePrompt(resumeText), tokensForBudget(1200), "public_tool");
           const cleaned = text.replace(/```json|```/g, "").trim();
           try {
             parsed = JSON.parse(cleaned);
@@ -2260,7 +2374,7 @@ async function extractFromPosting() {
   setExtracting(true);
   setExtractError("");
   try {
-    const text = await callClaude(extractionPrompt(rawPosting), 4096);
+    const text = await callClaude(extractionPrompt(rawPosting), 4096, "tailoring");
     const arr = parseJsonArray(text);
     setRequirements(arr.map((t, i) => ({ id: `r${i}`, text: t })));
   } catch (e) {
@@ -2317,7 +2431,7 @@ async function extractFromPosting() {
     if (!entry || !entry.basicDescription?.trim()) return;
     updateWorkExperience(id, { generating: true });
     try {
-      const text = await callClaude(workExpandPrompt(entry, jobTitle || selectedLib?.title, requirements), tokensForBudget(WORK_EXP_BUDGET));
+      const text = await callClaude(workExpandPrompt(entry, jobTitle || selectedLib?.title, requirements), tokensForBudget(WORK_EXP_BUDGET), "assist");
       const { text: fitted, trimmed } = trimToBudget(text.trim(), WORK_EXP_BUDGET);
       updateWorkExperience(id, { expandedDescription: fitted, generating: false, trimmed });
     } catch (e) {
@@ -2354,7 +2468,7 @@ async function extractFromPosting() {
     setTrainingExtracting(true);
     setTrainingError("");
     try {
-      const text = await callClaude(trainingExtractionPrompt(trainingPasteText), 1000);
+      const text = await callClaude(trainingExtractionPrompt(trainingPasteText), 1000, "assist");
       const arr = parseJsonArray(text);
       setTrainingEntries(arr.map((t) => ({
         id: newId("tr"),
@@ -2412,7 +2526,7 @@ async function extractFromPosting() {
     setResponses((r) => ({ ...r, [req.id]: { ...(r[req.id] || {}), generating: true } }));
     try {
       const budget = budgets[req.id] || 500;
-      const text = await callClaude(starPrompt(req.text, buildBackground(), budget), tokensForBudget(budget));
+      const text = await callClaude(starPrompt(req.text, buildBackground(), budget), tokensForBudget(budget), "assist");
       const { text: fitted, trimmed } = trimToBudget(text.trim(), budget);
       setResponses((r) => ({ ...r, [req.id]: { text: fitted, generating: false, trimmed } }));
     } catch (e) {
@@ -2424,7 +2538,7 @@ async function extractFromPosting() {
     if (!requireLogin()) return;
     setSkills({ text: "", generating: true });
     try {
-      const text = await callClaude(skillsPrompt(jobTitle || selectedLib?.title || "this position", buildBackground(), SKILLS_BUDGET), tokensForBudget(SKILLS_BUDGET));
+      const text = await callClaude(skillsPrompt(jobTitle || selectedLib?.title || "this position", buildBackground(), SKILLS_BUDGET), tokensForBudget(SKILLS_BUDGET), "assist");
       const { text: fitted, trimmed } = trimToBudget(text.trim(), SKILLS_BUDGET);
       setSkills({ text: fitted, generating: false, trimmed });
     } catch (e) {
@@ -2458,7 +2572,7 @@ async function extractFromPosting() {
         })),
       };
 
-      const text = await callClaude(resumePrompt(bg, contactInfo, guidance), 10000);
+      const text = await callClaude(resumePrompt(bg, contactInfo, guidance), 10000, "resume");
       const parsed = parseJsonObject(text);
       const workHistory = recentJobs.map((w, i) => ({
         title: w.positionTitle,
@@ -2498,7 +2612,7 @@ async function extractFromPosting() {
     setCoverLetterError(false);
     try {
       const bg = buildBackground();
-      const text = await callClaude(coverLetterPrompt(bg, clJobTitle, clCompanyName), tokensForBudget(1800));
+      const text = await callClaude(coverLetterPrompt(bg, clJobTitle, clCompanyName), tokensForBudget(1800), "cover_letter");
       const parsed = parseJsonObject(text);
       setCoverLetterData({
         date: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
@@ -2525,7 +2639,8 @@ async function extractFromPosting() {
       const bg = buildBackground();
       const text = await callClaude(
         interviewQuestionsPrompt(bg, requirements, jobTitle || selectedLib?.title, ivInterviewType),
-        3200
+        3200,
+        "premium"
       );
       const parsed = parseJsonObject(text);
       const questions = (parsed.questions || []).map((q) => ({
@@ -2576,11 +2691,11 @@ Every string value must be valid JSON: escape any internal double quotes as \\",
      const background = buildBackground();
       let stories;
       try {
-        const text = await callClaude(coachStoriesPrompt(background), 6000);
+        const text = await callClaude(coachStoriesPrompt(background), 6000, "premium");
         stories = parseJsonArray(text);
       } catch (parseErr) {
         console.warn("First story extraction failed to parse, retrying once:", parseErr);
-        const text2 = await callClaude(coachStoriesPrompt(background), 6000);
+        const text2 = await callClaude(coachStoriesPrompt(background), 6000, "premium");
         stories = parseJsonArray(text2);
       }
       const withIds = stories.map((s) => ({ ...s, id: newId("story") }));
@@ -2645,7 +2760,8 @@ Return ONLY the JSON array. No markdown fences, no commentary.`;
     try {
       const text = await callClaude(
         coachQuestionsPrompt(jobTitle || selectedLib?.title, requirements, careerStories),
-        3200
+        3200,
+        "premium"
       );
       const questions = parseJsonArray(text);
       setCoachQuestions(questions.map((q) => ({ ...q, id: newId("cq") })));
@@ -2699,7 +2815,8 @@ Return ONLY the JSON object. No markdown fences, no commentary.`;
       const matched = careerStories.find((s) => s.id === practiceQuestion?.matchedStoryId);
       const text = await callClaude(
         scoreAnswerPrompt(practiceQuestion?.question, practiceAnswer, matched),
-        1200
+        1200,
+        "premium"
       );
       const cleaned = text.trim().replace(/^```json\s*/i, "").replace(/```$/, "");
       const score = JSON.parse(cleaned);
@@ -2871,7 +2988,8 @@ async function scoreAndAdvanceMock() {
       const matched = careerStories.find((s) => s.id === mockCurrentQuestion?.matchedStoryId);
       const text = await callClaude(
         scoreAnswerPrompt(mockCurrentQuestion?.question, mockAnswer, matched),
-        1200
+        1200,
+        "premium"
       );
       const cleaned = text.trim().replace(/^```json\s*/i, "").replace(/```$/, "");
       const score = JSON.parse(cleaned);
@@ -2928,7 +3046,8 @@ Return ONLY the JSON object. No markdown fences, no commentary.`;
     try {
       const text = await callClaude(
         nextQuestionPrompt(jobTitle || selectedLib?.title, requirements, careerStories, history),
-        800
+        800,
+        "premium"
       );
       const cleaned = text.trim().replace(/^```json\s*/i, "").replace(/```$/, "");
       const result = JSON.parse(cleaned);
@@ -3023,7 +3142,7 @@ const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     setAnswerEvaluating(true);
     try {
       const bg = buildBackground();
-      const text = await callClaude(answerEvaluationPrompt(q, currentAnswerText, bg), tokensForBudget(1200));
+      const text = await callClaude(answerEvaluationPrompt(q, currentAnswerText, bg), tokensForBudget(1200), "premium");
       const parsed = parseJsonObject(text);
       setAnswerResults((prev) => ({
         ...prev,
@@ -3471,7 +3590,8 @@ async function runJobCardMatch(job, key) {
       const background = buildBackground();
       const text = await callClaude(
         matchScorePrompt(background, jobDescText, job.title, job.employer),
-        tokensForBudget(800)
+        tokensForBudget(800),
+        "premium"
       );
       const cleaned = text.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(cleaned);
@@ -3829,6 +3949,13 @@ async function runJobCardMatch(job, key) {
         ? { fontFamily: "'Inter', sans-serif", color: TOKENS.ink }
         : { fontFamily: "'Inter', sans-serif", color: TOKENS.ink, maxWidth: 880, margin: "0 auto", padding: "2rem 1.5rem" }}
     >
+      {gateInfo && (
+        <UpgradeModal
+          info={gateInfo}
+          onClose={() => setGateInfo(null)}
+          onPlans={() => { setGateInfo(null); setView("pricing"); }}
+        />
+      )}
       {toolsOn && (
         <ToolsChrome
           mode={mode}
@@ -3928,15 +4055,15 @@ async function runJobCardMatch(job, key) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 28 }}>
             <Card interactive onClick={() => { trackEvent("builder_entered", { source: "homepage", mode: "resume" }); setMode("resume"); setStep(1); setView("wizard"); }}>
               <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 6px" }}>Resume Builder</h3>
-              <p style={{ fontSize: 14, color: TOKENS.inkSoft, margin: 0 }}>Build an ATS-friendly resume in minutes.</p>
+              <p style={{ fontSize: 14, color: TOKENS.inkSoft, margin: 0 }}>Build an ATS-friendly resume in minutes.{usage?.unlimited ? "" : " 2 free generations."}</p>
             </Card>
             <Card interactive onClick={() => { trackEvent("builder_entered", { source: "homepage", mode: "application" }); setMode("application"); setStep(0); setView("wizard"); }}>
               <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 6px" }}>Job Tailoring</h3>
-              <p style={{ fontSize: 14, color: TOKENS.inkSoft, margin: 0 }}>Tailored STAR responses for any posting.</p>
+              <p style={{ fontSize: 14, color: TOKENS.inkSoft, margin: 0 }}>Tailored STAR responses for any posting.{usage?.unlimited ? "" : " 2 free runs."}</p>
             </Card>
             <Card interactive onClick={() => { trackEvent("builder_entered", { source: "homepage", mode: "coverletter" }); setMode("coverletter"); setStep(0); setView("wizard"); }}>
               <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 6px" }}>Cover Letter</h3>
-              <p style={{ fontSize: 14, color: TOKENS.inkSoft, margin: 0 }}>Generate a matching cover letter.</p>
+              <p style={{ fontSize: 14, color: TOKENS.inkSoft, margin: 0 }}>Generate a matching cover letter.{usage?.unlimited ? "" : " 2 free generations."}</p>
             </Card>
            <Card interactive onClick={() => setView("jobsearch")}>
               <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, margin: "0 0 6px" }}>Job Search</h3>
@@ -4087,7 +4214,7 @@ async function runJobCardMatch(job, key) {
             <Card style={{ padding: 32 }}>
               <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, margin: "0 0 6px", color: TOKENS.ink }}>Free</h2>
               <p style={{ fontSize: 15, color: TOKENS.inkSoft, margin: "0 0 20px", lineHeight: 1.5 }}>
-                Everything you need to build a standout application.
+                Try the core tools free. Includes 2 free generations each of resume, cover letter, and job tailoring.
               </p>
               <p style={{ fontSize: 34, fontWeight: 700, color: TOKENS.ink, margin: "0 0 24px" }}>$0</p>
 
@@ -4096,21 +4223,21 @@ async function runJobCardMatch(job, key) {
                   <Check size={18} color={TOKENS.green} style={{ flexShrink: 0, marginTop: 2 }} />
                   <div>
                     <p style={{ fontSize: 15, fontWeight: 600, margin: "0 0 2px", color: TOKENS.ink }}>Resume Builder</p>
-                    <p style={{ fontSize: 13.5, color: TOKENS.inkSoft, margin: 0, lineHeight: 1.5 }}>Build an ATS-friendly resume in minutes.</p>
+                    <p style={{ fontSize: 13.5, color: TOKENS.inkSoft, margin: 0, lineHeight: 1.5 }}>Build an ATS-friendly resume in minutes. 2 free generations.</p>
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                   <Check size={18} color={TOKENS.green} style={{ flexShrink: 0, marginTop: 2 }} />
                   <div>
                     <p style={{ fontSize: 15, fontWeight: 600, margin: "0 0 2px", color: TOKENS.ink }}>Job Tailoring</p>
-                    <p style={{ fontSize: 13.5, color: TOKENS.inkSoft, margin: 0, lineHeight: 1.5 }}>Tailored STAR responses for any posting.</p>
+                    <p style={{ fontSize: 13.5, color: TOKENS.inkSoft, margin: 0, lineHeight: 1.5 }}>Tailored STAR responses for any posting. 2 free runs.</p>
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                   <Check size={18} color={TOKENS.green} style={{ flexShrink: 0, marginTop: 2 }} />
                   <div>
                     <p style={{ fontSize: 15, fontWeight: 600, margin: "0 0 2px", color: TOKENS.ink }}>Cover Letter</p>
-                    <p style={{ fontSize: 13.5, color: TOKENS.inkSoft, margin: 0, lineHeight: 1.5 }}>Generate a matching cover letter.</p>
+                    <p style={{ fontSize: 13.5, color: TOKENS.inkSoft, margin: 0, lineHeight: 1.5 }}>Generate a matching cover letter. 2 free generations.</p>
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
@@ -4577,6 +4704,7 @@ async function runJobCardMatch(job, key) {
             <Button variant="ink" icon={extracting ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />} onClick={extractFromPosting} disabled={extracting || !rawPosting.trim()}>
               {extracting ? "Extracting..." : "Extract requirements"}
             </Button>
+            <UsageNote usage={usage} action="tailoring" noun="job tailoring runs" onPlans={() => setView("pricing")} />
             {extractError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: 10 }}>{extractError}</p>}
           </div>
 
@@ -5261,6 +5389,7 @@ async function runJobCardMatch(job, key) {
             ) : (
               <Button variant="primary" icon={<Sparkles size={14} />} onClick={generateResume}>Generate resume</Button>
             )}
+            <UsageNote usage={usage} action="resume" noun="resume generations" onPlans={() => setView("pricing")} />
             {resumeError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: 10 }}>Something went wrong generating the resume. Try again.</p>}
           </Card>
 
@@ -5331,6 +5460,7 @@ async function runJobCardMatch(job, key) {
             ) : (
               <Button variant="primary" icon={<Sparkles size={14} />} onClick={generateCoverLetter}>Generate cover letter</Button>
             )}
+            <UsageNote usage={usage} action="cover_letter" noun="cover letter generations" onPlans={() => setView("pricing")} />
             {coverLetterError && <p style={{ color: TOKENS.red, fontSize: 13, marginTop: 10 }}>Something went wrong generating the cover letter. Try again.</p>}
           </Card>
 

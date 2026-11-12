@@ -401,7 +401,7 @@ export default function NewLanding({
           <div className="nl-tools-side">
             <span className="nl-eyebrow">The toolkit</span>
             <h2 className="nl-h2">Everything between you and the offer</h2>
-            <p className="nl-lead">Start with the free essentials. Add Premium when you want to move faster.</p>
+            <p className="nl-lead">Start with the free essentials, including 2 free generations of each builder. Add Premium when you want to move faster.</p>
             <p style={{ fontSize: 16, color: "#3C5069" }}>
               <b style={{ color: "#16283D" }}>Also included:</b> job search across USAJOBS, Adzuna and Jooble; resume match scoring; and a career dashboard to track your search.
             </p>
@@ -424,7 +424,7 @@ export default function NewLanding({
             <article className="nl-tool nl-rv">
               <ArtBuilder />
               <div className="nl-tool-body">
-                <span className="nl-badge">Free</span>
+                <span className="nl-badge">2 free</span>
                 <h3>Resume Builder</h3>
                 <p>Build a clean, ATS-friendly resume in minutes from the background you enter once.</p>
                 <button type="button" className="nl-tool-link" onClick={() => onBuilder("resume")}>Open the Resume Builder &rarr;</button>
@@ -433,7 +433,7 @@ export default function NewLanding({
             <article className="nl-tool nl-rv">
               <ArtStar />
               <div className="nl-tool-body">
-                <span className="nl-badge">Free</span>
+                <span className="nl-badge">2 free</span>
                 <h3>STAR Job Tailoring</h3>
                 <p>Paste any posting and get STAR responses shaped to exactly what that hiring team is looking for.</p>
                 <button type="button" className="nl-tool-link" onClick={() => onBuilder("application")}>Tailor to a job posting &rarr;</button>
@@ -442,7 +442,7 @@ export default function NewLanding({
             <article className="nl-tool nl-rv">
               <ArtLetter />
               <div className="nl-tool-body">
-                <span className="nl-badge">Free</span>
+                <span className="nl-badge">2 free</span>
                 <h3>Cover Letters</h3>
                 <p>A matching cover letter for every application, written in your voice instead of a template&rsquo;s.</p>
                 <button type="button" className="nl-tool-link" onClick={() => onBuilder("coverletter")}>Write a cover letter &rarr;</button>
@@ -501,10 +501,10 @@ export default function NewLanding({
               <div className="nl-stack" style={{ gap: 4 }}>
                 <span className="name">Free</span>
                 <span className="price">$0</span>
-                <span className="sub">Everything you need to build a standout application.</span>
+                <span className="sub">Try the core tools free, then upgrade when you need more.</span>
               </div>
               <ul className="nl-chk">
-                <li>Readiness Scan</li><li>Resume Builder</li><li>STAR Job Tailoring</li><li>Cover Letters</li><li>Job search across USAJOBS, Adzuna &amp; Jooble</li>
+                <li>Readiness Scan</li><li>Resume Builder (2 free)</li><li>STAR Job Tailoring (2 free)</li><li>Cover Letters (2 free)</li><li>Job search across USAJOBS, Adzuna &amp; Jooble</li>
               </ul>
               <button type="button" className="nl-btn nl-btn-gh" onClick={onScan}>Get started free</button>
             </div>

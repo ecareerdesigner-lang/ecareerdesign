@@ -82,7 +82,7 @@ async function callClaude(prompt, maxTokens = 1200) {
   const response = await fetch("/api/claude", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, maxTokens }),
+    body: JSON.stringify({ prompt, maxTokens, action: "public_tool" }),
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data?.error || "Generation failed");

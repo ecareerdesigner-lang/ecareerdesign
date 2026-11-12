@@ -112,10 +112,10 @@ export default function JobscanAlternativePage() {
             </thead>
             <tbody>
               <Row label="Price" ecareer="$9.99/mo" jobscan="$49.95/mo (or $89.95/quarter)" />
-              <Row label="Free plan" ecareer="Resume builder, job tailoring, cover letter, job search - plus a free ATS score with no account" jobscan="About 5 resume scans/month" />
+              <Row label="Free plan" ecareer="Resume builder, job tailoring, and cover letter (2 free generations each), job search, plus a free ATS score with no account" jobscan="About 5 resume scans/month" />
               <Row label="ATS resume score" ecareer="Free score plus Premium match scoring against any posting" jobscan="Match Rate report (deepest in category)" />
-              <Row label="AI resume builder" ecareer="Included free" jobscan="Premium" />
-              <Row label="Cover letters" ecareer="Included free" jobscan="Premium" />
+              <Row label="AI resume builder" ecareer="2 free generations, then Premium" jobscan="Premium" />
+              <Row label="Cover letters" ecareer="2 free generations, then Premium" jobscan="Premium" />
               <Row label="Interview coaching" ecareer="Included in Premium - mock interviews with AI scoring" jobscan="Not offered" />
               <Row label="Job search" ecareer="Built in - real postings from USAJOBS, Adzuna & Jooble" jobscan="Job tracker only" />
             </tbody>
@@ -133,7 +133,7 @@ export default function JobscanAlternativePage() {
           Try the free part first
         </h2>
         <p style={{ fontSize: 15.5, color: TOKENS.inkSoft, lineHeight: 1.7, margin: "0 0 24px" }}>
-          You don't have to take our word for any of this. Score your resume free in about 30 seconds - no account, no card. If the score helps, the free builder, tailoring, cover letter, and job search tools are waiting.
+          You don't have to take our word for any of this. Score your resume free in about 30 seconds - no account, no card. If the score helps, your 2 free generations each of the builder, tailoring, and cover letter, plus job search, are waiting.
         </p>
 
         <div style={{ background: TOKENS.ink, borderRadius: 20, padding: "2.5rem", margin: "8px 0 48px" }}>
