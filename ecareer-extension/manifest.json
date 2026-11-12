@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "eCareer Design Apply Assistant",
+  "version": "1.0.0",
+  "description": "Find roles that fit your resume, tailor each application, and fill forms. You review and approve every send. Premium feature.",
+  "homepage_url": "https://www.ecareerdesign.net",
+  "minimum_chrome_version": "116",
+  "icons": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "permissions": ["storage", "sidePanel", "activeTab", "scripting", "tabs"],
+  "host_permissions": ["https://www.ecareerdesign.net/*", "http://localhost:3000/*"],
+  "optional_host_permissions": ["https://*/*"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "side_panel": { "default_path": "sidepanel/sidepanel.html" },
+  "action": { "default_title": "eCareer Design Apply Assistant" },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://boards.greenhouse.io/*",
+        "https://job-boards.greenhouse.io/*",
+        "https://jobs.lever.co/*",
+        "https://jobs.ashbyhq.com/*",
+        "https://*.myworkdayjobs.com/*"
+      ],
+      "js": ["content/adapters.js", "content/content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
