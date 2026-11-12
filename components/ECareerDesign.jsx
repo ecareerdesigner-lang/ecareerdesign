@@ -1500,6 +1500,7 @@ const [showJobMatches, setShowJobMatches] = useState(false);
         recentProjects={recentProjects}
         onRemoveProject={onRemoveProject}
         relativeDate={relativeDate}
+        extensionSlot={<ExtensionConnect />}
         onHome={onHome}
         onLogout={onLogout}
         onManageSubscription={onManageSubscription}
@@ -1632,6 +1633,9 @@ return (
           </Card>
         </Link>
       </div>
+      <div style={{ marginBottom: 40 }}>
+        <ExtensionConnect />
+      </div>
 <div style={{ marginBottom: 40 }}>
         <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, margin: "0 0 14px", color: TOKENS.ink }}>Resume Match Score</h2>
         <Card>
@@ -1706,9 +1710,6 @@ return (
                 <Clock size={14} color={TOKENS.inkSoft} />
                 <span style={{ fontSize: 14, fontWeight: 500, flex: 1, color: TOKENS.ink }}>{p.title}</span>
                 <span style={{ fontSize: 12, color: TOKENS.inkSoft }}>{p.type}</span>
-            <div style={{ marginBottom: 40 }}>
-  <ExtensionConnect />
-</div>
                 <span style={{ fontSize: 12, color: "#9AA3A0" }}>{relativeDate(p.date)}</span>
                 <button
                   onClick={() => onRemoveProject(p.id)}
@@ -4311,6 +4312,17 @@ async function runJobCardMatch(job, key) {
                     </p>
                   </div>
                 </div>
+                {process.env.NEXT_PUBLIC_EXTENSION_URL && (
+                  <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <Check size={18} color={TOKENS.accent} style={{ flexShrink: 0, marginTop: 2 }} />
+                    <div>
+                      <p style={{ fontSize: 15, fontWeight: 600, margin: "0 0 2px", color: "#fff" }}>Apply Assistant (Chrome extension)</p>
+                      <p style={{ fontSize: 13.5, color: "#C9D2DD", margin: 0, lineHeight: 1.5 }}>
+                        Find roles that fit your resume, get a tailored resume and cover letter for each, and have application forms filled in. You review and approve every send.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 <Button
                 variant="primary"
@@ -4438,17 +4450,6 @@ async function runJobCardMatch(job, key) {
 
                     {jobMatchResults[i]?.result && (
                       <div style={{ marginTop: 10, padding: 10, borderRadius: 6, background: TOKENS.surface, border: `1px solid ${TOKENS.line}` }}>
-                {process.env.NEXT_PUBLIC_EXTENSION_URL && (
-                  <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    <Check size={18} color={TOKENS.accent} style={{ flexShrink: 0, marginTop: 2 }} />
-                    <div>
-                      <p style={{ fontSize: 15, fontWeight: 600, margin: "0 0 2px", color: "#fff" }}>Apply Assistant (Chrome extension)</p>
-                      <p style={{ fontSize: 13.5, color: "#C9D2DD", margin: 0, lineHeight: 1.5 }}>
-                        Find roles that fit your resume, get a tailored resume and cover letter for each, and have application forms filled in. You review and approve every send.
-                      </p>
-                    </div>
-                  </div>
-                )}
                         <p style={{ fontSize: 20, fontWeight: 700, margin: "0 0 4px", color: TOKENS.ink }}>
                           {jobMatchResults[i].result.score}% match
                         </p>

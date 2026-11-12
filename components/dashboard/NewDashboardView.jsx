@@ -33,7 +33,7 @@ export default function NewDashboardView({
   statsLoaded, weeklyAppCount, newJobMatchCount, nextInterview, onPracticeInterview,
   showJobMatches, jobMatchesList, jobMatchesLoading, onToggleJobMatches,
   onResumeBuilder, onJobTailoring, onCoverLetter, onInterviewPrep, onInterviewCoach,
-  match, recentProjects, onRemoveProject, relativeDate,
+  match, recentProjects, onRemoveProject, relativeDate, extensionSlot,
   onHome, onLogout, onManageSubscription,
 }) {
   const applied = weeklyAppCount || 0;
@@ -216,6 +216,12 @@ export default function NewDashboardView({
               })}
             </div>
           </section>
+
+          {extensionSlot && (
+            <section className="nd-section" style={{ paddingTop: 24 }} aria-label="Apply Assistant browser extension">
+              {extensionSlot}
+            </section>
+          )}
         </div>
 
         <section className="nd-bg nd-dark nd-match" aria-labelledby="nd-match-h">
