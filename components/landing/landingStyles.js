@@ -214,6 +214,26 @@ export const LANDING_CSS = `
   .nl-rv, .nl-px { animation: none !important; }
   .nl-blog a { transition: none; }
 }
+
+/* Audit additions: mobile menu, proof blocks, badges */
+.nl-popular { display: inline-block; margin-left: 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.03em; padding: 3px 10px; border-radius: 999px; background: var(--nl-orange); color: var(--nl-deep); vertical-align: middle; }
+.nl-federal { margin: 0; font-size: 16px; color: #16283D; background: #FDE3CC; border-left: 4px solid var(--nl-orange); border-radius: 8px; padding: 12px 16px; line-height: 1.5; }
+.nl-federal a { color: #7A3300; font-weight: 600; }
+.nl-usage { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 15px; color: var(--nl-ondark); }
+.nl-avatars { display: inline-flex; }
+.nl-avatars img { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; margin-left: -8px; object-fit: cover; }
+.nl-avatars img:first-child { margin-left: 0; }
+.nl-quotes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+.nl-quote { margin: 0; background: #fff; border: 1px solid var(--nl-line); border-radius: 20px; padding: 26px; display: flex; flex-direction: column; gap: 14px; }
+.nl-quote blockquote { margin: 0; font-size: 18px; line-height: 1.5; color: var(--nl-navy); }
+.nl-quote .outcome { margin: 0; font-weight: 600; color: #7A3300; font-size: 15px; }
+.nl-quote figcaption { display: flex; align-items: center; gap: 12px; font-size: 15px; color: var(--nl-muted); margin-top: auto; }
+.nl-quote figcaption img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
+.nl-founder { display: flex; gap: 18px; align-items: flex-start; background: #E3E8E2; border-radius: 20px; padding: 24px; }
+.nl-founder img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.nl-founder p { margin: 0 0 8px; line-height: 1.55; }
+.nl-founder a { color: #2F5D8F; }
+.nl-foot-links a { display: inline-flex; align-items: center; min-height: 44px; }
 @media (max-width: 860px) { .nl-tools-side { position: static; } }
 @media (max-width: 760px) {
   .nl-navhide { display: none !important; }
@@ -228,6 +248,7 @@ export const LANDING_CSS = `
   .nl-nav-links .nl-btn { white-space: nowrap; padding: 8px 14px !important; font-size: 14px; }
   .nl-navlink { white-space: nowrap; }
   .nl-sm-hide { display: none; }
+  .nl-founder { flex-direction: column; }
 }
 @media (max-width: 360px) {
   .nl-nav-in { padding-left: 12px; padding-right: 12px; gap: 8px; }

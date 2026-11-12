@@ -4,6 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { Fraunces, Inter } from "next/font/google";
 import { LANDING_CSS } from "./landingStyles";
+import PremiumDemos from "./PremiumDemos";
+import { FAQS } from "./faqData";
+import { SITE_PROOF } from "../../lib/siteProof";
 
 // Same families, weights and styles as app/layout.js, so Next reuses the font files that
 // are already loaded instead of adding new ones. `variable` just exposes them to landing.css.
@@ -30,29 +33,6 @@ const TICKER = [
   "Performance reviews",
 ];
 
-const FAQS = [
-  {
-    q: "Will it sound like AI wrote it?",
-    a: "It starts from your real background and the exact posting, so the result is your experience, sharpened. You review and edit everything before it goes anywhere.",
-  },
-  {
-    q: "Is it only for federal jobs?",
-    a: "No. Paste a posting from any employer and it tailors your resume, cover letter and answers to that role. If you are applying for federal positions, it also searches USAJOBS directly and writes STAR responses for those postings.",
-  },
-  {
-    q: "Do I have to start from scratch each time?",
-    a: "No. You enter your background once, then every new application is built from it and shaped to the posting you paste in.",
-  },
-  {
-    q: "Is my resume kept private?",
-    a: "Your information is used to build your applications. The Privacy Notice explains exactly how it is handled.",
-    privacy: true,
-  },
-  {
-    q: "Can I cancel anytime?",
-    a: "Premium is month to month. If you would rather not subscribe at all, the 30-Day Pass is one payment with nothing to cancel.",
-  },
-];
 
 const BLOG = [
   ["/blog/how-to-find-keywords-in-job-description", "Job Description Keywords: How to Find the Right Ones"],
@@ -82,7 +62,7 @@ function BgImage({ src, position = "center", shade, priority = false }) {
 /* Small illustrations for the toolkit cards */
 function ArtScan() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
+    <svg role="img" aria-label="Illustration of a resume with a keyword highlighted under a magnifying glass" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
       <rect width="400" height="220" fill="#1F3B5C" />
       <circle cx="330" cy="30" r="130" fill="#F2660A" fillOpacity="0.22" />
       <rect x="125" y="26" width="150" height="176" rx="10" fill="#EEF0EC" />
@@ -99,7 +79,7 @@ function ArtScan() {
 }
 function ArtBuilder() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
+    <svg role="img" aria-label="Illustration of a resume with a photo block and a pencil" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
       <rect width="400" height="220" fill="#274A72" />
       <circle cx="60" cy="200" r="140" fill="#F2660A" fillOpacity="0.2" />
       <rect x="115" y="26" width="150" height="176" rx="10" fill="#EEF0EC" />
@@ -121,7 +101,7 @@ function ArtBuilder() {
 }
 function ArtStar() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
+    <svg role="img" aria-label="Illustration of the letters S, T, A and R as four connected steps" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
       <rect width="400" height="220" fill="#1F3B5C" />
       <circle cx="340" cy="190" r="130" fill="#F2660A" fillOpacity="0.2" />
       <line x1="80" y1="110" x2="320" y2="110" stroke="#C9D2DD" strokeWidth="3" strokeDasharray="6 6" />
@@ -140,7 +120,7 @@ function ArtStar() {
 }
 function ArtLetter() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
+    <svg role="img" aria-label="Illustration of a sealed cover letter envelope" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
       <rect width="400" height="220" fill="#274A72" />
       <circle cx="70" cy="40" r="130" fill="#F2660A" fillOpacity="0.2" />
       <rect x="105" y="52" width="190" height="130" rx="12" fill="#EEF0EC" />
@@ -152,7 +132,7 @@ function ArtLetter() {
 }
 function ArtMic() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
+    <svg role="img" aria-label="Illustration of a microphone for voice mock interviews" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
       <rect width="400" height="220" fill="#16283D" />
       <circle cx="330" cy="40" r="130" fill="#F2660A" fillOpacity="0.28" />
       <path d="M118 56 a28 28 0 0 0 0 76" fill="none" stroke="#C9D2DD" strokeOpacity="0.5" strokeWidth="6" strokeLinecap="round" />
@@ -169,7 +149,7 @@ function ArtMic() {
 }
 function ArtAward() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
+    <svg role="img" aria-label="Illustration of a star award for performance reviews" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
       <rect width="400" height="220" fill="#16283D" />
       <circle cx="70" cy="190" r="140" fill="#F2660A" fillOpacity="0.26" />
       <circle cx="200" cy="110" r="82" fill="none" stroke="#FFFFFF" strokeOpacity="0.22" strokeWidth="3" />
@@ -226,7 +206,7 @@ export default function NewLanding({
             ) : (
               <button type="button" className="nl-navlink" onClick={onLogin}>Log in</button>
             ))}
-            <button type="button" className="nl-btn nl-btn-or" style={{ minHeight: 40, padding: "8px 20px" }} onClick={onScan}>
+            <button type="button" className="nl-btn nl-btn-or" style={{ minHeight: 44, padding: "8px 20px" }} onClick={onScan}>
               Free <span className="nl-sm-hide">resume </span>scan
             </button>
           </nav>
@@ -244,11 +224,12 @@ export default function NewLanding({
           <div className="nl-hero-in">
             <div className="nl-hero-copy">
               <span className="nl-pill">AI resume builder · Free 30-second scan</span>
+              <span className="nl-pill">Full toolkit at $9.99/mo · Jobscan Premium is $49.95/mo</span>
               <h1 className="nl-h1">
                 Your resume, rebuilt for the job you <em>actually want.</em>
               </h1>
               <p className="nl-lead" style={{ maxWidth: 540 }}>
-                Upload your resume and see your ATS, keyword and formatting scores in seconds. Then paste any job posting and get a tailored resume, cover letter and interview answers built from one background you enter once.
+                For career changers, returners and federal applicants: upload your resume and see your ATS, keyword and formatting scores in seconds. Then paste any job posting and get a tailored resume, cover letter and interview answers built from one background you enter once.
               </p>
               <div className="nl-actions">
                 <button type="button" className="nl-btn nl-btn-or" style={{ padding: "15px 28px", fontSize: 17 }} onClick={onScan}>
@@ -259,6 +240,20 @@ export default function NewLanding({
                 </Link>
               </div>
               <p className="nl-fine">No credit card. Works for any posting from any employer.</p>
+              {(SITE_PROOF.usage || SITE_PROOF.avatars.length > 0) && (
+                <div className="nl-usage">
+                  {SITE_PROOF.avatars.length > 0 && (
+                    <span className="nl-avatars">
+                      {SITE_PROOF.avatars.slice(0, 20).map((a) => (
+                        <img key={a.name} src={a.photo} alt={a.name} width={32} height={32} loading="lazy" />
+                      ))}
+                    </span>
+                  )}
+                  {SITE_PROOF.usage && (
+                    <span className="nl-usage-text"><b>{SITE_PROOF.usage.count}</b> {SITE_PROOF.usage.label}</span>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="nl-card-wrap">
@@ -323,7 +318,7 @@ export default function NewLanding({
             <h2 className="nl-h2" style={{ fontSize: "clamp(34px, 4.4vw, 56px)" }}>Your experience is strong. Your resume isn&rsquo;t saying it.</h2>
           </div>
           <div className="nl-rv nl-stack" style={{ flex: "1 1 420px", minWidth: 0, gap: 22 }}>
-            <p className="nl-lead">Software skims for keywords. Hiring managers skim for proof. A generic resume loses both audiences before anyone reads past the first line.</p>
+            <p className="nl-lead">Software skims for keywords. Hiring managers skim for proof. A generic resume loses both audiences before anyone reads past the first line, so you get no callbacks and no clue why.</p>
             <p className="nl-lead">eCareer Design rewrites your background around each posting, so every application uses the language of the role and the results behind it.</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
               {["Keywords the posting uses", "Results you can verify", "A format every system reads"].map((c) => (
@@ -345,7 +340,7 @@ export default function NewLanding({
           <div className="nl-rv nl-stack" style={{ gap: 14, maxWidth: 680 }}>
             <span className="nl-eyebrow">Who it&rsquo;s for</span>
             <h2 className="nl-h2">Wherever your next move is</h2>
-            <p className="nl-lead">Enter your background once. Every resume, cover letter and interview answer starts from it.</p>
+            <p className="nl-lead">Enter your background once. Every resume, cover letter and interview answer starts from it, so the search stops feeling like a second full-time job. Built for individual job seekers, not recruiters or hiring teams.</p>
           </div>
           <div className="nl-grid">
             <div className="nl-rv nl-aud" style={{ color: "#16283D" }}>
@@ -404,6 +399,10 @@ export default function NewLanding({
             <p className="nl-lead">Start with the free essentials, including 2 free generations of each builder. Add Premium when you want to move faster.</p>
             <p style={{ fontSize: 16, color: "#3C5069" }}>
               <b style={{ color: "#16283D" }}>Also included:</b> job search across USAJOBS, Adzuna and Jooble; resume match scoring; and a career dashboard to track your search.
+            </p>
+            <p className="nl-federal">
+              <b>Federal applicants:</b> check your resume against the announcement&rsquo;s exact specialized-experience language.{" "}
+              <Link href="/federal-resume-builder">See the federal resume builder &rarr;</Link>
             </p>
             <div className="nl-actions">
               <button type="button" className="nl-btn nl-btn-navy" onClick={onScan}>Try the free scan</button>
@@ -468,6 +467,13 @@ export default function NewLanding({
             </article>
           </div>
         </div>
+        <div className="nl-wrap nl-stack" style={{ padding: 0, marginTop: 56, gap: 20 }}>
+          <div className="nl-rv nl-stack" style={{ gap: 10, maxWidth: 680 }}>
+            <span className="nl-eyebrow">Premium in action</span>
+            <h2 className="nl-h2" style={{ fontSize: "clamp(26px, 3.2vw, 38px)" }}>See what the Premium tools produce</h2>
+          </div>
+          <PremiumDemos />
+        </div>
       </section>
 
       {/* How it works */}
@@ -489,6 +495,36 @@ export default function NewLanding({
         </div>
       </section>
 
+      {/* Customer stories: renders only when real, owner-supplied testimonials exist (lib/siteProof.js) */}
+      {SITE_PROOF.testimonials.length > 0 && (
+        <section id="stories" className="nl-section" style={{ background: "#E3E8E2" }}>
+          <div className="nl-wrap nl-stack" style={{ gap: 32, padding: 0 }}>
+            <div className="nl-rv nl-stack" style={{ gap: 14, maxWidth: 680 }}>
+              <span className="nl-eyebrow">Customer stories</span>
+              <h2 className="nl-h2">What job seekers say</h2>
+              {SITE_PROOF.rating && (
+                <p style={{ fontSize: 16, color: "#3C5069", margin: 0 }}>
+                  {SITE_PROOF.rating.url ? <a href={SITE_PROOF.rating.url} rel="noopener noreferrer">{SITE_PROOF.rating.label}</a> : SITE_PROOF.rating.label}
+                  {SITE_PROOF.rating.date ? ` (${SITE_PROOF.rating.date})` : ""}
+                </p>
+              )}
+            </div>
+            <div className="nl-quotes">
+              {SITE_PROOF.testimonials.map((t) => (
+                <figure className="nl-quote nl-rv" key={t.name}>
+                  <blockquote>&ldquo;{t.quote}&rdquo;</blockquote>
+                  {t.outcome && <p className="outcome">{t.outcome}</p>}
+                  <figcaption>
+                    {t.photo && <img src={t.photo} alt={`${t.name}, ${t.role}`} width={44} height={44} loading="lazy" />}
+                    <span><b>{t.name}</b>{t.role ? `, ${t.role}` : ""}</span>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Pricing */}
       <section id="pricing" className="nl-section">
         <div className="nl-wrap nl-stack" style={{ gap: 40, padding: 0 }}>
@@ -502,6 +538,7 @@ export default function NewLanding({
                 <span className="name">Free</span>
                 <span className="price">$0</span>
                 <span className="sub">Try the core tools free, then upgrade when you need more.</span>
+                {SITE_PROOF.freeTierLine && <span className="sub" style={{ fontWeight: 600 }}>{SITE_PROOF.freeTierLine}</span>}
               </div>
               <ul className="nl-chk">
                 <li>Readiness Scan</li><li>Resume Builder (2 free)</li><li>STAR Job Tailoring (2 free)</li><li>Cover Letters (2 free)</li><li>Job search across USAJOBS, Adzuna &amp; Jooble</li>
@@ -510,14 +547,18 @@ export default function NewLanding({
             </div>
             <div className="nl-plan feat nl-rv">
               <div className="nl-stack" style={{ gap: 4 }}>
-                <span className="name">Premium</span>
+                <span className="name">Premium <span className="nl-popular">Most popular</span></span>
                 <span className="price">$9.99 <small>/ month</small></span>
                 <span className="sub">For the long search. Prep smarter, track everything.</span>
+                <span className="sub">About 5x less than Jobscan Premium ($49.95/mo, checked Sept 24, 2026). <Link href="/jobscan-alternative" style={{ color: "#FFB07A" }}>See the comparison</Link></span>
               </div>
               <ul className="nl-chk">
                 <li>Everything in Free</li><li>Career Dashboard &amp; weekly goals</li><li>Voice Interview Coach</li><li>Resume Match Scoring</li><li>Performance Review Writer</li>
               </ul>
-              <button type="button" className="nl-btn nl-btn-or" onClick={onPremiumCta}>{hasPremium ? "Go to dashboard" : "Subscribe"}</button>
+              <button type="button" className="nl-btn nl-btn-or" onClick={onPremiumCta}>{hasPremium ? "Go to dashboard" : "Subscribe - $9.99/mo"}</button>
+              {!hasPremium && SITE_PROOF.guaranteeDays && (
+                <span className="sub" style={{ textAlign: "center" }}>{SITE_PROOF.guaranteeDays}-day money-back, no questions asked.</span>
+              )}
             </div>
             <div className="nl-plan nl-rv">
               <div className="nl-stack" style={{ gap: 4 }}>
@@ -531,6 +572,7 @@ export default function NewLanding({
               <button type="button" className="nl-btn nl-btn-gh" onClick={onPricing}>Get the 30-Day Pass</button>
             </div>
           </div>
+          <p style={{ fontSize: 14, color: "#3C5069", margin: 0 }}>Payments are handled by Stripe. We never see your card details.</p>
         </div>
       </section>
 
@@ -566,6 +608,19 @@ export default function NewLanding({
               );
             })}
           </div>
+          {SITE_PROOF.founder && (
+            <div className="nl-founder nl-rv">
+              {SITE_PROOF.founder.photo && <img src={SITE_PROOF.founder.photo} alt={SITE_PROOF.founder.name} width={72} height={72} loading="lazy" />}
+              <div>
+                <p className="who"><b>{SITE_PROOF.founder.name}</b>{SITE_PROOF.founder.role ? `, ${SITE_PROOF.founder.role}` : ""}</p>
+                <p>{SITE_PROOF.founder.blurb || SITE_PROOF.founder.story}</p>
+                <p>
+                  <Link href="/about">Read why I built this</Link>
+                  {SITE_PROOF.founder.linkedin && <> &middot; <a href={SITE_PROOF.founder.linkedin} rel="noopener noreferrer">LinkedIn</a></>}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -603,7 +658,7 @@ export default function NewLanding({
               <p className="nl-lead">Free, takes 30 seconds, and you&rsquo;ll know exactly what to fix before you apply.</p>
             </div>
             <button type="button" className="nl-btn nl-btn-or" style={{ padding: "18px 34px", fontSize: 18 }} onClick={onScan}>
-              Scan my resume free
+              Scan my resume free - no credit card
             </button>
           </div>
         </div>
@@ -619,6 +674,7 @@ export default function NewLanding({
               <Link href="/pricing">Pricing</Link>
               <Link href="/jobscan-alternative">Jobscan Alternative</Link>
               <Link href="/teal-alternative">Teal Alternative</Link>
+              {SITE_PROOF.founder && <Link href="/about">About</Link>}
               <Link href="/privacy">Privacy</Link>
               <Link href="/terms">Terms</Link>
               <a href="mailto:hello@ecareerdesign.net">Contact us</a>
