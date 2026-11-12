@@ -225,11 +225,29 @@ async function restoreCache() {
   } catch {}
 }
 
+// Chrome only grants a site permission when it is asked for straight after the person's click, so it is asked here
+// in the panel, before any other work, never in the background worker.
+async function ensureAccess(url) {
+  let pattern;
+  try {
+    const u = new URL(url);
+    if (!/^https?:$/.test(u.protocol)) return false;
+    pattern = u.origin + "/*";
+  } catch {
+    return false;
+  }
+  if (await chrome.permissions.contains({ origins: [pattern] })) return true;
+  return chrome.permissions.request({ origins: [pattern] });
+}
+
 // ---- score the page the person is on ------------------------------------------------
 $("score-page").addEventListener("click", async () => {
   busy($("score-page"), true, "Reading page…");
   status("Reading this page…");
   try {
+    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!activeTab || !/^https?:/.test(activeTab.url || "")) throw new Error("Open a job posting first.");
+    if (!(await ensureAccess(activeTab.url))) throw new Error("Permission to read this site was not granted.");
     const { tabId, job } = await send("extractFromActiveTab");
     if (!job || !job.text || job.text.length < 200) {
       throw new Error("I couldn't find a job description here. Open the full job posting, not a list of results, then try again.");
@@ -300,11 +318,19 @@ $("p-fill").addEventListener("click", async () => {
   status("Opening the application and filling it in…");
   try {
     const { prepared, job, tabId } = current;
+    if (job.url && !(await ensureAccess(job.url))) throw new Error("Permission to fill this site was not granted.");
     const result = await send("fillApplication", {
       tabId,
       url: job.url,
       payload: { applicationId: prepared.applicationId, profile: profile.applicant, coverLetter: $("p-cover").value },
     });
+    if (result.needsAccess) {
+      // The link redirected to another site (for example an employer's own careers page).
+      current.tabId = result.tabId;
+      current.job = { ...job, url: result.url };
+      status(`This job opened on ${new URL(result.url).hostname}. Click "Open & fill application" again to allow that site and fill it in.`);
+      return;
+    }
     const n = result.needsAnswer ? result.needsAnswer.length : 0;
     status(`Filled ${result.filled} field${result.filled === 1 ? "" : "s"}${n ? `; ${n} need your answer` : ""}. Review the banner on the page and approve there when you're ready.`, "ok");
   } catch (e) {
@@ -320,7 +346,7 @@ $("p-download").addEventListener("click", async () => {
   try {
     const res = await api(`/applications/${encodeURIComponent(current.prepared.applicationId)}/resume`, { raw: true });
     const url = URL.createObjectURL(await res.blob());
-    const a = el("a", { href: url, download: "tailored-resume.pdf" });
+    const a = el("a", { href: url, download: `${((profile && profile.fullName) || "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}${profile && profile.fullName ? "-Resume" : "Resume"}.pdf` });
     document.body.append(a);
     a.click();
     a.remove();

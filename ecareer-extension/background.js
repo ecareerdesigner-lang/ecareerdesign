@@ -60,10 +60,8 @@ const handlers = {
   async extractFromActiveTab() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab || !/^https?:/.test(tab.url || "")) throw new Error("Open a job posting first.");
-    if (!(await hasOriginAccess(tab.url))) {
-      const ok = await chrome.permissions.request({ origins: [new URL(tab.url).origin + "/*"] });
-      if (!ok) throw new Error("Permission to read this site was not granted.");
-    }
+    // Chrome only allows a permission request straight after a click, so the side panel asks; this just checks.
+    if (!(await hasOriginAccess(tab.url))) throw new Error("Permission to read this site was not granted.");
     const job = await sendToTab(tab.id, { type: "EXTRACT_JOB" });
     return { tabId: tab.id, job };
   },
@@ -78,8 +76,8 @@ const handlers = {
     }
     const tab = await chrome.tabs.get(targetId);
     if (!(await hasOriginAccess(tab.url))) {
-      const ok = await chrome.permissions.request({ origins: [new URL(tab.url).origin + "/*"] });
-      if (!ok) throw new Error("Permission to fill this site was not granted.");
+      // The job link redirected to another site. Ask the side panel to get permission with a fresh click.
+      return { needsAccess: new URL(tab.url).origin, tabId: targetId, url: tab.url };
     }
     let resumeFile = null;
     if (payload.applicationId) {
