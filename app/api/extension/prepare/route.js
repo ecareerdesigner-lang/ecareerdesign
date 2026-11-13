@@ -40,6 +40,7 @@ export const POST = safe("prepare", async (req) => {
       "You help a job seeker apply. Rules: use ONLY facts present in the resume; never invent employers, titles, dates, metrics, " +
       "degrees, or skills; if the posting wants something the resume lacks, list it as a gap instead of claiming it. " +
       "Write in the candidate's plain first-person voice, no filler or clichés. " +
+      "Never round up or invent numbers: work out years of experience from the resume's actual start and end dates and state them no higher than that total, or avoid stating a total. Only use counts, percentages and dollar figures that appear in the resume. " +
       (partial ? "The posting text below is short or partial: score only on what is given and add a gap saying the full posting should be reviewed. " : "") +
       'tailoredResume must be plain text in this exact layout: do NOT write the name or any contact details (they are added automatically). ' +
       'Start with a line PROFESSIONAL SUMMARY, then a short paragraph. Section headings are ALL CAPS on their own line: PROFESSIONAL SUMMARY, EXPERIENCE, EDUCATION, SKILLS, and CERTIFICATIONS only if the resume has them. ' +
