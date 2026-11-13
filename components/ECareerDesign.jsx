@@ -2179,6 +2179,7 @@ const [jobMatchResults, setJobMatchResults] = useState({});
   });
 
   const [profileSaved, setProfileSaved] = useState(false);
+  const profileLoadedFor = useRef(null);
   const [recentProjects, setRecentProjects] = useState([]);
 
   const [budgets, setBudgets] = useState({});
@@ -2200,6 +2201,10 @@ useEffect(() => {
       let isLoggedIn = false;
       try {
         const { data: { user } } = await supabase.auth.getUser();
+        // The sign-in listener hands back a new user object whenever the session refreshes (tab focus, token refresh).
+        // Reloading then would wipe anything typed but not yet saved, so each account is loaded once.
+        if (user && profileLoadedFor.current === user.id) return;
+        profileLoadedFor.current = user ? user.id : null;
         if (user) {
           isLoggedIn = true;
           const { data: row } = await supabase
