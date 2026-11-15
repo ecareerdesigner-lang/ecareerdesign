@@ -35,6 +35,12 @@ export const TOOLS_CSS = `
 .nt-band h1 { font-family: var(--nt-display), Georgia, serif; font-weight: 600; letter-spacing: -0.015em; font-size: clamp(30px, 4.4vw, 46px); line-height: 1.08; margin: 8px 0 8px; }
 .nt-band p.nt-sub { font-size: 17px; color: var(--nt-ondark); max-width: 560px; margin: 0; }
 
+/* Free Resume Score screen */
+.nt .cf-upload { border-radius: 20px !important; border-color: #B9C1BC !important; background: #fff; transition: border-color 0.15s, background 0.15s; }
+@media (hover: hover) { .nt .cf-upload:hover { border-color: var(--nt-orange) !important; background: #FFF7F0; } }
+.nt .cf-pill-link { border-radius: 999px !important; background: var(--nt-orange) !important; color: var(--nt-deep) !important; padding: 11px 24px !important; min-height: 44px; display: inline-flex !important; align-items: center; }
+.nt .cf-pill-link:focus-visible { outline: 3px solid #FFB07A; outline-offset: 2px; }
+
 /* Skin: the old wizard heading is replaced by the band above */
 .nt .cf-wizard-head { display: none; }
 
