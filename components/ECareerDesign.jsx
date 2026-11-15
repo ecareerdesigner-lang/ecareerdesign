@@ -4,6 +4,7 @@ import Link from "next/link";
 import NewLanding from "./landing/NewLanding";
 import NewDashboardView from "./dashboard/NewDashboardView";
 import { usePublicRedesign } from "./public/usePublicRedesign";
+import NewAuthView from "./auth/NewAuthView";
 import ToolsChrome, { TOOLS_FONT_CLASS } from "./tools/ToolsChrome";
 import { supabase } from "../lib/supabase";
 import ExtensionConnect from "./ExtensionConnect";
@@ -3912,6 +3913,21 @@ async function runJobCardMatch(job, key) {
   const homeView = isPremium && currentUser && newDashOn ? "dashboard" : "landing";
   const homeLabel = homeView === "dashboard" ? "← Dashboard" : "← Home";
   const showNewDashboard = view === "dashboard" && isPremium && newDashOn;
+  // Redesigned log in / sign up screen. Same handlers; only the layout changes. Off unless a new-look switch is on.
+  const authLook = view === "auth" && ((newHomeOverride ?? NEW_LANDING_DEFAULT) || (newToolsOverride ?? NEW_TOOLS_DEFAULT) || publicLookOn);
+  if (authLook) {
+    return (
+      <NewAuthView
+        mode={authMode}
+        onToggleMode={() => { setAuthMode(authMode === "signup" ? "login" : "signup"); setAuthError(""); }}
+        email={authEmail} setEmail={setAuthEmail}
+        password={authPassword} setPassword={setAuthPassword}
+        error={authError} loading={authLoading}
+        onSubmit={handleAuthSubmit} onGoogle={signInWithGoogle}
+        onHome={() => setView("landing")}
+      />
+    );
+  }
   // New look for the builder screens: sticky bar + photo band + restyled cards, buttons and inputs.
   const toolsFlag = newToolsOverride ?? NEW_TOOLS_DEFAULT;
   // The Free Resume Score screen is public-facing, so it follows either the tools switch or the
