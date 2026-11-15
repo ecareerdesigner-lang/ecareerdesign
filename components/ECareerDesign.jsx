@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import NewLanding from "./landing/NewLanding";
 import NewDashboardView from "./dashboard/NewDashboardView";
+import { usePublicRedesign } from "./public/usePublicRedesign";
 import ToolsChrome, { TOOLS_FONT_CLASS } from "./tools/ToolsChrome";
 import { supabase } from "../lib/supabase";
 import ExtensionConnect from "./ExtensionConnect";
@@ -68,6 +69,7 @@ const NEW_DASHBOARD_DEFAULT = process.env.NEXT_PUBLIC_NEW_DASHBOARD === "1";
 // Redesigned tool screens (the builder wizard). OFF unless NEXT_PUBLIC_NEW_TOOLS=1 is set at build
 // time. Per-visit override for testing: ?newtools=1 shows the new look, ?newtools=0 the old one.
 const NEW_TOOLS_DEFAULT = process.env.NEXT_PUBLIC_NEW_TOOLS === "1";
+const SCORE_BAND = { eyebrow: "Free Resume Score", title: "See how your resume scores.", sub: "Upload it for an honest breakdown: ATS compatibility, keywords, formatting, and what's holding you back.", img: "/landing/resumes.jpg" };
 
 const TOTAL_BUDGET = 6000;   // Summary of Accomplishments (requirement responses), combined
 const SKILLS_BUDGET = 2000;  // Special Skills & Associations, independent cap
@@ -1758,6 +1760,7 @@ const [resumeScoreFile, setResumeScoreFile] = useState(null);
   const [newHomeOverride, setNewHomeOverride] = useState(null); // null | true | false
   const [newDashOverride, setNewDashOverride] = useState(null); // null | true | false
   const [newToolsOverride, setNewToolsOverride] = useState(null); // null | true | false
+  const publicLookOn = usePublicRedesign();
   const [wantDashboard, setWantDashboard] = useState(false);
 
   useEffect(() => {
@@ -3910,7 +3913,11 @@ async function runJobCardMatch(job, key) {
   const homeLabel = homeView === "dashboard" ? "← Dashboard" : "← Home";
   const showNewDashboard = view === "dashboard" && isPremium && newDashOn;
   // New look for the builder screens: sticky bar + photo band + restyled cards, buttons and inputs.
-  const toolsOn = view === "wizard" && (newToolsOverride ?? NEW_TOOLS_DEFAULT);
+  const toolsFlag = newToolsOverride ?? NEW_TOOLS_DEFAULT;
+  // The Free Resume Score screen is public-facing, so it follows either the tools switch or the
+  // public-pages switch. Off unless one of them is on.
+  const scoreLook = view === "resumescore" && (toolsFlag || publicLookOn);
+  const toolsOn = (view === "wizard" && toolsFlag) || scoreLook;
   const Inner = toolsOn ? "div" : React.Fragment;
   const innerProps = toolsOn ? { style: { maxWidth: 880, margin: "0 auto", padding: "2rem 1.5rem 3.5rem" } } : {};
   if (showNewDashboard) {
@@ -3974,7 +3981,8 @@ async function runJobCardMatch(job, key) {
       )}
       {toolsOn && (
         <ToolsChrome
-          mode={mode}
+          mode={scoreLook ? "resumescore" : mode}
+          band={scoreLook ? SCORE_BAND : undefined}
           homeLabel={homeLabel}
           onHome={() => { setMode(null); setStep(0); setView(homeView); }}
           onLogout={async () => { await supabase.auth.signOut(); }}
@@ -4480,8 +4488,11 @@ async function runJobCardMatch(job, key) {
       )}
 {view === "resumescore" && (
         <div style={{ maxWidth: 720, margin: "0 auto" }}>
+          {!scoreLook && (
           <Button variant="ghost" style={{ marginBottom: 10, padding: "4px 8px" }} onClick={() => setView(homeView)}>{homeLabel}</Button>
+          )}
 
+          {!scoreLook && (
           <div style={{ marginBottom: 28 }}>
             <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 34, margin: "0 0 8px", letterSpacing: "-0.01em" }}>
               Free Resume Score
@@ -4490,11 +4501,12 @@ async function runJobCardMatch(job, key) {
               Upload your resume and get an instant, honest breakdown — ATS compatibility, keyword strength, formatting, and what's holding you back.
             </p>
           </div>
+          )}
 
           <Card>
             {!resumeScoreResult && (
               <>
-                <div style={{ border: `2px dashed ${TOKENS.line}`, borderRadius: 8, padding: 32, textAlign: "center", marginBottom: 16 }}>
+                <div className="cf-upload" style={{ border: `2px dashed ${TOKENS.line}`, borderRadius: 8, padding: 32, textAlign: "center", marginBottom: 16 }}>
                   <input
                     type="file"
                     accept=".pdf,.docx"
@@ -4632,6 +4644,7 @@ async function runJobCardMatch(job, key) {
                   </p>
                   <a
                     href="/resume-job-match"
+                    className="cf-pill-link"
                     style={{ display: "inline-block", background: TOKENS.accent, color: "#fff", fontWeight: 600, fontSize: 13.5, padding: "9px 18px", borderRadius: 8, textDecoration: "none" }}
                   >
                     Check My Job Match Score →
