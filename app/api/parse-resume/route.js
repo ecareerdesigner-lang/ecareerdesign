@@ -5,6 +5,18 @@ export const runtime = "nodejs";
 
 const MAX_OCR_PAGES = 5;
 
+async function extractPdfText(buffer) {
+  const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const doc = await pdfjsLib.getDocument({ data: new Uint8Array(buffer), isEvalSupported: false }).promise;
+  let text = "";
+  for (let i = 1; i <= doc.numPages; i++) {
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map((item) => item.str).join(" ") + "\n";
+  }
+  return text.trim();
+}
+
 async function extractPdfImages(buffer) {
   const { PDFDocument, PDFName, PDFRawStream, PDFDict } = await import("pdf-lib");
   const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true });
@@ -42,22 +54,33 @@ export async function POST(req) {
 
     let text = "";
     if (lower.endsWith(".pdf") || file.type === "application/pdf") {
-      const pdfParse = (await import("pdf-parse/lib/pdf-parse.js")).default;
-      const data = await pdfParse(buffer);
-      text = (data.text || "").trim();
+      let parseError = null;
+      try {
+        text = await extractPdfText(buffer);
+      } catch (err) {
+        parseError = err;
+      }
 
       if (!text) {
-        // No text layer — likely a scanned/image-only PDF. Hand the page images
-        // back to the browser to OCR itself (tesseract.js's Node worker_threads
+        // No text layer, or pdfjs couldn't read this PDF at all despite its
+        // built-in xref-recovery pass — pdf-lib's independent parser is more
+        // tolerant still, so try handing the page images back to the browser
+        // to OCR itself (tesseract.js's Node worker_threads
         // path hangs indefinitely inside Vercel's serverless functions, but the
         // browser's real Web Worker support works fine).
-        const images = await extractPdfImages(buffer);
+        let images = [];
+        try {
+          images = await extractPdfImages(buffer);
+        } catch {
+          images = [];
+        }
         if (images.length > 0) {
           return Response.json({
             needsOcr: true,
             images: images.slice(0, MAX_OCR_PAGES).map((img) => img.toString("base64")),
           });
         }
+        if (parseError) throw parseError;
       }
     } else if (lower.endsWith(".docx") || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
       const result = await mammoth.extractRawText({ buffer });
