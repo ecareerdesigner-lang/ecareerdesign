@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { readResumeFile } from "../../lib/readResumeFile";
 import { usePublicRedesign } from "../../components/public/usePublicRedesign";
 import NewATSCheckerView from "./NewATSCheckerView";
 
@@ -141,15 +142,8 @@ export default function ATSCheckerTool() {
     setUnlocked(false);
     trackEvent("assessment_started", { tool: "ats_checker" });
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const parseRes = await fetch("/api/parse-resume", { method: "POST", body: formData });
-      const parseData = await parseRes.json();
-      if (!parseRes.ok || parseData.error) {
-        throw new Error(parseData.error || "Could not read this file.");
-      }
-
-      const parsed = await callClaudeForJson(resumeScorePrompt(parseData.text), 1200);
+      const resumeText = await readResumeFile(file);
+      const parsed = await callClaudeForJson(resumeScorePrompt(resumeText), 1200);
       setResult(parsed);
       trackEvent("assessment_completed", { tool: "ats_checker", overall_score: parsed.overallScore });
     } catch (e) {

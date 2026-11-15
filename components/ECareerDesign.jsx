@@ -3378,6 +3378,14 @@ function collectSafeBreakPoints(container) {
     // will be rendered.
     const breakPointsCss = collectSafeBreakPoints(element);
     const elementWidthCss = element.getBoundingClientRect().width;
+    // Text positions for the invisible text layer (measured now, same layout as the capture).
+    let textSegments = [];
+    try {
+      const { collectTextSegments } = await import("../lib/pdfTextLayer");
+      textSegments = collectTextSegments(element);
+    } catch (e) {
+      console.warn("[PDF text layer] collect failed", e);
+    }
 
     const canvas = await html2canvas(element, {
       scale: 1.5,
@@ -3411,8 +3419,10 @@ function collectSafeBreakPoints(container) {
     const pageHeight = pdf.internal.pageSize.getHeight();
     const scaledHeight = (canvas.height * pageWidth) / canvas.width;
     let pageCount = 1;
+    const pagesPx = [];
 
     if (scaledHeight <= pageHeight) {
+      pagesPx.push({ startPx: 0, heightPx: canvas.height });
       // Fits on one page.
       pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, pageWidth, scaledHeight);
     } else {
@@ -3460,6 +3470,7 @@ function collectSafeBreakPoints(container) {
         const ctx = pageCanvas.getContext("2d");
         ctx.drawImage(canvas, 0, renderedPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
 
+        pagesPx.push({ startPx: renderedPx, heightPx: sliceHeightPx });
         if (pageIndex > 0) pdf.addPage();
         const sliceHeightPt = (sliceHeightPx * pageWidth) / canvas.width;
         pdf.addImage(pageCanvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, pageWidth, sliceHeightPt);
@@ -3473,6 +3484,17 @@ function collectSafeBreakPoints(container) {
         pageIndex += 1;
       }
       pageCount = pageIndex;
+    }
+
+    // Invisible text layer so the PDF is readable by ATS parsers, copy/paste and our own tools.
+    try {
+      if (textSegments.length) {
+        const { addTextLayer } = await import("../lib/pdfTextLayer");
+        addTextLayer(pdf, textSegments, pagesPx, scaleRatio, canvas.width, pageWidth);
+        pdf.setPage(1);
+      }
+    } catch (e) {
+      console.warn("[PDF text layer] skipped", e);
     }
 
     console.log(`[PDF capture] produced ${pageCount} page(s)`);
