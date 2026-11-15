@@ -95,6 +95,33 @@ async function callClaude(prompt, maxTokens = 1200) {
   return text;
 }
 
+// Claude occasionally leaves a stray unescaped quote or literal newline inside a
+// string value, which breaks a bare JSON.parse. Try a clean parse first, then
+// repair near-valid JSON (same approach the main app uses for resume scoring).
+async function parseModelJson(raw) {
+  const cleaned = String(raw || "").replace(/```json|```/g, "").trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch (directParseErr) {
+    const { jsonrepair } = await import("jsonrepair");
+    return JSON.parse(jsonrepair(cleaned));
+  }
+}
+
+async function callClaudeForJson(prompt, maxTokens = 1200, attempts = 3) {
+  let lastErr;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await parseModelJson(await callClaude(prompt, maxTokens));
+    } catch (err) {
+      lastErr = err;
+      console.warn(`Analysis attempt ${attempt} failed:`, err);
+    }
+  }
+  console.error("All analysis attempts failed:", lastErr);
+  throw new Error("We couldn't analyze this resume just now. Please try again in a moment.");
+}
+
 export default function ATSCheckerTool() {
   const newLook = usePublicRedesign();
   const [file, setFile] = useState(null);
@@ -122,14 +149,7 @@ export default function ATSCheckerTool() {
         throw new Error(parseData.error || "Could not read this file.");
       }
 
-      let parsed;
-      try {
-        const text = await callClaude(resumeScorePrompt(parseData.text), 1200);
-        parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
-      } catch (parseErr) {
-        const text2 = await callClaude(resumeScorePrompt(parseData.text), 1200);
-        parsed = JSON.parse(text2.replace(/```json|```/g, "").trim());
-      }
+      const parsed = await callClaudeForJson(resumeScorePrompt(parseData.text), 1200);
       setResult(parsed);
       trackEvent("assessment_completed", { tool: "ats_checker", overall_score: parsed.overallScore });
     } catch (e) {
