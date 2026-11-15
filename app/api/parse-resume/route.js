@@ -61,8 +61,8 @@ export async function POST(req) {
         parseError = err;
       }
 
-      if (!text) {
-        // No text layer, or pdfjs couldn't read this PDF at all despite its
+      if (!text || text.length < 100) {
+        // No (or almost no) text layer, or pdfjs couldn't read this PDF at all despite its
         // built-in xref-recovery pass — pdf-lib's independent parser is more
         // tolerant still, so try handing the page images back to the browser
         // to OCR itself (tesseract.js's Node worker_threads
@@ -80,7 +80,7 @@ export async function POST(req) {
             images: images.slice(0, MAX_OCR_PAGES).map((img) => img.toString("base64")),
           });
         }
-        if (parseError) throw parseError;
+        if (parseError && !text) throw parseError;
       }
     } else if (lower.endsWith(".docx") || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
       const result = await mammoth.extractRawText({ buffer });

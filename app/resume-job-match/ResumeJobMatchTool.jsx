@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { readResumeFile } from "../../lib/readResumeFile";
 import { usePublicRedesign } from "../../components/public/usePublicRedesign";
 import NewResumeJobMatchView from "./NewResumeJobMatchView";
 
@@ -148,15 +149,8 @@ export default function ResumeJobMatchTool() {
     setUnlocked(false);
     trackEvent("assessment_started", { tool: "resume_job_match" });
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const parseRes = await fetch("/api/parse-resume", { method: "POST", body: formData });
-      const parseData = await parseRes.json();
-      if (!parseRes.ok || parseData.error) {
-        throw new Error(parseData.error || "Could not read this file.");
-      }
-
-      const parsed = await callClaudeForJson(matchScorePrompt(parseData.text, jobDescription), 1200);
+      const resumeText = await readResumeFile(file);
+      const parsed = await callClaudeForJson(matchScorePrompt(resumeText, jobDescription), 1200);
       setResult(parsed);
       trackEvent("assessment_completed", { tool: "resume_job_match", score: parsed.score });
     } catch (e) {
