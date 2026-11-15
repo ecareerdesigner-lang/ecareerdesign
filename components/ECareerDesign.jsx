@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import NewLanding from "./landing/NewLanding";
 import NewDashboardView from "./dashboard/NewDashboardView";
+import BulletCoach, { useBulletCoach } from "./resume/BulletCoach";
 import ToolsChrome, { TOOLS_FONT_CLASS } from "./tools/ToolsChrome";
 import { supabase } from "../lib/supabase";
 import ExtensionConnect from "./ExtensionConnect";
@@ -1757,6 +1758,7 @@ const [resumeScoreFile, setResumeScoreFile] = useState(null);
   const [returnToStep, setReturnToStep] = useState(null);
   const [newHomeOverride, setNewHomeOverride] = useState(null); // null | true | false
   const [newDashOverride, setNewDashOverride] = useState(null); // null | true | false
+  const bulletCoachOn = useBulletCoach();
   const [newToolsOverride, setNewToolsOverride] = useState(null); // null | true | false
   const [wantDashboard, setWantDashboard] = useState(false);
 
@@ -5406,6 +5408,9 @@ async function runJobCardMatch(job, key) {
                 <div style={{ background: TOKENS.paper, padding: 20, borderRadius: 4, marginBottom: 12 }}>
                   <ResumePreview template={resumeTemplate} contact={contactInfo} data={resumeData} color={resumeColor} photo={resumePhoto} />
                 </div>
+                {bulletCoachOn && (
+                  <BulletCoach data={resumeData} setData={setResumeData} ask={(prompt, maxTokens) => callClaude(prompt, maxTokens, "assist")} />
+                )}
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                   <Button variant="ghost" icon={<RefreshCw size={13} />} onClick={generateResume}>Regenerate content</Button>
                   <Button variant="ghost" icon={copiedKey === "resume" ? <Check size={13} /> : <Copy size={13} />} onClick={() => copyText("resume", buildResumePlainText())}>
