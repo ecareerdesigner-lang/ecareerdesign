@@ -1,5 +1,6 @@
 'use client';
 
+import { bfetch } from '@/lib/business/api';
 import { useState, useEffect } from 'react';
 import { SectionHeader, Card, CardHeader, CardContent } from '@/components/business/components';
 import { Input } from '@/components/ui/input';
@@ -33,7 +34,7 @@ export default function TasksPage() {
 
   const fetchTasks = async () => {
     try {
-      const res = await fetch('/api/business/tasks');
+      const res = await bfetch('/api/business/tasks');
       const data = await res.json();
       setTasks(data.tasks || []);
     } catch (error) {
@@ -46,7 +47,7 @@ export default function TasksPage() {
   const addTask = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetch('/api/business/tasks', {
+      await bfetch('/api/business/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -70,7 +71,7 @@ export default function TasksPage() {
 
   const updateTaskStatus = async (id: string, newStatus: string) => {
     try {
-      await fetch(`/api/business/tasks/${id}`, {
+      await bfetch(`/api/business/tasks/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -84,7 +85,7 @@ export default function TasksPage() {
   const deleteTask = async (id: string) => {
     if (!confirm('Delete this task?')) return;
     try {
-      await fetch(`/api/business/tasks/${id}`, { method: 'DELETE' });
+      await bfetch(`/api/business/tasks/${id}`, { method: 'DELETE' });
       fetchTasks();
     } catch (error) {
       console.error('Error:', error);

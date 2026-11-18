@@ -1,5 +1,6 @@
 'use client';
 
+import { bfetch } from '@/lib/business/api';
 import { useState, useEffect } from 'react';
 import { SectionHeader, Card, CardHeader, CardContent } from '@/components/business/components';
 import { Input } from '@/components/ui/input';
@@ -31,7 +32,7 @@ export default function RevenuePage() {
 
   const fetchRevenue = async () => {
     try {
-      const res = await fetch('/api/business/revenue');
+      const res = await bfetch('/api/business/revenue');
       const data = await res.json();
       setEntries(data.revenue || []);
     } catch (error) {
@@ -44,7 +45,7 @@ export default function RevenuePage() {
   const addEntry = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetch('/api/business/revenue', {
+      await bfetch('/api/business/revenue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -69,7 +70,7 @@ export default function RevenuePage() {
   const deleteEntry = async (id: string) => {
     if (!confirm('Delete this entry?')) return;
     try {
-      await fetch(`/api/business/revenue/${id}`, { method: 'DELETE' });
+      await bfetch(`/api/business/revenue/${id}`, { method: 'DELETE' });
       fetchRevenue();
     } catch (error) {
       console.error('Error:', error);

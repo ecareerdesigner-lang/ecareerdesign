@@ -1,5 +1,6 @@
 'use client';
 
+import { bfetch } from '@/lib/business/api';
 import { useState, useEffect } from 'react';
 import { SectionHeader, Card, CardHeader, CardContent } from '@/components/business/components';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,7 @@ export default function ReportsPage() {
 
  const fetchReportData = async () => {
     try {
-      const res = await fetch('/api/business/reports');
+      const res = await bfetch('/api/business/reports');
       const reportData = await res.json();
 
       // Create employee lookup map
