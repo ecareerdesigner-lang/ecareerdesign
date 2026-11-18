@@ -1,5 +1,6 @@
 'use client';
 
+import { bfetch } from '@/lib/business/api';
 import { useState, useEffect } from 'react';
 import { SectionHeader, Card, CardHeader, CardContent } from '@/components/business/components';
 import { Input } from '@/components/ui/input';
@@ -31,7 +32,7 @@ export default function ProjectsPage() {
 
   const fetchProjects = async () => {
     try {
-      const res = await fetch('/api/business/projects');
+      const res = await bfetch('/api/business/projects');
       const data = await res.json();
       setProjects(data.projects || []);
     } catch (error) {
@@ -44,7 +45,7 @@ export default function ProjectsPage() {
   const addProject = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetch('/api/business/projects', {
+      await bfetch('/api/business/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -67,7 +68,7 @@ export default function ProjectsPage() {
 
   const updateProjectStatus = async (id: string, newStatus: string) => {
     try {
-      await fetch(`/api/business/projects/${id}`, {
+      await bfetch(`/api/business/projects/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -81,7 +82,7 @@ export default function ProjectsPage() {
   const deleteProject = async (id: string) => {
     if (!confirm('Delete this project?')) return;
     try {
-      await fetch(`/api/business/projects/${id}`, { method: 'DELETE' });
+      await bfetch(`/api/business/projects/${id}`, { method: 'DELETE' });
       fetchProjects();
     } catch (error) {
       console.error('Error:', error);

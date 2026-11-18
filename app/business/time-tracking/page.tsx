@@ -1,5 +1,6 @@
 'use client';
 
+import { bfetch } from '@/lib/business/api';
 import { useState, useEffect } from 'react';
 import { SectionHeader, Card, CardHeader, CardContent } from '@/components/business/components';
 import { Input } from '@/components/ui/input';
@@ -63,7 +64,7 @@ export default function TimeTrackingPage() {
 
   const fetchEmployees = async () => {
     try {
-      const res = await fetch('/api/business/employees');
+      const res = await bfetch('/api/business/employees');
       const data = await res.json();
       setEmployees(data.employees || []);
     } catch (error) {
@@ -73,7 +74,7 @@ export default function TimeTrackingPage() {
 
   const fetchEntries = async () => {
     try {
-      const res = await fetch('/api/business/time-entries');
+      const res = await bfetch('/api/business/time-entries');
       const data = await res.json();
       setEntries(data.entries || []);
     } catch (error) {
@@ -86,7 +87,7 @@ export default function TimeTrackingPage() {
   const addEntry = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetch('/api/business/time-entries', {
+      await bfetch('/api/business/time-entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -110,7 +111,7 @@ export default function TimeTrackingPage() {
 
   const updateEntryStatus = async (id: string, newStatus: string) => {
     try {
-      await fetch(`/api/business/time-entries/${id}`, {
+      await bfetch(`/api/business/time-entries/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -124,7 +125,7 @@ export default function TimeTrackingPage() {
   const deleteEntry = async (id: string) => {
     if (!confirm('Delete this entry?')) return;
     try {
-      await fetch(`/api/business/time-entries/${id}`, { method: 'DELETE' });
+      await bfetch(`/api/business/time-entries/${id}`, { method: 'DELETE' });
       fetchEntries();
     } catch (error) {
       console.error('Error:', error);
@@ -173,7 +174,7 @@ export default function TimeTrackingPage() {
 
       await Promise.all(
         entriesToCreate.map((entry) =>
-          fetch('/api/business/time-entries', {
+          bfetch('/api/business/time-entries', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(entry),

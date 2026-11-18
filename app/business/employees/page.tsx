@@ -1,5 +1,6 @@
 'use client';
 
+import { bfetch } from '@/lib/business/api';
 import { useState, useEffect } from 'react';
 import { SectionHeader, Card, CardHeader, CardContent } from '@/components/business/components';
 import { Input } from '@/components/ui/input';
@@ -29,7 +30,7 @@ export default function EmployeesPage() {
 
   const fetchEmployees = async () => {
     try {
-      const res = await fetch('/api/business/employees');
+      const res = await bfetch('/api/business/employees');
       const data = await res.json();
       setEmployees(data.employees || []);
     } catch (error) {
@@ -42,7 +43,7 @@ export default function EmployeesPage() {
   const addEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetch('/api/business/employees', {
+      await bfetch('/api/business/employees', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, role, department, status: 'active' }),
@@ -61,7 +62,7 @@ export default function EmployeesPage() {
   const deleteEmployee = async (id: string) => {
     if (!confirm('Delete this employee?')) return;
     try {
-      await fetch(`/api/business/employees/${id}`, { method: 'DELETE' });
+      await bfetch(`/api/business/employees/${id}`, { method: 'DELETE' });
       fetchEmployees();
     } catch (error) {
       console.error('Error:', error);

@@ -1,5 +1,6 @@
 'use client';
 
+import { bfetch } from '@/lib/business/api';
 import { useState, useEffect } from 'react';
 import { SectionHeader, Card, CardHeader, CardContent } from '@/components/business/components';
 
@@ -21,7 +22,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const response = await fetch('/api/business/metrics');
+        const response = await bfetch('/api/business/metrics');
         const data = await response.json();
         setMetrics(data);
       } catch (error) {

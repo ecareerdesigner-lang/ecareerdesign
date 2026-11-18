@@ -1,5 +1,6 @@
 'use client';
 
+import { bfetch } from '@/lib/business/api';
 import { useState, useEffect } from 'react';
 import { SectionHeader, Card, CardHeader, CardContent } from '@/components/business/components';
 import { Input } from '@/components/ui/input';
@@ -34,7 +35,7 @@ export default function AIUsagePage() {
 
   const fetchUsage = async () => {
     try {
-      const res = await fetch('/api/business/ai-usage');
+      const res = await bfetch('/api/business/ai-usage');
       const data = await res.json();
       setEntries(data.usage || []);
     } catch (error) {
@@ -47,7 +48,7 @@ export default function AIUsagePage() {
   const addEntry = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetch('/api/business/ai-usage', {
+      await bfetch('/api/business/ai-usage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -75,7 +76,7 @@ export default function AIUsagePage() {
   const deleteEntry = async (id: string) => {
     if (!confirm('Delete this entry?')) return;
     try {
-      await fetch(`/api/business/ai-usage/${id}`, { method: 'DELETE' });
+      await bfetch(`/api/business/ai-usage/${id}`, { method: 'DELETE' });
       fetchUsage();
     } catch (error) {
       console.error('Error:', error);

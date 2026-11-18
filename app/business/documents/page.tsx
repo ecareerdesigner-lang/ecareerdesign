@@ -1,5 +1,6 @@
 'use client';
 
+import { bfetch } from '@/lib/business/api';
 import { useState, useEffect, useRef } from 'react';
 import { SectionHeader, Card, CardContent } from '@/components/business/components';
 import { Input } from '@/components/ui/input';
@@ -29,7 +30,7 @@ export default function DocumentsPage() {
 
   const fetchDocuments = async () => {
     try {
-      const res = await fetch('/api/business/documents');
+      const res = await bfetch('/api/business/documents');
       const data = await res.json();
       setDocuments(data.documents || []);
     } catch (error) {
@@ -53,7 +54,7 @@ export default function DocumentsPage() {
       formData.append('file', file);
       formData.append('category', category);
 
-      const res = await fetch('/api/business/documents', {
+      const res = await bfetch('/api/business/documents', {
         method: 'POST',
         body: formData,
       });
@@ -76,7 +77,7 @@ export default function DocumentsPage() {
   const deleteDocument = async (id: string) => {
     if (!confirm('Delete this document?')) return;
     try {
-      await fetch(`/api/business/documents/${id}`, { method: 'DELETE' });
+      await bfetch(`/api/business/documents/${id}`, { method: 'DELETE' });
       fetchDocuments();
     } catch (error) {
       console.error('Error:', error);

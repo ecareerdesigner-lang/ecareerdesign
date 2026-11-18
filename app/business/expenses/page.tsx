@@ -1,5 +1,6 @@
 'use client';
 
+import { bfetch } from '@/lib/business/api';
 import { useState, useEffect } from 'react';
 import { SectionHeader, Card, CardHeader, CardContent } from '@/components/business/components';
 import { Input } from '@/components/ui/input';
@@ -41,7 +42,7 @@ export default function ExpensesPage() {
 
   const fetchEmployees = async () => {
     try {
-      const res = await fetch('/api/business/employees');
+      const res = await bfetch('/api/business/employees');
       const data = await res.json();
       setEmployees(data.employees || []);
     } catch (error) {
@@ -51,7 +52,7 @@ export default function ExpensesPage() {
 
   const fetchExpenses = async () => {
     try {
-      const res = await fetch('/api/business/expenses');
+      const res = await bfetch('/api/business/expenses');
       const data = await res.json();
       setExpenses(data.expenses || []);
     } catch (error) {
@@ -64,7 +65,7 @@ export default function ExpensesPage() {
   const addExpense = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetch('/api/business/expenses', {
+      await bfetch('/api/business/expenses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -90,7 +91,7 @@ export default function ExpensesPage() {
 
   const updateExpenseStatus = async (id: string, newStatus: string) => {
     try {
-      await fetch(`/api/business/expenses/${id}`, {
+      await bfetch(`/api/business/expenses/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -104,7 +105,7 @@ export default function ExpensesPage() {
   const deleteExpense = async (id: string) => {
     if (!confirm('Delete this expense?')) return;
     try {
-      await fetch(`/api/business/expenses/${id}`, { method: 'DELETE' });
+      await bfetch(`/api/business/expenses/${id}`, { method: 'DELETE' });
       fetchExpenses();
     } catch (error) {
       console.error('Error:', error);
